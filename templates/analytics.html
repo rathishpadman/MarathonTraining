@@ -435,7 +435,7 @@ function loadAnalyticsData() {
     
     const days = currentTimeRange === 'week' ? 7 : currentTimeRange === 'month' ? 30 : 90;
     
-    fetch(`/analytics/data?days=${days}`)
+    fetch(`/api/analytics/data?days=${days}`)
         .then(response => response.json())
         .then(data => {
             updateMetrics(data.metrics);

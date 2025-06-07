@@ -664,7 +664,7 @@ def prepare_heart_rate_analytics(activities):
         # Group by week for trend analysis
         weekly_data = {}
         for activity in hr_activities:
-            week_start = activity.start_date - datetime.timedelta(days=activity.start_date.weekday())
+            week_start = activity.start_date - timedelta(days=activity.start_date.weekday())
             week_key = week_start.strftime('%m/%d')
             
             if week_key not in weekly_data:
@@ -691,7 +691,7 @@ def prepare_heart_rate_analytics(activities):
         }
     
     except Exception as e:
-        app.logger.error(f"Error in heart rate analytics: {str(e)}")
+        logger.error(f"Error in heart rate analytics: {str(e)}")
         return {'labels': [], 'avgHeartRate': [], 'maxHeartRate': []}
 
 
@@ -719,7 +719,7 @@ def prepare_elevation_analytics(activities):
         }
     
     except Exception as e:
-        app.logger.error(f"Error in elevation analytics: {str(e)}")
+        logger.error(f"Error in elevation analytics: {str(e)}")
         return {'labels': [], 'distance': [], 'elevation': []}
 
 
@@ -755,5 +755,5 @@ def prepare_pace_analytics(activities):
         }
     
     except Exception as e:
-        app.logger.error(f"Error in pace analytics: {str(e)}")
+        logger.error(f"Error in pace analytics: {str(e)}")
         return {'labels': [], 'pace': [], 'targetPace': []}
