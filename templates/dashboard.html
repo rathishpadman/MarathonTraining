@@ -196,24 +196,30 @@ document.addEventListener('DOMContentLoaded', function() {
         checkForExistingAthletes();
     }
     
-    // Setup Strava connection button
-    document.getElementById('connectStrava').addEventListener('click', function() {
-        connectToStrava();
-    });
+    // Setup Strava connection button (check if element exists)
+    const connectBtn = document.getElementById('connectStrava');
+    if (connectBtn) {
+        connectBtn.addEventListener('click', function() {
+            connectToStrava();
+        });
+    }
     
-    // Athlete selection change handler
-    document.getElementById('athleteSelect').addEventListener('change', function() {
-        const athleteId = this.value;
-        if (athleteId) {
-            currentAthlete = athleteId;
-            loadAthleteData(athleteId);
-            
-            // Join athlete's room for real-time updates
-            if (socket) {
-                socket.emit('join_dashboard_room', {athlete_id: athleteId});
+    // Athlete selection change handler (check if element exists)
+    const athleteSelect = document.getElementById('athleteSelect');
+    if (athleteSelect) {
+        athleteSelect.addEventListener('change', function() {
+            const athleteId = this.value;
+            if (athleteId) {
+                currentAthlete = athleteId;
+                loadAthleteData(athleteId);
+                
+                // Join athlete's room for real-time updates
+                if (socket) {
+                    socket.emit('join_dashboard_room', {athlete_id: athleteId});
+                }
             }
-        }
-    });
+        });
+    }
 });
 
 // Check for existing athletes on page load
@@ -314,7 +320,10 @@ function populateAthleteSelector(athletes) {
 
 // Load athlete-specific data
 function loadAthleteData(athleteId) {
-    document.getElementById('loadingSpinner').style.display = 'block';
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    if (loadingSpinner) {
+        loadingSpinner.style.display = 'block';
+    }
     
     // Load athlete dashboard data
     fetch(`/api/athletes/${athleteId}/dashboard-data`)
@@ -334,15 +343,26 @@ function loadAthleteData(athleteId) {
                 loadAIInsights(athleteId);
                 
                 // Show dashboard sections
-                document.getElementById('metricsSection').style.display = 'flex';
-                document.getElementById('chartsSection').style.display = 'flex';
-                document.getElementById('activitiesSection').style.display = 'flex';
+                const metricsSection = document.getElementById('metricsSection');
+                const chartsSection = document.getElementById('chartsSection');
+                const activitiesSection = document.getElementById('activitiesSection');
+                
+                if (metricsSection) metricsSection.style.display = 'flex';
+                if (chartsSection) chartsSection.style.display = 'flex';
+                if (activitiesSection) activitiesSection.style.display = 'flex';
             }
-            document.getElementById('loadingSpinner').style.display = 'none';
+            
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            if (loadingSpinner) {
+                loadingSpinner.style.display = 'none';
+            }
         })
         .catch(error => {
             console.error('Error loading athlete data:', error);
-            document.getElementById('loadingSpinner').style.display = 'none';
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            if (loadingSpinner) {
+                loadingSpinner.style.display = 'none';
+            }
             showNotification('Failed to load athlete data', 'error');
         });
 }
@@ -355,17 +375,25 @@ function updateDashboardMetrics(data) {
     const metrics = data.metrics || {};
     
     // Update metric values using the actual backend response structure
-    document.getElementById('metric-total_distance').textContent = 
-        (metrics.total_distance || 0).toFixed(1);
+    const distanceEl = document.getElementById('metric-total_distance');
+    if (distanceEl) {
+        distanceEl.textContent = (metrics.total_distance || 0).toFixed(1);
+    }
     
-    document.getElementById('metric-total_activities').textContent = 
-        metrics.total_activities || 0;
+    const activitiesEl = document.getElementById('metric-total_activities');
+    if (activitiesEl) {
+        activitiesEl.textContent = metrics.total_activities || 0;
+    }
     
-    document.getElementById('metric-avg_pace').textContent = 
-        metrics.avg_pace ? metrics.avg_pace.toFixed(2) + ' min/km' : 'N/A';
+    const paceEl = document.getElementById('metric-avg_pace');
+    if (paceEl) {
+        paceEl.textContent = metrics.avg_pace ? metrics.avg_pace.toFixed(2) + ' min/km' : 'N/A';
+    }
     
-    document.getElementById('metric-training_load').textContent = 
-        (metrics.training_load || 0).toFixed(1);
+    const loadEl = document.getElementById('metric-training_load');
+    if (loadEl) {
+        loadEl.textContent = (metrics.training_load || 0).toFixed(1);
+    }
 }
 
 // Update charts with new data
