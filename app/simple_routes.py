@@ -444,34 +444,59 @@ def sync_athlete_activities(athlete_id):
         
         activities_synced = 0
         for activity_data in activities_data:
-            # Check if activity already exists
-            existing = db.session.query(Activity).filter_by(
-                strava_activity_id=activity_data['id']
-            ).first()
-            
-            if not existing:
-                # Create new activity record
-                activity = Activity(
-                    strava_activity_id=activity_data['id'],
-                    athlete_id=athlete_id,
-                    name=activity_data['name'],
-                    sport_type=activity_data['sport_type'],
-                    start_date=datetime.fromisoformat(activity_data['start_date_local'].replace('Z', '+00:00')),
-                    distance=activity_data.get('distance'),
-                    moving_time=activity_data.get('moving_time'),
-                    elapsed_time=activity_data.get('elapsed_time'),
-                    total_elevation_gain=activity_data.get('total_elevation_gain'),
-                    average_speed=activity_data.get('average_speed'),
-                    max_speed=activity_data.get('max_speed'),
-                    average_cadence=activity_data.get('average_cadence'),
-                    average_heartrate=activity_data.get('average_heartrate'),
-                    max_heartrate=activity_data.get('max_heartrate'),
-                    calories=activity_data.get('calories'),
-                    created_at=datetime.now()
-                )
+            try:
+                # Check if activity already exists
+                existing = db.session.query(Activity).filter_by(
+                    strava_activity_id=activity_data['id']
+                ).first()
                 
-                db.session.add(activity)
-                activities_synced += 1
+                if not existing:
+                    # Parse the start date properly
+                    start_date_str = activity_data['start_date_local']
+                    if start_date_str.endswith('Z'):
+                        start_date_str = start_date_str.replace('Z', '+00:00')
+                    
+                    # Create new activity using direct SQL insert for PostgreSQL compatibility
+                    from sqlalchemy import text
+                    insert_query = text("""
+                        INSERT INTO activities (
+                            strava_activity_id, athlete_id, name, sport_type, start_date,
+                            distance, moving_time, elapsed_time, total_elevation_gain,
+                            average_speed, max_speed, average_cadence, average_heartrate,
+                            max_heartrate, calories, created_at
+                        ) VALUES (
+                            :strava_id, :athlete_id, :name, :sport_type, :start_date,
+                            :distance, :moving_time, :elapsed_time, :elevation,
+                            :avg_speed, :max_speed, :cadence, :avg_hr,
+                            :max_hr, :calories, :created_at
+                        )
+                    """)
+                    
+                    db.session.execute(insert_query, {
+                        'strava_id': activity_data['id'],
+                        'athlete_id': athlete_id,
+                        'name': activity_data['name'],
+                        'sport_type': activity_data['sport_type'],
+                        'start_date': datetime.fromisoformat(start_date_str),
+                        'distance': activity_data.get('distance'),
+                        'moving_time': activity_data.get('moving_time'),
+                        'elapsed_time': activity_data.get('elapsed_time'),
+                        'elevation': activity_data.get('total_elevation_gain'),
+                        'avg_speed': activity_data.get('average_speed'),
+                        'max_speed': activity_data.get('max_speed'),
+                        'cadence': activity_data.get('average_cadence'),
+                        'avg_hr': activity_data.get('average_heartrate'),
+                        'max_hr': activity_data.get('max_heartrate'),
+                        'calories': activity_data.get('calories'),
+                        'created_at': datetime.now()
+                    })
+                    
+                    activities_synced += 1
+                    logger.info(f"Inserted activity {activity_data['id']} for athlete {athlete_id}")
+                    
+            except Exception as e:
+                logger.error(f"Error inserting activity {activity_data.get('id', 'unknown')}: {str(e)}")
+                continue
         
         db.session.commit()
         
