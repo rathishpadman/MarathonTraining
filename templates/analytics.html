@@ -389,16 +389,16 @@ function loadAthleteAnalytics() {
 
 // Display analytics summary
 function displayAnalytics(data) {
-    document.getElementById('totalDistance').textContent = `${data.total_distance_km} km`;
-    document.getElementById('totalTime').textContent = formatDuration(data.total_moving_time);
-    document.getElementById('avgPace').textContent = data.average_pace_formatted || '--';
-    document.getElementById('avgHeartRate').textContent = data.average_heart_rate ? `${Math.round(data.average_heart_rate)} bpm` : '--';
+    document.getElementById('totalDistance').textContent = `${data.total_distance} km`;
+    document.getElementById('totalTime').textContent = formatDuration(data.total_time * 3600); // Convert hours to seconds
+    document.getElementById('avgPace').textContent = data.avg_pace ? `${data.avg_pace.toFixed(2)} min/km` : '--';
+    document.getElementById('avgHeartRate').textContent = data.avg_heart_rate ? `${Math.round(data.avg_heart_rate)} bpm` : '--';
     
-    // Show percentage changes
-    document.getElementById('distanceChange').textContent = data.distance_change || '--';
-    document.getElementById('timeChange').textContent = data.time_change || '--';
-    document.getElementById('paceChange').textContent = data.pace_change || '--';
-    document.getElementById('hrChange').textContent = data.hr_change || '--';
+    // Show percentage changes (not available in current API, so show activity count)
+    document.getElementById('distanceChange').textContent = `${data.activity_count} activities`;
+    document.getElementById('timeChange').textContent = data.training_load ? `${data.training_load.toFixed(1)} TSS` : '--';
+    document.getElementById('paceChange').textContent = data.status || '--';
+    document.getElementById('hrChange').textContent = data.period_days ? `${data.period_days} days` : '--';
     
     showAnalytics();
 }
