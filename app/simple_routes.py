@@ -583,7 +583,7 @@ def get_analytics_data():
         
         return jsonify({
             'metrics': {
-                'totalDistance': total_distance * 1000,  # Convert back to meters for frontend
+                'totalDistance': total_distance,  # Keep in km as frontend expects
                 'totalTime': total_time,
                 'avgHeartRate': round(avg_heart_rate, 1) if avg_heart_rate else 0,
                 'activityCount': activity_count

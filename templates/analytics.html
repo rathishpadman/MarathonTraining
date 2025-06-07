@@ -459,10 +459,11 @@ function loadAnalyticsData() {
 }
 
 function updateMetrics(metrics) {
-    document.getElementById('totalDistance').textContent = `${(metrics.totalDistance / 1000).toFixed(1)} km`;
-    document.getElementById('totalTime').textContent = formatDuration(metrics.totalTime);
+    // Backend already returns distance in km, no conversion needed
+    document.getElementById('totalDistance').textContent = `${(metrics.totalDistance || 0).toFixed(1)} km`;
+    document.getElementById('totalTime').textContent = formatDuration(metrics.totalTime || 0);
     document.getElementById('avgHeartRate').textContent = `${metrics.avgHeartRate || '--'} bpm`;
-    document.getElementById('activityCount').textContent = metrics.activityCount;
+    document.getElementById('activityCount').textContent = metrics.activityCount || 0;
 }
 
 function updateCharts(data) {
