@@ -9,7 +9,7 @@ from app.config import Config
 web_bp = Blueprint('main_routes', __name__)
 logger = logging.getLogger(__name__)
 
-@web_bp.route('/')
+@web_bp.route('/old-dashboard')
 def dashboard():
     """Main dashboard page"""
     return render_template('dashboard.html')

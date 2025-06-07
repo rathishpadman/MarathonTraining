@@ -56,15 +56,15 @@ def create_app():
     security = ReplitSecurity()
     security.setup_jwt_handlers(jwt)
     
-    # Register routes - web routes first to take precedence
-    from app.web_routes import web_bp
-    app.register_blueprint(web_bp)
-    
-    # Register main routes (including home page)
+    # Register main routes (including community dashboard home page) first
     from app.simple_routes import main_bp
     app.register_blueprint(main_bp)
     
-    # Register API routes with prefix to avoid root conflict
+    # Register web routes (individual dashboards)
+    from app.web_routes import web_bp
+    app.register_blueprint(web_bp)
+    
+    # Register API routes with prefix
     from app.simple_routes import api_bp
     app.register_blueprint(api_bp)
     
