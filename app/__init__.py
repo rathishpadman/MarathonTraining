@@ -56,7 +56,7 @@ def create_app():
     app.register_blueprint(web_bp)
     
     # Register API routes with prefix to avoid root conflict
-    from app.routes import api_bp
+    from app.simple_routes import api_bp
     app.register_blueprint(api_bp)
     
     # Create database tables
@@ -83,7 +83,7 @@ def create_app():
         )
         
         # Schedule athlete updates every 60 seconds
-        from app.routes import send_athlete_update
+        from app.simple_routes import send_athlete_update
         scheduler.add_job(
             func=send_athlete_update,
             trigger='interval',
