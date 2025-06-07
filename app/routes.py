@@ -13,7 +13,7 @@ from app.config import Config
 
 # Create blueprint for API routes
 api_bp = Blueprint('api', __name__, url_prefix='/api')
-api = Api(api_bp, title='Marathon Training API', version='1.0', doc=False)
+api = Api(api_bp, title='Marathon Training API', version='1.0', doc='/api/docs')
 
 # Initialize components
 config = Config()
@@ -247,23 +247,25 @@ def handle_disconnect():
 # Helper functions for real-time updates
 def send_athlete_update():
     """Send updates to all connected athletes (called by scheduler)"""
+    from flask import current_app
     try:
-        # Get all active athletes
-        active_athletes = db.session.query(ReplitAthlete).filter_by(is_active=True).all()
-        
-        for athlete in active_athletes:
-            try:
-                # Get lightweight update for this athlete
-                update_data = get_lightweight_update(athlete.id)
-                
-                # Emit to athlete's room
-                room = f"athlete_{athlete.id}"
-                socketio.emit('dashboard_refresh', update_data, room=room)
-                
-            except Exception as e:
-                logger.error(f"Error sending update to athlete {athlete.id}: {str(e)}")
-        
-        logger.info(f"Sent updates to {len(active_athletes)} athletes")
+        with current_app.app_context():
+            # Get all active athletes
+            active_athletes = db.session.query(ReplitAthlete).filter_by(is_active=True).all()
+            
+            for athlete in active_athletes:
+                try:
+                    # Get lightweight update for this athlete
+                    update_data = get_lightweight_update(athlete.id)
+                    
+                    # Emit to athlete's room
+                    room = f"athlete_{athlete.id}"
+                    socketio.emit('dashboard_refresh', update_data, to=room)
+                    
+                except Exception as e:
+                    logger.error(f"Error sending update to athlete {athlete.id}: {str(e)}")
+            
+            logger.info(f"Sent updates to {len(active_athletes)} athletes")
         
     except Exception as e:
         logger.error(f"Error in send_athlete_update: {str(e)}")

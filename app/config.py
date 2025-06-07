@@ -10,7 +10,7 @@ class Config:
     SECRET_KEY = os.environ.get('SESSION_SECRET', 'dev-secret-key')
     
     # Database configuration
-    DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///marathon.db')
+    DATABASE_URL = 'sqlite:///marathon.db'
     SQLALCHEMY_DATABASE_URI = DATABASE_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
@@ -22,8 +22,8 @@ class Config:
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET', 'default-jwt-secret-key')
     
     # Strava API configuration
-    STRAVA_CLIENT_ID = os.environ.get('STRAVA_CLIENT_ID', 'default_client_id')
-    STRAVA_CLIENT_SECRET = os.environ.get('STRAVA_CLIENT_SECRET', 'default_client_secret')
+    STRAVA_CLIENT_ID = os.environ.get('STRAVA_CLIENT_ID', '67019')
+    STRAVA_CLIENT_SECRET = os.environ.get('STRAVA_CLIENT_SECRET', '94bec5162fd0b13ed7e91e49e8344c8518bf22b5')
     
     # Mail configuration
     MAIL_SMTP_SERVER = os.environ.get('MAIL_SMTP_SERVER', 'smtp.gmail.com')
