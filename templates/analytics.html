@@ -644,12 +644,33 @@ function loadRecentActivities(athleteId) {
 
 // Load performance insights
 function loadPerformanceInsights(athleteId) {
-    fetch(`/api/athletes/${athleteId}/insights`)
+    const timePeriod = document.getElementById('timePeriodSelect').value;
+    fetch(`/api/athletes/${athleteId}/performance-insights?days=${timePeriod}`)
         .then(response => response.json())
-        .then(insights => {
+        .then(data => {
             const container = document.getElementById('performanceInsights');
             
-            if (insights && insights.length > 0) {
+            if (data && (data.volume_trend || data.consistency || data.intensity)) {
+                const insights = [];
+                if (data.volume_trend) {
+                    insights.push({
+                        category: 'Volume Trend',
+                        message: data.volume_trend
+                    });
+                }
+                if (data.consistency) {
+                    insights.push({
+                        category: 'Training Consistency',
+                        message: data.consistency
+                    });
+                }
+                if (data.intensity) {
+                    insights.push({
+                        category: 'Training Intensity',
+                        message: data.intensity
+                    });
+                }
+                
                 container.innerHTML = insights.map(insight => `
                     <div class="alert alert-info mb-3">
                         <h6 class="text-primary">${insight.category}</h6>
