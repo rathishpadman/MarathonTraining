@@ -95,7 +95,7 @@
                         <i class="fas fa-route text-primary fs-1 mb-3"></i>
                         <h5 class="text-white">Total Distance</h5>
                         <h2 class="text-primary mb-0" id="totalDistance">--</h2>
-                        <small class="text-white-75" id="distanceChange">--</small>
+                        <small class="text-white-75" id="distanceTimeframe">Last 30 days</small>
                     </div>
                 </div>
             </div>
@@ -105,7 +105,7 @@
                         <i class="fas fa-clock text-warning fs-1 mb-3"></i>
                         <h5 class="text-white">Training Time</h5>
                         <h2 class="text-warning mb-0" id="totalTime">--</h2>
-                        <small class="text-white-75" id="timeChange">--</small>
+                        <small class="text-white-75" id="timeTimeframe">Last 30 days</small>
                     </div>
                 </div>
             </div>
@@ -115,7 +115,7 @@
                         <i class="fas fa-tachometer-alt text-success fs-1 mb-3"></i>
                         <h5 class="text-white">Avg Pace</h5>
                         <h2 class="text-success mb-0" id="avgPace">--</h2>
-                        <small class="text-white-75" id="paceChange">--</small>
+                        <small class="text-white-75" id="paceTimeframe">Last 30 days</small>
                     </div>
                 </div>
             </div>
@@ -125,7 +125,7 @@
                         <i class="fas fa-heartbeat text-danger fs-1 mb-3"></i>
                         <h5 class="text-white">Avg Heart Rate</h5>
                         <h2 class="text-danger mb-0" id="avgHeartRate">--</h2>
-                        <small class="text-white-75" id="hrChange">--</small>
+                        <small class="text-white-75" id="hrTimeframe">Last 30 days</small>
                     </div>
                 </div>
             </div>
@@ -389,16 +389,20 @@ function loadAthleteAnalytics() {
 
 // Display analytics summary
 function displayAnalytics(data) {
+    const timePeriod = document.getElementById('timePeriodSelect').value;
+    const timeframeText = `Last ${timePeriod} days`;
+    
+    // Update data values
     document.getElementById('totalDistance').textContent = `${data.total_distance} km`;
     document.getElementById('totalTime').textContent = formatDuration(data.total_time * 3600); // Convert hours to seconds
     document.getElementById('avgPace').textContent = data.avg_pace ? `${data.avg_pace.toFixed(2)} min/km` : '--';
     document.getElementById('avgHeartRate').textContent = data.avg_heart_rate ? `${Math.round(data.avg_heart_rate)} bpm` : '--';
     
-    // Show percentage changes (not available in current API, so show activity count)
-    document.getElementById('distanceChange').textContent = `${data.activity_count} activities`;
-    document.getElementById('timeChange').textContent = data.training_load ? `${data.training_load.toFixed(1)} TSS` : '--';
-    document.getElementById('paceChange').textContent = data.status || '--';
-    document.getElementById('hrChange').textContent = data.period_days ? `${data.period_days} days` : '--';
+    // Update timeframe labels
+    document.getElementById('distanceTimeframe').textContent = timeframeText;
+    document.getElementById('timeTimeframe').textContent = timeframeText;
+    document.getElementById('paceTimeframe').textContent = timeframeText;
+    document.getElementById('hrTimeframe').textContent = timeframeText;
     
     showAnalytics();
 }
@@ -621,13 +625,13 @@ function loadRecentActivities(athleteId) {
                 activities.forEach(activity => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${new Date(activity.start_date).toLocaleDateString()}</td>
+                        <td>${new Date(activity.date).toLocaleDateString()}</td>
                         <td>${activity.sport_type}</td>
-                        <td>${(activity.distance / 1000).toFixed(2)} km</td>
-                        <td>${formatDuration(activity.moving_time)}</td>
-                        <td>${activity.pace_formatted || '--'}</td>
-                        <td>${activity.average_heartrate ? Math.round(activity.average_heartrate) + ' bpm' : '--'}</td>
-                        <td>${activity.training_stress_score ? Math.round(activity.training_stress_score) : '--'}</td>
+                        <td>${activity.distance.toFixed(2)} km</td>
+                        <td>${formatDuration(activity.time * 60)}</td>
+                        <td>${activity.pace ? activity.pace.toFixed(2) + ' min/km' : '--'}</td>
+                        <td>--</td>
+                        <td>--</td>
                     `;
                     tbody.appendChild(row);
                 });
