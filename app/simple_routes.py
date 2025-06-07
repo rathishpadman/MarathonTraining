@@ -6,6 +6,7 @@ from flask_socketio import emit, join_room, leave_room
 from app import db, socketio
 from app.models import ReplitAthlete, DailySummary, Activity, PlannedWorkout, SystemLog
 from app.data_processor import get_athlete_performance_summary, get_team_overview
+from app.race_optimizer import RacePerformanceOptimizer
 from app.security import ReplitSecurity
 from app.strava_client import ReplitStravaClient
 from app.config import Config
@@ -717,3 +718,91 @@ def prepare_pace_analytics(activities):
     except Exception as e:
         logger.error(f"Error in pace analytics: {str(e)}")
         return {'labels': [], 'pace': [], 'targetPace': []}
+
+# Race Performance Optimization Endpoints
+@api_bp.route('/api/athletes/<int:athlete_id>/race-prediction', methods=['GET'])
+def get_race_prediction(athlete_id):
+    """Get race time prediction for specific distance"""
+    try:
+        race_distance = request.args.get('distance', 'Half Marathon')
+        logger.info(f"Predicting {race_distance} performance for athlete {athlete_id}")
+        
+        optimizer = RacePerformanceOptimizer()
+        prediction = optimizer.predict_race_performance(db.session, athlete_id, race_distance)
+        
+        # Format prediction for frontend
+        hours = int(prediction.predicted_time // 3600)
+        minutes = int((prediction.predicted_time % 3600) // 60)
+        seconds = int(prediction.predicted_time % 60)
+        
+        return jsonify({
+            'race_distance': race_distance,
+            'predicted_time_seconds': prediction.predicted_time,
+            'predicted_time_formatted': f"{hours:02d}:{minutes:02d}:{seconds:02d}",
+            'confidence_score': round(prediction.confidence_score * 100, 1),
+            'fitness_score': round(prediction.fitness_score, 1),
+            'aerobic_capacity': round(prediction.aerobic_capacity, 1),
+            'pacing_strategy': prediction.pacing_strategy,
+            'training_recommendations': prediction.training_recommendations
+        })
+        
+    except Exception as e:
+        logger.error(f"Error predicting race performance: {str(e)}")
+        return jsonify({'error': 'Failed to predict race performance'}), 500
+
+@api_bp.route('/api/athletes/<int:athlete_id>/fitness-analysis', methods=['GET'])
+def get_fitness_analysis(athlete_id):
+    """Get comprehensive fitness analysis"""
+    try:
+        days = int(request.args.get('days', 90))
+        logger.info(f"Analyzing fitness for athlete {athlete_id} over {days} days")
+        
+        optimizer = RacePerformanceOptimizer()
+        analysis = optimizer.analyze_athlete_fitness(db.session, athlete_id, days)
+        
+        return jsonify({
+            'fitness_metrics': {
+                'current_fitness': round(analysis['fitness_metrics']['current_fitness'], 1),
+                'aerobic_capacity': round(analysis['fitness_metrics']['aerobic_capacity'], 1),
+                'lactate_threshold_pace': f"{int(analysis['fitness_metrics']['lactate_threshold'] // 60)}:{int(analysis['fitness_metrics']['lactate_threshold'] % 60):02d}",
+                'training_load': round(analysis['fitness_metrics']['training_load'], 1),
+                'consistency_score': round(analysis['fitness_metrics']['consistency_score'], 1),
+                'injury_risk': round(analysis['fitness_metrics']['injury_risk'], 1),
+                'fatigue_level': round(analysis['fitness_metrics']['fatigue_level'], 1)
+            },
+            'zone_distribution': analysis['zone_distribution'],
+            'trends': analysis['trends'],
+            'summary': {
+                'total_activities': analysis['total_activities'],
+                'total_distance_km': round(analysis['total_distance'], 1),
+                'analysis_period_days': analysis['analysis_period']
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error analyzing fitness: {str(e)}")
+        return jsonify({'error': 'Failed to analyze fitness'}), 500
+
+@api_bp.route('/api/athletes/<int:athlete_id>/training-plan', methods=['POST'])
+def get_training_plan(athlete_id):
+    """Generate optimized training plan"""
+    try:
+        data = request.get_json()
+        race_distance = data.get('race_distance', 'Half Marathon')
+        race_date_str = data.get('race_date')
+        
+        if not race_date_str:
+            return jsonify({'error': 'Race date is required'}), 400
+        
+        race_date = datetime.strptime(race_date_str, '%Y-%m-%d')
+        
+        logger.info(f"Generating training plan for athlete {athlete_id}, race: {race_distance}")
+        
+        optimizer = RacePerformanceOptimizer()
+        training_plan = optimizer.optimize_training_plan(db.session, athlete_id, race_distance, race_date)
+        
+        return jsonify(training_plan)
+        
+    except Exception as e:
+        logger.error(f"Error generating training plan: {str(e)}")
+        return jsonify({'error': 'Failed to generate training plan'}), 500
