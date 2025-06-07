@@ -464,25 +464,52 @@
         async function loadCommunityData() {
             try {
                 const response = await fetch('/api/community/overview');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
                 
                 if (data.error) {
                     console.error('API Error:', data.error);
+                    showErrorMessage('Failed to load community data. Please try again.');
                     return;
                 }
 
-                // Update KPI cards
+                // Validate data structure
+                if (!data.kpis || !data.leaderboard || !data.trainingLoadDistribution || !data.communityTrends) {
+                    console.error('Invalid data structure received:', data);
+                    showErrorMessage('Invalid data received from server.');
+                    return;
+                }
+
+                // Update components safely
                 updateKPICards(data.kpis);
-                
-                // Update leaderboard
                 updateLeaderboard(data.leaderboard);
-                
-                // Update charts
                 updateTrainingLoadChart(data.trainingLoadDistribution);
                 updateCommunityTrendsChart(data.communityTrends);
                 
             } catch (error) {
                 console.error('Error loading community data:', error);
+                showErrorMessage('Unable to connect to server. Please check your connection.');
+            }
+        }
+
+        function showErrorMessage(message) {
+            // Show error in place of leaderboard
+            const container = document.getElementById('leaderboard');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center text-warning p-4">
+                        <i data-feather="alert-triangle" class="mb-2"></i>
+                        <div>${message}</div>
+                        <button class="btn btn-outline-primary btn-sm mt-2" onclick="loadCommunityData()">
+                            Retry
+                        </button>
+                    </div>
+                `;
+                feather.replace();
             }
         }
 

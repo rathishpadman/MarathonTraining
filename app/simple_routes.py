@@ -833,9 +833,10 @@ def get_community_overview():
             Activity.start_date >= start_date
         ).all()
         
-        total_distance = sum(a.distance or 0 for a in all_activities) / 1000  # km
+        # Safe calculation with null checks
+        total_distance = sum((a.distance or 0) for a in all_activities if a.distance is not None) / 1000  # km
         total_activities = len(all_activities)
-        active_athletes = len(set(a.athlete_id for a in all_activities))
+        active_athletes = len(set(a.athlete_id for a in all_activities if a.athlete_id))
         
         # Calculate community average pace
         valid_activities = [a for a in all_activities if a.distance and a.moving_time and a.distance > 0]
@@ -900,7 +901,7 @@ def get_community_overview():
             date = datetime.now() - timedelta(days=i)
             trend_labels.append(date.strftime('%m/%d'))
             
-            day_activities = [a for a in all_activities if a.start_date.date() == date.date()]
+            day_activities = [a for a in all_activities if a.start_date and a.start_date.date() == date.date()]
             day_distance = sum(a.distance or 0 for a in day_activities) / 1000
             day_count = len(day_activities)
             
