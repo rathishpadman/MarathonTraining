@@ -326,6 +326,12 @@
         <div class="page-header">
             <h1 class="page-title">Community Dashboard</h1>
             <p class="page-subtitle">Real-time training insights and community performance metrics</p>
+            <div class="mt-3">
+                <button class="btn btn-primary btn-lg" onclick="connectStrava()">
+                    <i data-feather="plus-circle" class="me-2"></i>
+                    Connect with Strava
+                </button>
+            </div>
         </div>
 
         <!-- KPI Cards Row -->
@@ -738,6 +744,24 @@
                     }
                 }
             });
+        }
+
+        // Strava connection function
+        async function connectStrava() {
+            try {
+                const response = await fetch('/api/auth/strava');
+                const data = await response.json();
+                
+                if (data.auth_url) {
+                    // Redirect to Strava authorization
+                    window.location.href = data.auth_url;
+                } else {
+                    alert('Failed to get Strava authorization URL. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error connecting to Strava:', error);
+                alert('Error connecting to Strava. Please check your connection and try again.');
+            }
         }
 
         // Auto-refresh data every 5 minutes
