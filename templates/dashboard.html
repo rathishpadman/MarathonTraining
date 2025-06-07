@@ -713,7 +713,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('athleteSelection').style.display = 'block';
     
     // Load athletes
-    loadAthletes();
+    checkForExistingAthletes();
     
     // Initialize with first athlete if athlete_id is provided
     const urlParams = new URLSearchParams(window.location.search);
