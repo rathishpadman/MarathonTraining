@@ -9,13 +9,13 @@ class Config:
     # Flask configuration
     SECRET_KEY = os.environ.get('SESSION_SECRET', 'dev-secret-key')
     
-    # Database configuration
-    DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///marathon.db')
-    SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    # Database configuration - Force SQLite
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///marathon.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # SQLite-specific options
     SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_recycle": 300,
-        "pool_pre_ping": True,
+        "pool_timeout": 20,
+        "pool_recycle": -1,
     }
     
     # JWT configuration

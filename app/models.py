@@ -6,7 +6,7 @@ from app import db
 
 class ReplitAthlete(db.Model):
     """
-    Optimized for Replit's SQLite/PostgreSQL, handling multiple athletes.
+    SQLite-optimized athlete model for marathon training dashboard.
     Includes fields for personalized settings and performance benchmarks.
     """
     __tablename__ = 'athletes'
