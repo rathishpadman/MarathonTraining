@@ -51,11 +51,11 @@ def create_app():
     security = ReplitSecurity()
     security.setup_jwt_handlers(jwt)
     
-    # Register routes
-    from app.routes import api_bp
+    # Register routes - web routes first to take precedence
     from app.web_routes import web_bp
-    app.register_blueprint(api_bp)
+    from app.routes import api_bp
     app.register_blueprint(web_bp)
+    app.register_blueprint(api_bp)
     
     # Create database tables
     with app.app_context():
