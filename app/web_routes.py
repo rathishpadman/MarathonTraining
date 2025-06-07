@@ -35,6 +35,12 @@ def race_optimizer():
     """Race Performance Optimizer page"""
     return render_template('race_optimizer.html')
 
+@web_bp.route('/race-predictor')
+def race_predictor():
+    """Race Predictor page"""
+    athlete_id = request.args.get('athlete_id', 1)
+    return render_template('race_optimizer.html', athlete_id=athlete_id)
+
 @web_bp.route('/settings')
 def settings():
     """Settings page"""
