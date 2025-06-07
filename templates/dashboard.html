@@ -317,9 +317,16 @@ function loadAthleteData(athleteId) {
     document.getElementById('loadingSpinner').style.display = 'block';
     
     // Load athlete dashboard data
-    fetch(`/api/athletes/${athleteId}/dashboard-data`)
-        .then(response => response.json())
+    fetch(`/api/athletes/${athleteId}/dashboard`)
+        .then(response => {
+            console.log('Dashboard response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Dashboard data received:', data);
             if (data) {
                 updateDashboardMetrics(data);
                 updateCharts(data);

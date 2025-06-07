@@ -238,6 +238,7 @@ let heartRateChart, elevationChart, paceProgressionChart, activityTypesChart;
 let currentTimeRange = 'week';
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Analytics page loaded, initializing...');
     initializeCharts();
     loadAnalyticsData();
     
@@ -245,6 +246,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('input[name="timeRange"]').forEach(radio => {
         radio.addEventListener('change', function() {
             currentTimeRange = this.id;
+            console.log('Time range changed to:', currentTimeRange);
             loadAnalyticsData();
         });
     });
@@ -442,10 +444,18 @@ function loadAnalyticsData() {
     modal.show();
     
     const days = currentTimeRange === 'week' ? 7 : currentTimeRange === 'month' ? 30 : 90;
+    console.log(`Loading analytics data for ${days} days`);
     
     fetch(`/api/analytics/data?days=${days}`)
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Analytics data received:', data);
             updateMetrics(data.metrics);
             updateCharts(data);
             updateActivitiesTable(data.activities);
@@ -454,7 +464,7 @@ function loadAnalyticsData() {
         .catch(error => {
             console.error('Error loading analytics:', error);
             modal.hide();
-            showErrorMessage('Failed to load analytics data');
+            showErrorMessage('Failed to load analytics data: ' + error.message);
         });
 }
 
