@@ -4,7 +4,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_socketio import SocketIO
-from flask_restx import Api
+# Removed Flask-RESTX to prevent routing conflicts
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -18,11 +18,11 @@ class Base(DeclarativeBase):
 db = SQLAlchemy(model_class=Base)
 jwt = JWTManager()
 socketio = SocketIO()
-api = Api()
+# Removed api = Api() to prevent routing conflicts
 scheduler = BackgroundScheduler()
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder='../templates')
     
     # Apply proxy fix for Replit
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
@@ -39,7 +39,7 @@ def create_app():
     db.init_app(app)
     jwt.init_app(app)
     socketio.init_app(app, cors_allowed_origins="*")
-    api.init_app(app, title="Marathon Training API", version="1.0", description="API for Marathon Training Dashboard")
+    # Removed Flask-RESTX initialization to prevent routing conflicts
     
     # Configure JWT
     app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET', 'default-jwt-secret-key')
