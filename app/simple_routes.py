@@ -121,125 +121,85 @@ def get_athlete_dashboard_data(athlete_id):
             except Exception as e:
                 logger.warning(f"Failed to fetch Strava activities: {str(e)}")
         
-        # Get performance summary
+        # Get all activities for this athlete
+        all_activities = Activity.query.filter_by(athlete_id=athlete_id).all()
+        logger.info(f"Total activities in database for athlete {athlete_id}: {len(all_activities)}")
+        
+        # Get recent activities (last 30 days)
+        cutoff_date = datetime.now() - timedelta(days=30)
+        recent_activities = Activity.query.filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= cutoff_date
+        ).order_by(Activity.start_date.desc()).all()
+        
+        logger.info(f"Recent activities (30 days) for athlete {athlete_id}: {len(recent_activities)}")
+        
+        # Calculate real metrics from our 50 activities
+        total_distance_m = sum(a.distance or 0 for a in recent_activities)
+        total_distance_km = total_distance_m / 1000
+        total_activities = len(recent_activities)
+        total_time = sum(a.moving_time or 0 for a in recent_activities)
+        
+        # Calculate average pace (min/km) 
+        avg_pace_min_km = 0
+        if total_distance_km > 0 and total_time > 0:
+            pace_seconds_per_km = total_time / total_distance_km
+            avg_pace_min_km = pace_seconds_per_km / 60
+        
+        # Calculate average heart rate
+        hr_activities = [a for a in recent_activities if a.average_heartrate]
+        avg_heart_rate = sum(a.average_heartrate for a in hr_activities) / len(hr_activities) if hr_activities else 0
+        
+        # Training load (sum of suffer scores)
+        training_load = sum(a.suffer_score or 0 for a in recent_activities)
+        
+        logger.info(f"Calculated metrics - Distance: {total_distance_km:.2f}km, Activities: {total_activities}, Pace: {avg_pace_min_km:.2f}min/km, HR: {avg_heart_rate:.1f}, Load: {training_load}")
+        
+        # Get performance summary with fallback
         performance_summary = get_athlete_performance_summary(db.session, athlete_id, days=30)
         
-        # If still no data, return basic athlete info
-        if not performance_summary:
-            return jsonify({
-                'athlete': {
-                    'id': athlete.id,
-                    'name': athlete.name,
-                    'strava_athlete_id': athlete.strava_athlete_id
-                },
-                'performance_summary': {
-                    'total_distance': 0,
-                    'total_activities': 0,
-                    'average_pace': None,
-                    'average_heart_rate': None,
-                    'training_load': 0,
-                    'total_elevation_gain': 0
-                },
-                'activities': [],
-                'weekly_data': {
-                    'labels': [],
-                    'distance': [],
-                    'training_load': [],
-                    'heart_rate': [],
-                    'elevation': []
-                }
-            })
-        
-        # Get recent daily summaries
-        recent_summaries = db.session.query(DailySummary)\
-            .filter_by(athlete_id=athlete_id)\
-            .order_by(DailySummary.summary_date.desc())\
-            .limit(7).all()
-        
-        # Format weekly data for charts
-        weekly_data = {
-            'labels': [],
-            'distance': [],
-            'training_load': []
-        }
-        
-        for summary in reversed(recent_summaries):
-            weekly_data['labels'].append(summary.summary_date.strftime('%Y-%m-%d'))
-            weekly_data['distance'].append(summary.total_distance / 1000)  # Convert to km
-            weekly_data['training_load'].append(summary.training_load or 0)
-        
-        # Status distribution
-        status_counts = {}
-        for summary in recent_summaries:
-            status = summary.status or 'Unknown'
-            status_counts[status] = status_counts.get(status, 0) + 1
-        
-        status_distribution = {
-            'labels': list(status_counts.keys()),
-            'values': list(status_counts.values())
-        }
-        
-        # Create comprehensive weekly data from activities for charts
-        activities = performance_summary.get('activities', [])
-        weekly_chart_data = {
-            'labels': [],
-            'distance': [],
-            'heart_rate': [],
-            'elevation': [],
-            'pace': []
-        }
-        
-        for activity in activities[-7:]:  # Last 7 activities for chart
-            if activity.get('start_date'):
-                date_obj = datetime.fromisoformat(activity['start_date'].replace('Z', '+00:00'))
-                weekly_chart_data['labels'].append(date_obj.strftime('%m/%d'))
-                weekly_chart_data['distance'].append(activity.get('distance', 0))
-                weekly_chart_data['heart_rate'].append(activity.get('average_heartrate') or 0)
-                weekly_chart_data['elevation'].append(0)  # Will be enhanced with elevation data
-                
-                # Calculate pace from distance and time
-                distance_km = activity.get('distance', 0)
-                time_minutes = (activity.get('moving_time', 0)) / 60
-                pace = (time_minutes / distance_km) if distance_km > 0 else 0
-                weekly_chart_data['pace'].append(round(pace, 2))
-
+        # Build comprehensive dashboard data
         dashboard_data = {
             'athlete': {
                 'id': athlete.id,
                 'name': athlete.name,
                 'strava_athlete_id': athlete.strava_athlete_id
             },
-            'performance_summary': performance_summary,
-            'activities': activities,
-            'weekly_data': weekly_chart_data,
-            'status_distribution': status_distribution
+            'metrics': {
+                'total_distance': round(total_distance_km, 2),
+                'total_activities': total_activities,
+                'avg_pace': round(avg_pace_min_km, 2),
+                'training_load': round(training_load, 1),
+                'avg_heart_rate': round(avg_heart_rate, 1) if avg_heart_rate > 0 else 0,
+                'total_time': total_time
+            },
+            'recent_activities': [{
+                'id': a.id,
+                'name': a.name,
+                'distance': round((a.distance or 0) / 1000, 2),
+                'moving_time': a.moving_time or 0,
+                'start_date': a.start_date.isoformat() if a.start_date else None,
+                'sport_type': a.sport_type,
+                'average_heartrate': a.average_heartrate
+            } for a in recent_activities[:10]],
+            'performance_summary': performance_summary or {
+                'total_distance': round(total_distance_km, 2),
+                'total_activities': total_activities,
+                'average_pace': round(avg_pace_min_km, 2) if avg_pace_min_km > 0 else None,
+                'average_heart_rate': round(avg_heart_rate, 1) if avg_heart_rate > 0 else None,
+                'training_load': round(training_load, 1),
+                'total_elevation_gain': sum(a.total_elevation_gain or 0 for a in recent_activities)
+            }
         }
         
+        logger.info(f"Returning dashboard data: {len(dashboard_data['recent_activities'])} activities, {dashboard_data['metrics']['total_distance']}km total")
         return jsonify(dashboard_data)
         
     except Exception as e:
         logger.error(f"Error fetching dashboard data for athlete {athlete_id}: {str(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({'error': 'Failed to fetch dashboard data'}), 500
-
-# Realtime dashboard endpoint
-@api_bp.route('/realtime/dashboard', methods=['GET'])
-@jwt_required()
-def get_realtime_dashboard():
-    """Get lightweight real-time dashboard data"""
-    try:
-        current_user_id = get_jwt_identity()
-        
-        dashboard_data = {
-            'timestamp': datetime.now().isoformat(),
-            'athlete_id': current_user_id,
-            'status': 'active'
-        }
-        
-        return jsonify(dashboard_data)
-        
-    except Exception as e:
-        logger.error(f"Error fetching realtime dashboard: {str(e)}")
-        return jsonify({'error': 'Failed to fetch realtime data'}), 500
 
 # Strava authorization endpoint
 @api_bp.route('/auth/strava/authorize', methods=['GET'])
