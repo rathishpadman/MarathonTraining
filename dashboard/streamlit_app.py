@@ -591,35 +591,52 @@ def display_advanced_analytics(athlete_id):
         try:
             # Fetch race prediction data
             import requests
-            race_response = requests.get(f"http://localhost:5000/api/race-predictor/{athlete_id}")
+            race_response = requests.get(f"http://localhost:5000/api/athletes/{athlete_id}/race-prediction?distance=Marathon")
             if race_response.status_code == 200:
                 race_data = race_response.json()
                 
-                # Display race predictions in organized format
-                st.markdown("**Marathon Predictions:**")
-                predictions = race_data.get('marathon_predictions', {})
+                # Display marathon prediction
+                st.markdown("**Marathon Prediction:**")
                 
-                if predictions:
-                    # Create prediction cards
-                    for distance, time_pred in predictions.items():
-                        if isinstance(time_pred, dict) and 'predicted_time' in time_pred:
-                            time_str = time_pred['predicted_time']
-                            confidence = time_pred.get('confidence', 0)
+                time_str = race_data.get('predicted_time_formatted', 'N/A')
+                confidence = race_data.get('confidence_score', 0) / 100
+                distance = race_data.get('race_distance', 'Marathon')
+                
+                # Color coding based on confidence
+                if confidence > 0.8:
+                    confidence_color = "🟢"
+                elif confidence > 0.6:
+                    confidence_color = "🟡"
+                else:
+                    confidence_color = "🔴"
+                
+                st.markdown(f"""
+                <div style="background: rgba(16, 185, 129, 0.2); padding: 15px; border-radius: 10px; margin: 10px 0; border-left: 4px solid #10b981;">
+                    <h4 style="margin: 0; color: #10b981;">{distance}</h4>
+                    <h2 style="margin: 5px 0; color: white;">{time_str}</h2>
+                    <small>{confidence_color} Confidence: {confidence:.0%}</small>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Fetch additional race distances
+                other_distances = ['5K', '10K', 'Half Marathon']
+                for dist in other_distances:
+                    try:
+                        dist_response = requests.get(f"http://localhost:5000/api/athletes/{athlete_id}/race-prediction?distance={dist}")
+                        if dist_response.status_code == 200:
+                            dist_data = dist_response.json()
+                            dist_time = dist_data.get('predicted_time_formatted', 'N/A')
+                            dist_conf = dist_data.get('confidence_score', 0) / 100
                             
-                            # Color coding based on confidence
-                            if confidence > 0.8:
-                                confidence_color = "🟢"
-                            elif confidence > 0.6:
-                                confidence_color = "🟡"
-                            else:
-                                confidence_color = "🔴"
+                            conf_color = "🟢" if dist_conf > 0.8 else "🟡" if dist_conf > 0.6 else "🔴"
                             
                             st.markdown(f"""
-                            <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin: 5px 0;">
-                                <strong>{distance}:</strong> {time_str}<br>
-                                <small>{confidence_color} Confidence: {confidence:.0%}</small>
+                            <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 6px; margin: 3px 0;">
+                                <strong>{dist}:</strong> {dist_time} <small>{conf_color} {dist_conf:.0%}</small>
                             </div>
                             """, unsafe_allow_html=True)
+                    except:
+                        pass
                 
                 # Training recommendations
                 recommendations = race_data.get('training_recommendations', [])
