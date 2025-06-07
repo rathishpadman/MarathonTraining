@@ -749,12 +749,12 @@
         // Strava connection function
         async function connectStrava() {
             try {
-                const response = await fetch('/api/auth/strava');
+                const response = await fetch('/api/auth/strava/authorize');
                 const data = await response.json();
                 
-                if (data.auth_url) {
+                if (data.authorization_url) {
                     // Redirect to Strava authorization
-                    window.location.href = data.auth_url;
+                    window.location.href = data.authorization_url;
                 } else {
                     alert('Failed to get Strava authorization URL. Please try again.');
                 }

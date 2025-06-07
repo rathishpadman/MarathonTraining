@@ -598,6 +598,12 @@ def handle_strava_callback():
         logger.error(f"Error in Strava callback: {str(e)}")
         return jsonify({'error': 'Authentication failed'}), 500
 
+@main_bp.route('/auth/success')
+def auth_success():
+    """Display success page after Strava authentication"""
+    from flask import render_template
+    return render_template('auth_success.html')
+
 # WebSocket event handlers
 @socketio.on('join_dashboard_room')
 def handle_join_dashboard_room(data):
