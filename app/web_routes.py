@@ -14,6 +14,12 @@ def dashboard():
     """Main dashboard page"""
     return render_template('dashboard.html')
 
+@web_bp.route('/dashboard')
+def dashboard_page():
+    """Dashboard page with optional athlete_id parameter"""
+    athlete_id = request.args.get('athlete_id')
+    return render_template('dashboard.html', athlete_id=athlete_id)
+
 @web_bp.route('/athletes')
 def athletes():
     """Athletes management page"""

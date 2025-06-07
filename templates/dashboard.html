@@ -165,8 +165,26 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Always check for existing athletes first
-    checkForExistingAthletes();
+    // Check for athlete_id in URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const athleteId = urlParams.get('athlete_id');
+    
+    if (athleteId) {
+        // If athlete_id is provided, load that specific athlete directly
+        currentAthlete = parseInt(athleteId);
+        loadDashboard();
+        // Auto-select the athlete in the dropdown when it loads
+        setTimeout(() => {
+            const select = document.getElementById('athleteSelect');
+            if (select) {
+                select.value = athleteId;
+                loadAthleteData(athleteId);
+            }
+        }, 1000);
+    } else {
+        // Otherwise, check for existing athletes normally
+        checkForExistingAthletes();
+    }
     
     // Setup Strava connection button
     document.getElementById('connectStrava').addEventListener('click', function() {
