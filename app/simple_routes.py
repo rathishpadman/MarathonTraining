@@ -170,6 +170,12 @@ def handle_strava_callback():
         if not athlete_data:
             return jsonify({'error': 'Failed to retrieve athlete information'}), 400
         
+        # Convert expires_at timestamp to datetime object
+        from datetime import datetime
+        expires_at = None
+        if token_response.get('expires_at'):
+            expires_at = datetime.fromtimestamp(token_response['expires_at'])
+        
         # Check if athlete exists
         existing_athlete = ReplitAthlete.query.filter_by(
             strava_athlete_id=athlete_data['id']
@@ -179,7 +185,7 @@ def handle_strava_callback():
             # Update existing athlete
             existing_athlete.refresh_token = token_response['refresh_token']
             existing_athlete.access_token = token_response['access_token']
-            existing_athlete.token_expires_at = token_response.get('expires_at')
+            existing_athlete.token_expires_at = expires_at
             existing_athlete.is_active = True
             athlete = existing_athlete
         else:
@@ -190,7 +196,7 @@ def handle_strava_callback():
                 strava_athlete_id=athlete_data['id'],
                 refresh_token=token_response['refresh_token'],
                 access_token=token_response['access_token'],
-                token_expires_at=token_response.get('expires_at'),
+                token_expires_at=expires_at,
                 is_active=True
             )
             db.session.add(athlete)

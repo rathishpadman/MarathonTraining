@@ -1,0 +1,22 @@
+2025-06-07 07:50:28,608 INFO [app.strava_client] [athlete_id:N/A] Retrieved athlete info for ID: 24204298
+INFO:app.strava_client:Retrieved athlete info for ID: 24204298
+2025-06-07 07:50:28,633 ERROR [app.simple_routes] [athlete_id:N/A] Error in Strava callback: (builtins.TypeError) SQLite DateTime type only accepts Python datetime and date objects as input.
+[SQL: INSERT INTO athletes (name, email, strava_athlete_id, refresh_token, access_token, token_expires_at, is_active, ftp, lthr, max_hr, training_zones, preferences, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: [{'name': 'Rathish Padman', 'strava_athlete_id': 24204298, 'access_token': '6f117ba5d91c533e1263f7e3fcc5dac302f4feb5', 'email': '', 'token_expires_at': ... (30 characters truncated) ... , 'refresh_token': 'efacc42751c2e91ec4d53e94ed41ded10420349c', 'preferences': None, 'ftp': None, 'max_hr': None, 'lthr': None, 'training_zones': None}]]
+ERROR:app.simple_routes:Error in Strava callback: (builtins.TypeError) SQLite DateTime type only accepts Python datetime and date objects as input.
+[SQL: INSERT INTO athletes (name, email, strava_athlete_id, refresh_token, access_token, token_expires_at, is_active, ftp, lthr, max_hr, training_zones, preferences, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: [{'name': 'Rathish Padman', 'strava_athlete_id': 24204298, 'access_token': '6f117ba5d91c533e1263f7e3fcc5dac302f4feb5', 'email': '', 'token_expires_at': ... (30 characters truncated) ... , 'refresh_token': 'efacc42751c2e91ec4d53e94ed41ded10420349c', 'preferences': None, 'ftp': None, 'max_hr': None, 'lthr': None, 'training_zones': None}]]
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): www.strava.com:443
+DEBUG:urllib3.connectionpool:https://www.strava.com:443 "POST /oauth/token HTTP/1.1" 200 None
+2025-06-07 07:51:17,083 INFO [app.strava_client] [athlete_id:N/A] Successfully exchanged code for tokens
+INFO:app.strava_client:Successfully exchanged code for tokens
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): www.strava.com:443
+DEBUG:urllib3.connectionpool:https://www.strava.com:443 "GET /api/v3/athlete HTTP/1.1" 200 None
+2025-06-07 07:51:17,228 INFO [app.strava_client] [athlete_id:N/A] Retrieved athlete info for ID: 24204298
+INFO:app.strava_client:Retrieved athlete info for ID: 24204298
+2025-06-07 07:51:17,233 ERROR [app.simple_routes] [athlete_id:N/A] Error in Strava callback: (builtins.TypeError) SQLite DateTime type only accepts Python datetime and date objects as input.
+[SQL: INSERT INTO athletes (name, email, strava_athlete_id, refresh_token, access_token, token_expires_at, is_active, ftp, lthr, max_hr, training_zones, preferences, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: [{'name': 'Rathish Padman', 'strava_athlete_id': 24204298, 'access_token': '6f117ba5d91c533e1263f7e3fcc5dac302f4feb5', 'email': '', 'token_expires_at': ... (30 characters truncated) ... , 'refresh_token': 'efacc42751c2e91ec4d53e94ed41ded10420349c', 'preferences': None, 'ftp': None, 'max_hr': None, 'lthr': None, 'training_zones': None}]]
+ERROR:app.simple_routes:Error in Strava callback: (builtins.TypeError) SQLite DateTime type only accepts Python datetime and date objects as input.
+[SQL: INSERT INTO athletes (name, email, strava_athlete_id, refresh_token, access_token, token_expires_at, is_active, ftp, lthr, max_hr, training_zones, preferences, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: [{'name': 'Rathish Padman', 'strava_athlete_id': 24204298, 'access_token': '6f117ba5d91c533e1263f7e3fcc5dac302f4feb5', 'email': '', 'token_expires_at': ... (30 characters truncated) ... , 'refresh_token': 'efacc42751c2e91ec4d53e94ed41ded10420349c', 'preferences': None, 'ftp': None, 'max_hr': None, 'lthr': None, 'training_zones': None}]]
