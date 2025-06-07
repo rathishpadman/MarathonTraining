@@ -341,6 +341,20 @@ class DataProcessor:
             # Training load estimation
             training_load = activity_count * 50  # Simple estimation
             
+            # Convert activities to dictionaries for JSON serialization
+            activities_data = []
+            for activity in activities[:10]:
+                activities_data.append({
+                    'id': activity.id,
+                    'name': activity.name,
+                    'sport_type': activity.sport_type,
+                    'start_date': activity.start_date.isoformat() if activity.start_date else None,
+                    'distance': round(activity.distance / 1000, 2) if activity.distance else 0,  # Convert to km
+                    'moving_time': activity.moving_time or 0,
+                    'average_heartrate': activity.average_heartrate,
+                    'calories': activity.calories
+                })
+            
             return {
                 'total_distance': round(total_distance, 2),
                 'total_moving_time': total_moving_time,
@@ -349,7 +363,7 @@ class DataProcessor:
                 'average_pace': round(avg_pace, 2) if avg_pace else None,
                 'average_heart_rate': round(avg_heart_rate, 1) if avg_heart_rate else None,
                 'training_load': training_load,
-                'activities': activities[:10]  # Return recent 10 activities
+                'activities': activities_data
             }
         
         except Exception as e:
