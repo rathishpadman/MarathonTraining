@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marathon Training Community Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/feather.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .glass-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 1rem 0;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .kpi-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            color: white;
+            transition: transform 0.3s ease;
+            height: 140px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .kpi-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .kpi-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .leaderboard-item {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .leaderboard-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+        
+        .rank-badge {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .rank-1 { background: linear-gradient(45deg, #ffd700, #ffb347); }
+        .rank-2 { background: linear-gradient(45deg, #c0c0c0, #a8a8a8); }
+        .rank-3 { background: linear-gradient(45deg, #cd7f32, #b8860b); }
+        
+        .athlete-links {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .athlete-link {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+        
+        .athlete-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .page-header {
+            text-align: center;
+            color: white;
+            margin: 2rem 0;
+        }
+        
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 0.5rem;
+        }
+        
+        .page-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+        
+        .section-title {
+            color: white;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            color: white;
+        }
+        
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: white !important;
+        }
+        
+        .navbar {
+            background: rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i data-feather="activity" class="me-2"></i>
+                Marathon Training Community
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/streamlit">Individual Analytics</a>
+                <a class="nav-link" href="/dashboard">Athlete Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">Community Dashboard</h1>
+            <p class="page-subtitle">Real-time training insights and community performance metrics</p>
+        </div>
+
+        <!-- KPI Cards Row -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="kpi-card">
+                    <div class="kpi-value" id="totalAthletes">-</div>
+                    <div class="kpi-label">Active Athletes</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="kpi-card">
+                    <div class="kpi-value" id="totalDistance">-</div>
+                    <div class="kpi-label">Total Distance (km)</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="kpi-card">
+                    <div class="kpi-value" id="totalActivities">-</div>
+                    <div class="kpi-label">Total Activities</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="kpi-card">
+                    <div class="kpi-value" id="avgPace">-</div>
+                    <div class="kpi-label">Avg Pace (min/km)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Row -->
+        <div class="row">
+            <!-- Leaderboard -->
+            <div class="col-lg-6 mb-4">
+                <div class="glass-container">
+                    <h3 class="section-title">
+                        <i data-feather="award" class="me-2"></i>
+                        Performance Leaderboard
+                    </h3>
+                    <div id="leaderboard" class="loading-spinner">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Training Load Distribution -->
+            <div class="col-lg-6 mb-4">
+                <div class="glass-container">
+                    <h3 class="section-title">
+                        <i data-feather="bar-chart-2" class="me-2"></i>
+                        Training Load Distribution
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="trainingLoadChart" width="400" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Community Trends -->
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="glass-container">
+                    <h3 class="section-title">
+                        <i data-feather="trending-up" class="me-2"></i>
+                        Community Training Trends (Last 7 Days)
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="communityTrendsChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize Feather icons
+        feather.replace();
+
+        // Global chart instances
+        let trainingLoadChart;
+        let communityTrendsChart;
+
+        // Load community data
+        async function loadCommunityData() {
+            try {
+                const response = await fetch('/api/community/overview');
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error('API Error:', data.error);
+                    return;
+                }
+
+                // Update KPI cards
+                updateKPICards(data.kpis);
+                
+                // Update leaderboard
+                updateLeaderboard(data.leaderboard);
+                
+                // Update charts
+                updateTrainingLoadChart(data.trainingLoadDistribution);
+                updateCommunityTrendsChart(data.communityTrends);
+                
+            } catch (error) {
+                console.error('Error loading community data:', error);
+            }
+        }
+
+        function updateKPICards(kpis) {
+            document.getElementById('totalAthletes').textContent = kpis.totalAthletes;
+            document.getElementById('totalDistance').textContent = kpis.totalDistance.toFixed(1);
+            document.getElementById('totalActivities').textContent = kpis.totalActivities;
+            document.getElementById('avgPace').textContent = kpis.avgPace > 0 ? kpis.avgPace.toFixed(2) : 'N/A';
+        }
+
+        function updateLeaderboard(leaderboard) {
+            const container = document.getElementById('leaderboard');
+            
+            if (leaderboard.length === 0) {
+                container.innerHTML = '<div class="text-center text-white">No athletes found</div>';
+                return;
+            }
+
+            const leaderboardHTML = leaderboard.map((athlete, index) => {
+                const rank = index + 1;
+                const rankClass = rank <= 3 ? `rank-${rank}` : '';
+                
+                return `
+                    <div class="leaderboard-item">
+                        <div class="d-flex align-items-center">
+                            <div class="rank-badge ${rankClass} me-3">
+                                ${rank}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">${athlete.name}</div>
+                                <div class="small opacity-75">
+                                    ${athlete.distance.toFixed(1)}km • ${athlete.activities} activities
+                                    ${athlete.avg_pace > 0 ? ` • ${athlete.avg_pace.toFixed(2)} min/km` : ''}
+                                    ${athlete.avg_hr > 0 ? ` • ${athlete.avg_hr.toFixed(0)} bpm avg` : ''}
+                                </div>
+                                <div class="athlete-links">
+                                    <a href="/dashboard?athlete_id=${athlete.id}" class="athlete-link">
+                                        <i data-feather="user" width="14" height="14"></i> Dashboard
+                                    </a>
+                                    <a href="/race-predictor?athlete_id=${athlete.id}" class="athlete-link">
+                                        <i data-feather="zap" width="14" height="14"></i> Race Predictor
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = leaderboardHTML;
+            feather.replace(); // Re-initialize icons
+        }
+
+        function updateTrainingLoadChart(data) {
+            const ctx = document.getElementById('trainingLoadChart').getContext('2d');
+            
+            if (trainingLoadChart) {
+                trainingLoadChart.destroy();
+            }
+            
+            trainingLoadChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.data,
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    return `${label}: ${value.toFixed(1)}km`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCommunityTrendsChart(data) {
+            const ctx = document.getElementById('communityTrendsChart').getContext('2d');
+            
+            if (communityTrendsChart) {
+                communityTrendsChart.destroy();
+            }
+            
+            communityTrendsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets.map(dataset => ({
+                        ...dataset,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        fill: true
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+        // Auto-refresh data every 5 minutes
+        function startAutoRefresh() {
+            setInterval(loadCommunityData, 5 * 60 * 1000);
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCommunityData();
+            startAutoRefresh();
+        });
+    </script>
+</body>
+</html>

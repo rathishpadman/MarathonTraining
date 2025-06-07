@@ -60,6 +60,10 @@ def create_app():
     from app.web_routes import web_bp
     app.register_blueprint(web_bp)
     
+    # Register main routes (including home page)
+    from app.simple_routes import main_bp
+    app.register_blueprint(main_bp)
+    
     # Register API routes with prefix to avoid root conflict
     from app.simple_routes import api_bp
     app.register_blueprint(api_bp)

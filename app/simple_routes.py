@@ -14,6 +14,9 @@ from app.config import Config
 # Create blueprint for API routes
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
+# Main routes blueprint
+main_bp = Blueprint('main', __name__)
+
 # Initialize components
 config = Config()
 security = ReplitSecurity()
@@ -492,6 +495,148 @@ def sync_athlete_activities(athlete_id):
         logger.error(f"Error syncing activities for athlete {athlete_id}: {str(e)}")
         return jsonify({'error': 'Failed to sync activities'}), 500
 
+@api_bp.route('/community/overview')
+def get_community_overview():
+    """Get community overview data for the home page dashboard"""
+    try:
+        logger.info("Fetching community overview data")
+        
+        # Get all active athletes
+        athletes = ReplitAthlete.query.filter_by(is_active=True).all()
+        
+        if not athletes:
+            return jsonify({
+                'kpis': {
+                    'totalAthletes': 0,
+                    'totalDistance': 0,
+                    'totalActivities': 0,
+                    'avgPace': 0
+                },
+                'leaderboard': [],
+                'trainingLoadDistribution': {'labels': [], 'data': []},
+                'communityTrends': {'labels': [], 'datasets': []}
+            })
+        
+        # Calculate community KPIs
+        from datetime import datetime, timedelta
+        from app.models import Activity
+        
+        start_date = datetime.now() - timedelta(days=30)
+        
+        # Get all recent activities for community analysis
+        all_activities = Activity.query.filter(
+            Activity.start_date >= start_date
+        ).all()
+        
+        total_distance = sum(a.distance or 0 for a in all_activities) / 1000  # km
+        total_activities = len(all_activities)
+        active_athletes = len(set(a.athlete_id for a in all_activities))
+        
+        # Calculate community average pace
+        valid_activities = [a for a in all_activities if a.distance and a.moving_time and a.distance > 0]
+        if valid_activities:
+            total_time = sum(a.moving_time for a in valid_activities)
+            total_distance_m = sum(a.distance for a in valid_activities)
+            avg_pace = (total_time / 60) / (total_distance_m / 1000) if total_distance_m > 0 else 0
+        else:
+            avg_pace = 0
+        
+        # Generate leaderboard (top performers by distance)
+        athlete_stats = {}
+        for activity in all_activities:
+            athlete_id = activity.athlete_id
+            if athlete_id not in athlete_stats:
+                athlete = ReplitAthlete.query.get(athlete_id)
+                athlete_stats[athlete_id] = {
+                    'id': athlete_id,
+                    'name': athlete.name if athlete else f"Athlete {athlete_id}",
+                    'email': athlete.email if athlete else "",
+                    'distance': 0,
+                    'activities': 0,
+                    'avg_pace': 0,
+                    'avg_hr': 0
+                }
+            
+            athlete_stats[athlete_id]['distance'] += (activity.distance or 0) / 1000
+            athlete_stats[athlete_id]['activities'] += 1
+        
+        # Calculate average pace and HR for each athlete
+        for athlete_id, stats in athlete_stats.items():
+            athlete_activities = [a for a in all_activities if a.athlete_id == athlete_id]
+            if athlete_activities:
+                # Calculate average pace
+                valid_acts = [a for a in athlete_activities if a.distance and a.moving_time and a.distance > 0]
+                if valid_acts:
+                    total_time = sum(a.moving_time for a in valid_acts)
+                    total_dist = sum(a.distance for a in valid_acts) / 1000
+                    stats['avg_pace'] = (total_time / 60) / total_dist if total_dist > 0 else 0
+                
+                # Calculate average heart rate
+                hr_activities = [a for a in athlete_activities if a.average_heartrate]
+                if hr_activities:
+                    stats['avg_hr'] = sum(a.average_heartrate for a in hr_activities) / len(hr_activities)
+        
+        # Sort leaderboard by distance
+        leaderboard = sorted(athlete_stats.values(), key=lambda x: x['distance'], reverse=True)
+        
+        # Training load distribution by athlete
+        training_load_labels = []
+        training_load_data = []
+        for athlete_data in leaderboard[:5]:  # Top 5 athletes
+            training_load_labels.append(athlete_data['name'])
+            training_load_data.append(round(athlete_data['distance'], 1))
+        
+        # Community trends (last 7 days)
+        trend_labels = []
+        distance_trend = []
+        activity_trend = []
+        
+        for i in range(6, -1, -1):
+            date = datetime.now() - timedelta(days=i)
+            trend_labels.append(date.strftime('%m/%d'))
+            
+            day_activities = [a for a in all_activities if a.start_date.date() == date.date()]
+            day_distance = sum(a.distance or 0 for a in day_activities) / 1000
+            day_count = len(day_activities)
+            
+            distance_trend.append(round(day_distance, 1))
+            activity_trend.append(day_count)
+        
+        return jsonify({
+            'kpis': {
+                'totalAthletes': active_athletes,
+                'totalDistance': round(total_distance, 1),
+                'totalActivities': total_activities,
+                'avgPace': round(avg_pace, 2) if avg_pace > 0 else 0
+            },
+            'leaderboard': leaderboard,
+            'trainingLoadDistribution': {
+                'labels': training_load_labels,
+                'data': training_load_data
+            },
+            'communityTrends': {
+                'labels': trend_labels,
+                'datasets': [
+                    {
+                        'label': 'Daily Distance (km)',
+                        'data': distance_trend,
+                        'borderColor': 'rgb(75, 192, 192)',
+                        'backgroundColor': 'rgba(75, 192, 192, 0.2)'
+                    },
+                    {
+                        'label': 'Daily Activities',
+                        'data': activity_trend,
+                        'borderColor': 'rgb(255, 99, 132)',
+                        'backgroundColor': 'rgba(255, 99, 132, 0.2)'
+                    }
+                ]
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching community overview: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @api_bp.route('/analytics/data')
 def get_analytics_data():
     """Get analytics data for charts and metrics"""
@@ -753,6 +898,13 @@ def get_fitness_analysis(athlete_id):
     except Exception as e:
         logger.error(f"Error analyzing fitness: {str(e)}")
         return jsonify({'error': 'Failed to analyze fitness'}), 500
+
+# Home page route
+@main_bp.route('/')
+def home():
+    """Community dashboard home page"""
+    from flask import render_template
+    return render_template('community_dashboard.html')
 
 @api_bp.route('/api/athletes/<int:athlete_id>/training-plan', methods=['POST'])
 def get_training_plan(athlete_id):
