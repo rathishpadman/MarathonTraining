@@ -720,7 +720,7 @@ def prepare_pace_analytics(activities):
         return {'labels': [], 'pace': [], 'targetPace': []}
 
 # Race Performance Optimization Endpoints
-@api_bp.route('/api/athletes/<int:athlete_id>/race-prediction', methods=['GET'])
+@api_bp.route('/athletes/<int:athlete_id>/race-prediction', methods=['GET'])
 def get_race_prediction(athlete_id):
     """Get race time prediction for specific distance"""
     try:
@@ -737,7 +737,7 @@ def get_race_prediction(athlete_id):
         logger.error(f"Error predicting race performance: {str(e)}")
         return jsonify({'error': 'Failed to predict race performance'}), 500
 
-@api_bp.route('/api/athletes/<int:athlete_id>/fitness-analysis', methods=['GET'])
+@api_bp.route('/athletes/<int:athlete_id>/fitness-analysis', methods=['GET'])
 def get_fitness_analysis(athlete_id):
     """Get comprehensive fitness analysis"""
     try:
