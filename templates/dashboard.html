@@ -539,5 +539,39 @@ function loadTeamOverview() {
             console.error('Error loading team overview:', error);
         });
 }
+
+// Sync athlete data with Strava
+function syncAthleteData() {
+    if (!currentAthlete) {
+        showNotification('Please select an athlete first', 'error');
+        return;
+    }
+    
+    const syncButton = document.getElementById('syncButton');
+    const originalText = syncButton.innerHTML;
+    syncButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+    syncButton.disabled = true;
+    
+    fetch(`/api/athletes/${currentAthlete}/sync-activities`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        showNotification(`Successfully synced ${data.activities_synced} activities`, 'success');
+        // Reload athlete data after sync
+        loadAthleteData(currentAthlete);
+    })
+    .catch(error => {
+        console.error('Error syncing data:', error);
+        showNotification('Failed to sync Strava data', 'error');
+    })
+    .finally(() => {
+        syncButton.innerHTML = originalText;
+        syncButton.disabled = false;
+    });
+}
 </script>
 {% endblock %}

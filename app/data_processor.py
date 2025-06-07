@@ -309,53 +309,52 @@ class DataProcessor:
             end_date = datetime.now().date()
             start_date = end_date - timedelta(days=days)
             
-            # Get daily summaries for the period
-            summaries = db_session.query(DailySummary).filter(
-                DailySummary.athlete_id == athlete_id,
-                func.date(DailySummary.summary_date) >= start_date,
-                func.date(DailySummary.summary_date) <= end_date
-            ).order_by(DailySummary.summary_date.desc()).all()
+            # Get activities for the period directly
+            activities = db_session.query(Activity).filter(
+                Activity.athlete_id == athlete_id,
+                func.date(Activity.start_date) >= start_date,
+                func.date(Activity.start_date) <= end_date
+            ).order_by(Activity.start_date.desc()).all()
             
-            if not summaries:
-                self.logger.warning(f"No performance data found for athlete {athlete_id}")
+            if not activities:
+                self.logger.warning(f"No activities found for athlete {athlete_id}")
                 return None
             
-            # Convert to DataFrame for analysis
-            summary_data = []
-            for summary in summaries:
-                summary_data.append({
-                    'date': summary.summary_date,
-                    'distance': summary.total_distance,
-                    'moving_time': summary.total_moving_time,
-                    'elevation_gain': summary.total_elevation_gain,
-                    'activity_count': summary.activity_count,
-                    'average_pace': summary.average_pace,
-                    'training_load': summary.training_load,
-                    'status': summary.status
-                })
+            # Calculate totals from activities
+            total_distance = sum(activity.distance or 0 for activity in activities) / 1000  # Convert to km
+            total_moving_time = sum(activity.moving_time or 0 for activity in activities)
+            total_elevation_gain = sum(activity.total_elevation_gain or 0 for activity in activities)
+            activity_count = len(activities)
             
-            df = pd.DataFrame(summary_data)
+            # Calculate averages
+            avg_heart_rate = None
+            heart_rates = [activity.average_heartrate for activity in activities if activity.average_heartrate]
+            if heart_rates:
+                avg_heart_rate = sum(heart_rates) / len(heart_rates)
             
-            # Calculate aggregated metrics
-            performance_summary = {
-                'period': f"{start_date} to {end_date}",
-                'total_distance': df['distance'].sum(),
-                'total_activities': df['activity_count'].sum(),
-                'total_training_time': df['moving_time'].sum(),
-                'average_weekly_distance': df['distance'].sum() / (days / 7),
-                'average_pace': df['average_pace'].mean(),
-                'total_elevation_gain': df['elevation_gain'].sum(),
-                'training_load': df['training_load'].sum(),
-                'active_days': len(df[df['activity_count'] > 0]),
-                'recent_summaries': summary_data[:7]  # Last 7 days
+            # Calculate average pace (min/km)
+            avg_pace = None
+            if total_distance > 0 and total_moving_time > 0:
+                pace_seconds_per_km = (total_moving_time / (total_distance))
+                avg_pace = pace_seconds_per_km / 60  # Convert to minutes per km
+            
+            # Training load estimation
+            training_load = activity_count * 50  # Simple estimation
+            
+            return {
+                'total_distance': round(total_distance, 2),
+                'total_moving_time': total_moving_time,
+                'total_elevation_gain': round(total_elevation_gain, 1),
+                'activity_count': activity_count,
+                'average_pace': round(avg_pace, 2) if avg_pace else None,
+                'average_heart_rate': round(avg_heart_rate, 1) if avg_heart_rate else None,
+                'training_load': training_load,
+                'activities': activities[:10]  # Return recent 10 activities
             }
-            
-            self.logger.info(f"Performance summary calculated for athlete {athlete_id}")
-            return performance_summary
-            
+        
         except Exception as e:
-            self.logger.error(f"Failed to get performance summary for athlete {athlete_id}: {str(e)}")
-            raise
+            self.logger.error(f"Error getting athlete performance summary: {str(e)}")
+            return None
     
     def get_team_overview(self, db_session, days=7):
         """
