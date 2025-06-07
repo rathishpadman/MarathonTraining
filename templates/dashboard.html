@@ -317,7 +317,7 @@ function loadAthleteData(athleteId) {
     document.getElementById('loadingSpinner').style.display = 'block';
     
     // Load athlete dashboard data
-    fetch(`/api/athletes/${athleteId}/dashboard`)
+    fetch(`/api/athletes/${athleteId}/dashboard-data`)
         .then(response => {
             console.log('Dashboard response status:', response.status);
             if (!response.ok) {
@@ -349,19 +349,23 @@ function loadAthleteData(athleteId) {
 
 // Update dashboard metrics
 function updateDashboardMetrics(data) {
-    if (data.performance_summary) {
-        const summary = data.performance_summary;
-        
-        // Update metric values (backend already returns km, no conversion needed)
-        document.getElementById('metric-total_distance').textContent = 
-            (summary.total_distance || 0).toFixed(1);
-        document.getElementById('metric-total_activities').textContent = 
-            summary.total_activities || 0;
-        document.getElementById('metric-avg_pace').textContent = 
-            summary.average_pace ? summary.average_pace.toFixed(2) + ' min/km' : 'N/A';
-        document.getElementById('metric-training_load').textContent = 
-            (summary.training_load || 0).toFixed(1);
-    }
+    console.log('Updating dashboard metrics with data:', data);
+    
+    // Use the metrics object from the backend response
+    const metrics = data.metrics || {};
+    
+    // Update metric values using the actual backend response structure
+    document.getElementById('metric-total_distance').textContent = 
+        (metrics.total_distance || 0).toFixed(1);
+    
+    document.getElementById('metric-total_activities').textContent = 
+        metrics.total_activities || 0;
+    
+    document.getElementById('metric-avg_pace').textContent = 
+        metrics.avg_pace ? metrics.avg_pace.toFixed(2) + ' min/km' : 'N/A';
+    
+    document.getElementById('metric-training_load').textContent = 
+        (metrics.training_load || 0).toFixed(1);
 }
 
 // Update charts with new data
