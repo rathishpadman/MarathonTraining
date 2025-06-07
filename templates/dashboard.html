@@ -37,9 +37,16 @@
                         <option value="">Loading athletes...</option>
                     </select>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <button class="btn btn-outline-primary" id="syncButton" onclick="syncAthleteData()" title="Sync Strava Data">
+                            <i class="fas fa-sync-alt"></i> Sync Data
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-2">
                     <div class="text-end">
-                        <span class="text-white-50">Connected athletes: </span>
+                        <span class="text-white-50">Athletes: </span>
                         <span id="athleteCount" class="text-white fw-bold">0</span>
                     </div>
                 </div>

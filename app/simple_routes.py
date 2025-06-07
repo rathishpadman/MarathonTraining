@@ -456,40 +456,26 @@ def sync_athlete_activities(athlete_id):
                     if start_date_str.endswith('Z'):
                         start_date_str = start_date_str.replace('Z', '+00:00')
                     
-                    # Create new activity using direct SQL insert for PostgreSQL compatibility
-                    from sqlalchemy import text
-                    insert_query = text("""
-                        INSERT INTO activities (
-                            strava_activity_id, athlete_id, name, sport_type, start_date,
-                            distance, moving_time, elapsed_time, total_elevation_gain,
-                            average_speed, max_speed, average_cadence, average_heartrate,
-                            max_heartrate, calories, created_at
-                        ) VALUES (
-                            :strava_id, :athlete_id, :name, :sport_type, :start_date,
-                            :distance, :moving_time, :elapsed_time, :elevation,
-                            :avg_speed, :max_speed, :cadence, :avg_hr,
-                            :max_hr, :calories, :created_at
-                        )
-                    """)
+                    # Create new activity record for SQLite
+                    activity = Activity()
+                    activity.strava_activity_id = activity_data['id']
+                    activity.athlete_id = athlete_id
+                    activity.name = activity_data['name']
+                    activity.sport_type = activity_data['sport_type']
+                    activity.start_date = datetime.fromisoformat(start_date_str)
+                    activity.distance = activity_data.get('distance')
+                    activity.moving_time = activity_data.get('moving_time')
+                    activity.elapsed_time = activity_data.get('elapsed_time')
+                    activity.total_elevation_gain = activity_data.get('total_elevation_gain')
+                    activity.average_speed = activity_data.get('average_speed')
+                    activity.max_speed = activity_data.get('max_speed')
+                    activity.average_cadence = activity_data.get('average_cadence')
+                    activity.average_heartrate = activity_data.get('average_heartrate')
+                    activity.max_heartrate = activity_data.get('max_heartrate')
+                    activity.calories = activity_data.get('calories')
+                    activity.created_at = datetime.now()
                     
-                    db.session.execute(insert_query, {
-                        'strava_id': activity_data['id'],
-                        'athlete_id': athlete_id,
-                        'name': activity_data['name'],
-                        'sport_type': activity_data['sport_type'],
-                        'start_date': datetime.fromisoformat(start_date_str),
-                        'distance': activity_data.get('distance'),
-                        'moving_time': activity_data.get('moving_time'),
-                        'elapsed_time': activity_data.get('elapsed_time'),
-                        'elevation': activity_data.get('total_elevation_gain'),
-                        'avg_speed': activity_data.get('average_speed'),
-                        'max_speed': activity_data.get('max_speed'),
-                        'cadence': activity_data.get('average_cadence'),
-                        'avg_hr': activity_data.get('average_heartrate'),
-                        'max_hr': activity_data.get('max_heartrate'),
-                        'calories': activity_data.get('calories'),
-                        'created_at': datetime.now()
-                    })
+                    db.session.add(activity)
                     
                     activities_synced += 1
                     logger.info(f"Inserted activity {activity_data['id']} for athlete {athlete_id}")

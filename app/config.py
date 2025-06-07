@@ -10,7 +10,7 @@ class Config:
     SECRET_KEY = os.environ.get('SESSION_SECRET', 'dev-secret-key')
     
     # Database configuration
-    DATABASE_URL = 'sqlite:///marathon.db'
+    DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///marathon.db')
     SQLALCHEMY_DATABASE_URI = DATABASE_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
