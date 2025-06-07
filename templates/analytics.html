@@ -314,10 +314,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-let charts = {};
-if (typeof currentAthlete === 'undefined') {
-    let currentAthlete = null;
-}
+// Use global variables from base template
+// currentAthlete and charts are already declared in base.html
 
 // Load athletes and analytics on page load
 document.addEventListener('DOMContentLoaded', function() {
