@@ -1,0 +1,218 @@
+Your goal is to build the complete "Marathon Training Dashboard" application on Replit, integrating all features specified in the `Solution_Design.md` document within a single, comprehensive build.
+
+**Replit Agent Prompt: Marathon Training Dashboard - Full Application Build**
+
+**Project Name:** Marathon Training Dashboard
+
+**Objective:** Build the complete Marathon Training Dashboard application, focusing on robust error handling, detailed logging for all major outputs and API responses, and comprehensive multi-athlete support. The application should be fully functional and ready for deployment on Replit.
+
+**Core Implementation Details:**
+
+1.  **Replit Environment Configuration:**
+    * **`.replit`**: Configure the `run` command to execute `python main.py`.
+    * **`.env` (Secrets)**: Set up the following environment variables in Replit's "Secrets" tab. Do NOT hardcode these in the code:
+        * `STRAVA_CLIENT_ID`
+        * `STRAVA_CLIENT_SECRET`
+        * `JWT_SECRET` (Generate a strong, random one, e.g., using `secrets.token_urlsafe(64)`)
+        * `DATABASE_URL` (e.g., `sqlite:///marathon.db` for SQLite or `postgresql://user:pass@host:port/dbname` for PostgreSQL)
+        * `MAIL_SMTP_SERVER`
+        * `MAIL_SMTP_PORT`
+        * `MAIL_SMTP_USER`
+        * `MAIL_SMTP_PASSWORD`
+        * `LOG_LEVEL` (e.g., `INFO` or `DEBUG`)
+
+2.  **Application Structure:**
+    * Create the exact directory and file structure as defined in "Production-Ready Deployment -> Application Structure for Replit":
+        ```
+        ├── .replit
+        ├── main.py
+        ├── app/
+        │   ├── __init__.py
+        │   ├── routes.py
+        │   ├── models.py
+        │   ├── strava_client.py
+        │   ├── data_processor.py
+        │   ├── mail_notifier.py
+        │   ├── config.py
+        │   └── services/
+        │       ├── __init__.py
+        │       └── analytics.py
+        ├── dashboard/
+        │   ├── streamlit_app.py
+        │   ├── components.py
+        │   ├── analytics_display.py
+        │   └── api_client.py
+        ├── requirements.txt
+        ├── data/
+        │   └── models/
+        │       └── light_perf_model.pkl
+        ├── tests/
+        │   ├── test_api.py
+        │   ├── test_models.py
+        │   └── test_data_processing.py
+        └── .env
+        ```
+    * Populate empty `__init__.py` files in all directories (`app/`, `app/services/`, `dashboard/`, `data/`, `data/models/`, `tests/`) to make them Python packages.
+
+3.  **Flask Backend (`app/` directory):**
+
+    * **`app/config.py`**:
+        * Create a `Config` class to load all environment variables from `os.environ` using `os.getenv()` and provide default values where appropriate.
+        * Implement `configure_replit_logging(app)` function as detailed in "Error Handling & Observability -> Replit-Optimized Logging". This function should set up `StreamHandler` and `RotatingFileHandler` with the specified `Formatter` including `%(athlete_id)s`. It must also configure the custom `LogRecordFactory` to inject `athlete_id` into log records and suppress noisy SQLAlchemy logs.
+        * Implement the `app.errorhandler(Exception)` global error handler to log unhandled exceptions with full traceback and return a generic JSON error response. This handler should attempt to log to the `SystemLog` model.
+
+    * **`app/models.py`**:
+        * Define all SQLAlchemy models: `ReplitAthlete`, `Activity`, `PlannedWorkout`, `DailySummary`, `SystemLog`, `StravaApiUsage`, `OptimalValues`, and `NotificationLog`.
+        * Ensure correct column types (e.g., `Text` for JSON fields in SQLite, `JSONB` for PostgreSQL).
+        * Define `ForeignKey` relationships and `__repr__` methods for all models as specified.
+
+    * **`app/__init__.py`**:
+        * Initialize the Flask application.
+        * Load configurations from `app.config.Config`.
+        * Call `configure_replit_logging(app)`.
+        * Initialize `SQLAlchemy` (`db`) and ensure `db.create_all()` is called on startup to create tables based on models.
+        * Initialize `JWTManager` with the `JWT_SECRET_KEY` and token expiration settings.
+        * Register custom JWT error handlers (`unauthorized_loader`, `invalid_token_loader`, `expired_token_loader`, `revoked_token_loader`) as described in `ReplitSecurity` class.
+        * Initialize `Flask-RESTx` (`api`) with title, version, and description.
+        * Initialize `Flask-SocketIO` (`socketio`) with `cors_allowed_origins="*"`.
+        * Register Flask-RESTx API routes (blueprint registration).
+        * Set up `APScheduler` (BackgroundScheduler) to run `replit_daily_processing` cron job (e.g., daily at 3 AM) and `send_athlete_update` (e.g., every 60 seconds for a specific athlete). Ensure scheduler starts in a non-blocking way.
+        * Ensure `db_session` is exposed or available for use by other modules.
+
+    * **`app/security.py`**:
+        * Implement the `ReplitSecurity` class. Its `__init__` method should configure JWTManager settings and register the custom error handlers.
+        * Implement `create_tokens(athlete_id)` to generate access and refresh tokens.
+        * Implement `verify_token_identity(token, expected_athlete_id)` for manual token validation, crucial for WebSocket authentication.
+
+    * **`app/strava_client.py`**:
+        * Implement the `ReplitStravaClient` class.
+        * `__init__(client_id, client_secret)`: Initializes `base_client`.
+        * `get_authorization_url(redirect_uri, scope)`: Generates Strava OAuth URL with `state` parameter.
+        * `exchange_code_for_token(code)`: Exchanges code for tokens with error handling.
+        * `refresh_access_token(refresh_token)`: Refreshes tokens with error handling.
+        * `get_activities(access_token, start_date, end_date)`: Fetches activities using `athlete_client.iter_activities` with pagination, `time.sleep(0.1)` delay, and robust error handling for `RateLimitExceeded` and `OAuthError`. Log all significant events.
+
+    * **`app/data_processor.py`**:
+        * Implement `process_athlete_daily_performance(db_session, athlete_id, processing_date)`: This is the core logic. It should retrieve an athlete's activities for the `processing_date`, compare with `PlannedWorkout` data, perform basic performance calculations (distance, pace, variance), update or create a `DailySummary` record, and infer a `status` (e.g., "On Track", "Under-performed"). Log all steps and results.
+        * Implement `get_athlete_performance_summary(db_session, athlete_id)`: Fetches and aggregates an athlete's performance data.
+        * Implement `get_team_overview(db_session)`: Aggregates data for all athletes for a team view.
+
+    * **`app/mail_notifier.py`**:
+        * Implement the `MailNotifier` class using `smtplib` and `email.mime.text`.
+        * `__init__(smtp_server, smtp_port, smtp_user, smtp_password)`: Initializes the SMTP client.
+        * `send_daily_summary(recipient_email, summary_data)`: Composes and sends a personalized daily summary email. Include error handling for SMTP connection failures and logging. Log the attempt, success, or failure.
+
+    * **`app/services/analytics.py`**:
+        * Implement the `ReplitAnalyticsEngine` class.
+        * `__init__`: Calls `load_lightweight_models`.
+        * `load_lightweight_models()`: Loads pre-trained lightweight ML models (`light_perf_model.pkl`, `light_risk_model.pkl`) using `joblib`. Include `FileNotFoundError` handling and logging.
+        * `get_sampled_training_data(athlete_id)`: Retrieves and samples training data for an athlete from the database, converting it to a pandas DataFrame. Log the data retrieval.
+        * `predict_race_performance(athlete_id, race_distance)`: Uses the loaded `performance_predictor` model and sampled data to predict race performance. Include checks for model availability and dummy prediction logic. Log the prediction process and result.
+
+    * **`app/routes.py`**:
+        * Define `api = Api(...)` and API models (`athlete_model`, `daily_summary_model`) for Flask-RESTx.
+        * Implement the `/api/athletes` (GET) endpoint:
+            * Requires `jwt_required()`.
+            * Fetches all active athletes from the database.
+            * Include authorization logic (e.g., admin vs. regular user) to return all athletes or just the current user's athlete data.
+            * Return marshaled `athlete_model` list. Log request and response.
+        * Implement `/api/athlete/<int:athlete_id>/dashboard-data` (GET) endpoint:
+            * Requires `jwt_required()`.
+            * Strictly enforce `current_user_id == athlete_id` unless admin.
+            * Fetches data using `get_athlete_performance_summary` from `app.data_processor`.
+            * Return marshaled `daily_summary_model` list. Log request and response, including potential `403 Forbidden` errors.
+        * Implement `/api/realtime-dashboard` (GET) endpoint:
+            * Requires `jwt_required()`.
+            * Returns lightweight data (`performance`, `upcoming`, `notifications`) specific to `current_user_id`. Log data fetched and response.
+        * Implement WebSocket handlers (`socketio.on('join_dashboard_room')`, `socketio.on('disconnect')`):
+            * `join_dashboard_room`: Authenticates the client's `jwt_token` against the `athlete_id` using `ReplitSecurity.verify_token_identity`. If successful, `join_room` and send initial `dashboard_refresh` data using `get_lightweight_update`. Crucial logging for success, authentication failures, and other errors.
+            * `disconnect`: Log client disconnection.
+        * Implement helper functions: `send_athlete_update`, `get_cached_performance`, `get_upcoming_workouts`, `get_recent_notifications`, `get_lightweight_update`, and `get_athlete_list_from_api` (the latter will call your Flask API from Streamlit via `requests` once the API is up). Ensure these functions use logging.
+
+4.  **Advanced Processing Workflows (`app/processing_workflows.py` - create this file):**
+    * This file will contain the daily processing logic, typically triggered by APScheduler.
+    * `get_athletes_in_chunks(db_session_factory, chunk_size)`: Fetches active athletes in memory-managed chunks, essential for scalability. Log the chunking process.
+    * `process_single_athlete_workflow(athlete_data, processing_date, mail_notifier)`:
+        * This function runs independently for each athlete within a `ThreadPoolExecutor`.
+        * Each worker must get its own SQLAlchemy session (`Session()`) and close it in `finally`.
+        * Call `core_process_athlete_daily_performance` from `app.data_processor`.
+        * If a summary is generated, check `athlete_preferences` for `notification_daily_summary` and call `mail_notifier.send_daily_summary`.
+        * Log `NotificationLog` entries (sent/failed).
+        * Implement robust error handling: `db_session.rollback()` on error, log to `SystemLog` model for persistent error tracking.
+        * Log all steps, successes, and failures comprehensively.
+    * `replit_daily_processing(processing_date)`:
+        * Orchestrates the daily processing for all active athletes.
+        * Initializes `MailNotifier` once.
+        * Fetches raw athlete data as dictionaries to avoid ORM session issues across threads.
+        * Uses `ThreadPoolExecutor` with `max_workers` based on `os.cpu_count()` to parallelize `process_single_athlete_workflow`.
+        * Logs the start, completion, and any worker-level exceptions using `as_completed`.
+
+5.  **Streamlit Frontend (`dashboard/` directory):**
+
+    * **`dashboard/streamlit_app.py`**:
+        * Set `page_title`, `layout`, and `initial_sidebar_state`.
+        * Apply Glassmorphism CSS styling via `st.markdown`.
+        * Implement a sidebar with "Athlete Selection" using `st.sidebar.selectbox`. The options should be fetched from the Flask backend via `api_client.get_athlete_list_from_api()`.
+        * Implement the main dashboard area to display "Team Performance Dashboard" or individual athlete data based on `selected_athlete`.
+        * Use `st.columns` to display "replit-card glass-container" divs for metrics, fetched via `api_client` calls.
+        * Integrate WebSocket for real-time updates: Establish a `websocket.WebSocketApp` connection to the Flask backend's SocketIO, emit `join_dashboard_room` with `athlete_id` and JWT, and handle incoming `dashboard_refresh` events to update the UI. Ensure logging for WebSocket events.
+        * Implement login/authentication flow to obtain JWT tokens from the Flask backend. Store tokens securely in Streamlit's `st.session_state`.
+
+    * **`dashboard/api_client.py`**:
+        * Create utility functions for Streamlit to interact with Flask APIs using the `requests` library.
+        * `login(username, password)`: Calls Flask's `/auth/login` (or similar) endpoint to get JWT tokens.
+        * `get_athlete_list_from_api(jwt_token)`: Calls `/api/athletes`.
+        * `get_athlete_dashboard_data(athlete_id, jwt_token)`: Calls `/api/athlete/<id>/dashboard-data`.
+        * `get_realtime_dashboard_data(athlete_id, jwt_token)`: Calls `/api/realtime-dashboard`.
+        * All functions should include error handling (e.g., for network errors, API errors) and log responses.
+
+    * **`dashboard/components.py`**:
+        * Define reusable Streamlit UI components/functions for consistent styling (e.g., a function to create a "glass-container" card).
+
+    * **`dashboard/analytics_display.py`**:
+        * Create functions to display analytics data using Streamlit's charting capabilities (e.g., `st.line_chart`, `st.bar_chart`) and `pandas` data manipulation for visualization.
+
+6.  **Production-Ready Deployment & Orchestration (`main.py`):**
+    * **`main.py`**: This script will be the entry point.
+    * Use `subprocess.Popen` to start Flask (via `gunicorn`) and Streamlit in parallel.
+    * **Flask Command**: `gunicorn -w 2 app:app -b 0.0.0.0:5000 --log-level info`.
+    * **Streamlit Command**: `streamlit run dashboard/streamlit_app.py --server.port 8501 --server.enableCORS false --server.enableXsrfProtection false --server.headless true`.
+    * Use `threading.Thread` to manage these processes in the background.
+    * Include a `time.sleep(5)` to allow Flask to start before Streamlit.
+    * Implement a `while True: time.sleep(3600)` loop in the main thread to keep the Replit container alive.
+    * Ensure logging is configured at the very beginning of `main.py` before starting any threads.
+
+7.  **Database Schema (SQL):**
+    * Ensure the SQLAlchemy models correctly generate the detailed table schemas and indexes as specified in "Enhanced Database Design -> Replit-Optimized Schema". Pay attention to `UNIQUE` constraints and `FOREIGN KEY` relationships. The `CREATE INDEX` statements will be managed by SQLAlchemy if models are configured correctly, but explicitly mentioning them ensures the intent.
+
+8.  **External Integrations - Strava:**
+    * Ensure the `ReplitStravaClient` correctly handles OAuth flows and activity fetching, including `RateLimitExceeded` and `OAuthError` exceptions, with appropriate logging and retry mechanisms.
+
+9.  **Performance & Monitoring:**
+    * Implement the `/replit_metrics` endpoint in Flask to report on CPU usage, memory, database size, and active database connections, as detailed in "Performance & Monitoring -> Replit-Optimized Monitoring". Include error handling for `psutil` or database queries.
+
+10. **Error Handling & Observability - General:**
+    * Throughout the entire application, add `logging.info()`, `logging.warning()`, `logging.error()`, and `logging.debug()` statements for all major operations, data processing steps, API requests/responses, and error conditions.
+    * Use `exc_info=True` in `logging.error()` calls to capture full tracebacks.
+    * Pass `extra={'athlete_id': athlete_id}` to logger calls wherever an operation is specific to an athlete to enable easy filtering in logs.
+    * Implement `try-except` blocks for database operations, external API calls, and any potentially failing logic.
+
+11. **Testing (`tests/` directory):**
+    * Create empty `test_api.py`, `test_models.py`, `test_data_processing.py` files. While not implementing tests in this build, their presence follows the `Solution_Design.md`.
+
+12. **Dependencies (`requirements.txt`):**
+    * Generate a `requirements.txt` file listing all required Python packages for the entire application (e.g., `Flask`, `Streamlit`, `pandas`, `sqlalchemy`, `flask-jwt-extended`, `flask-restx`, `stravalib`, `scikit-learn`, `numpy`, `flask-socketio`, `marshmallow`, `apscheduler`, `psutil`, `gunicorn`, `requests`, `joblib`, `smtplib`, `email`).
+
+**Expected Output:**
+
+The Replit Agent should provide the complete code for the entire application, following the structure and implementation details above. The output should include:
+
+* The content of `.replit`.
+* A clear statement of the required `.env` secrets.
+* The full code for `main.py`.
+* The complete directory structure with the contents of all files within `app/` (including `__init__.py`, `routes.py`, `models.py`, `strava_client.py`, `data_processor.py`, `mail_notifier.py`, `config.py`, `security.py`, `processing_workflows.py`, and `services/analytics.py`).
+* The complete directory structure with the contents of all files within `dashboard/` (including `streamlit_app.py`, `components.py`, `analytics_display.py`, and `api_client.py`).
+* The `requirements.txt` file.
+* A confirmation that the application is designed to run without errors on Replit and that all major outputs and API responses will include logging/print statements.
+* Instructions on how to set up the `.env` secrets in Replit.
+* Instructions on how to run the application (`python main.py`).
