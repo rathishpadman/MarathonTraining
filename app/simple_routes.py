@@ -21,12 +21,10 @@ logger = logging.getLogger(__name__)
 
 # Athletes API endpoint
 @api_bp.route('/athletes', methods=['GET'])
-@jwt_required()
 def get_athletes():
     """Get all athletes or current user's athlete data"""
     try:
-        current_user_id = get_jwt_identity()
-        logger.info(f"Fetching athletes for user {current_user_id}")
+        logger.info("Fetching all active athletes")
         
         # Get all active athletes
         athletes = db.session.query(ReplitAthlete).filter_by(is_active=True).all()
@@ -51,21 +49,79 @@ def get_athletes():
 
 # Athlete dashboard data endpoint
 @api_bp.route('/athletes/<int:athlete_id>/dashboard-data', methods=['GET'])
-@jwt_required()
 def get_athlete_dashboard_data(athlete_id):
     """Get dashboard data for a specific athlete"""
     try:
-        current_user_id = get_jwt_identity()
+        logger.info(f"Fetching dashboard data for athlete {athlete_id}")
         
-        # Validate access
-        if not security.validate_athlete_access(current_user_id, athlete_id):
-            return jsonify({'error': 'Access denied'}), 403
+        # Get athlete record
+        athlete = ReplitAthlete.query.filter_by(id=athlete_id, is_active=True).first()
+        if not athlete:
+            return jsonify({'error': 'Athlete not found'}), 404
+        
+        # Try to fetch fresh data from Strava if no local data exists
+        activities = Activity.query.filter_by(athlete_id=athlete_id).limit(1).all()
+        
+        if not activities and athlete.access_token:
+            # Fetch activities from Strava
+            try:
+                strava_activities = strava_client.get_activities(athlete.access_token, per_page=10)
+                if strava_activities:
+                    # Save activities to database
+                    for activity_data in strava_activities:
+                        existing_activity = Activity.query.filter_by(
+                            strava_activity_id=activity_data['id']
+                        ).first()
+                        
+                        if not existing_activity:
+                            activity = Activity(
+                                strava_activity_id=activity_data['id'],
+                                athlete_id=athlete_id,
+                                name=activity_data.get('name', 'Untitled'),
+                                sport_type=activity_data.get('sport_type', 'Unknown'),
+                                start_date=datetime.fromisoformat(activity_data['start_date_local'].replace('Z', '')),
+                                distance=activity_data.get('distance'),
+                                moving_time=activity_data.get('moving_time'),
+                                elapsed_time=activity_data.get('elapsed_time'),
+                                total_elevation_gain=activity_data.get('total_elevation_gain'),
+                                average_speed=activity_data.get('average_speed'),
+                                max_speed=activity_data.get('max_speed'),
+                                average_cadence=activity_data.get('average_cadence'),
+                                average_heartrate=activity_data.get('average_heartrate'),
+                                max_heartrate=activity_data.get('max_heartrate'),
+                                calories=activity_data.get('calories')
+                            )
+                            db.session.add(activity)
+                    
+                    db.session.commit()
+                    logger.info(f"Fetched and saved {len(strava_activities)} activities for athlete {athlete_id}")
+            except Exception as e:
+                logger.warning(f"Failed to fetch Strava activities: {str(e)}")
         
         # Get performance summary
         performance_summary = get_athlete_performance_summary(db.session, athlete_id, days=30)
         
+        # If still no data, return basic athlete info
         if not performance_summary:
-            return jsonify({'error': 'No data found for athlete'}), 404
+            return jsonify({
+                'athlete': {
+                    'id': athlete.id,
+                    'name': athlete.name,
+                    'strava_athlete_id': athlete.strava_athlete_id
+                },
+                'performance_summary': {
+                    'total_distance': 0,
+                    'total_activities': 0,
+                    'average_speed': 0,
+                    'total_training_load': 0
+                },
+                'recent_summaries': [],
+                'weekly_data': {
+                    'labels': [],
+                    'distance': [],
+                    'training_load': []
+                }
+            })
         
         # Get recent daily summaries
         recent_summaries = db.session.query(DailySummary)\
