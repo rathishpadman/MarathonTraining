@@ -226,7 +226,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-let trainingLoadChart, activityTypesChart, paceProgressionChart;
+let heartRateChart, elevationChart, paceProgressionChart, activityTypesChart;
 let currentTimeRange = 'week';
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -243,27 +243,154 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeCharts() {
-    // Training Load Chart
-    const trainingCtx = document.getElementById('trainingLoadChart').getContext('2d');
-    trainingLoadChart = new Chart(trainingCtx, {
+    // Heart Rate Analysis Chart
+    const heartRateCtx = document.getElementById('heartRateChart').getContext('2d');
+    heartRateChart = new Chart(heartRateCtx, {
         type: 'line',
         data: {
             labels: [],
             datasets: [{
-                label: 'Training Load',
+                label: 'Average Heart Rate',
                 data: [],
-                borderColor: 'rgb(75, 192, 192)',
-                backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                tension: 0.1,
+                borderColor: '#e74c3c',
+                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                tension: 0.3,
                 fill: true
+            }, {
+                label: 'Max Heart Rate',
+                data: [],
+                borderColor: '#c0392b',
+                backgroundColor: 'rgba(192, 57, 43, 0.1)',
+                tension: 0.3,
+                fill: false
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: 'white'
+                    }
+                }
+            },
             scales: {
+                x: {
+                    ticks: { color: 'white' },
+                    grid: { color: 'rgba(255,255,255,0.1)' }
+                },
                 y: {
-                    beginAtZero: true
+                    beginAtZero: false,
+                    ticks: { color: 'white' },
+                    grid: { color: 'rgba(255,255,255,0.1)' }
+                }
+            }
+        }
+    });
+
+    // Elevation & Distance Chart
+    const elevationCtx = document.getElementById('elevationChart').getContext('2d');
+    elevationChart = new Chart(elevationCtx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Distance (km)',
+                data: [],
+                backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                borderColor: '#3498db',
+                borderWidth: 1,
+                yAxisID: 'y'
+            }, {
+                label: 'Elevation Gain (m)',
+                data: [],
+                backgroundColor: 'rgba(39, 174, 96, 0.7)',
+                borderColor: '#27ae60',
+                borderWidth: 1,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: 'white'
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: 'white' },
+                    grid: { color: 'rgba(255,255,255,0.1)' }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    ticks: { color: 'white' },
+                    grid: { color: 'rgba(255,255,255,0.1)' }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    ticks: { color: 'white' },
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        }
+    });
+
+    // Pace Progression Chart
+    const paceCtx = document.getElementById('paceProgressionChart').getContext('2d');
+    paceProgressionChart = new Chart(paceCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Average Pace (min/km)',
+                data: [],
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                tension: 0.3,
+                fill: true
+            }, {
+                label: 'Target Marathon Pace',
+                data: [],
+                borderColor: '#f39c12',
+                backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                borderDash: [5, 5],
+                tension: 0.3,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: 'white'
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: 'white' },
+                    grid: { color: 'rgba(255,255,255,0.1)' }
+                },
+                y: {
+                    reverse: true,
+                    ticks: { 
+                        color: 'white',
+                        callback: function(value) {
+                            return formatPaceFromSeconds(value);
+                        }
+                    },
+                    grid: { color: 'rgba(255,255,255,0.1)' }
                 }
             }
         }
@@ -278,41 +405,24 @@ function initializeCharts() {
             datasets: [{
                 data: [],
                 backgroundColor: [
-                    '#FF6384',
-                    '#36A2EB',
-                    '#FFCE56',
-                    '#4BC0C0',
-                    '#9966FF'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true
-        }
-    });
-
-    // Pace Progression Chart
-    const paceCtx = document.getElementById('paceProgressionChart').getContext('2d');
-    paceProgressionChart = new Chart(paceCtx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Average Pace (min/km)',
-                data: [],
-                borderColor: 'rgb(255, 99, 132)',
-                backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                tension: 0.1
+                    '#fc4c02',
+                    '#3498db',
+                    '#27ae60',
+                    '#f39c12',
+                    '#e74c3c'
+                ],
+                borderColor: 'rgba(255,255,255,0.2)',
+                borderWidth: 2
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            scales: {
-                y: {
-                    reverse: true,
-                    beginAtZero: false
+            plugins: {
+                legend: {
+                    labels: {
+                        color: 'white'
+                    }
                 }
             }
         }
@@ -325,11 +435,11 @@ function loadAnalyticsData() {
     
     const days = currentTimeRange === 'week' ? 7 : currentTimeRange === 'month' ? 30 : 90;
     
-    fetch(`/api/analytics/data?days=${days}`)
+    fetch(`/analytics/data?days=${days}`)
         .then(response => response.json())
         .then(data => {
             updateMetrics(data.metrics);
-            updateCharts(data.charts);
+            updateCharts(data);
             updateActivitiesTable(data.activities);
             modal.hide();
         })
@@ -341,37 +451,52 @@ function loadAnalyticsData() {
 }
 
 function updateMetrics(metrics) {
-    document.getElementById('totalDistance').textContent = `${metrics.totalDistance.toFixed(1)} km`;
+    document.getElementById('totalDistance').textContent = `${(metrics.totalDistance / 1000).toFixed(1)} km`;
     document.getElementById('totalTime').textContent = formatDuration(metrics.totalTime);
-    document.getElementById('avgPace').textContent = formatPace(metrics.avgPace);
+    document.getElementById('avgHeartRate').textContent = `${metrics.avgHeartRate || '--'} bpm`;
     document.getElementById('activityCount').textContent = metrics.activityCount;
 }
 
-function updateCharts(chartData) {
-    // Update Training Load Chart
-    trainingLoadChart.data.labels = chartData.trainingLoad.labels;
-    trainingLoadChart.data.datasets[0].data = chartData.trainingLoad.data;
-    trainingLoadChart.update();
+function updateCharts(data) {
+    // Update Heart Rate Chart
+    if (data.heartRateData) {
+        heartRateChart.data.labels = data.heartRateData.labels;
+        heartRateChart.data.datasets[0].data = data.heartRateData.avgHeartRate;
+        heartRateChart.data.datasets[1].data = data.heartRateData.maxHeartRate;
+        heartRateChart.update();
+    }
 
-    // Update Activity Types Chart
-    activityTypesChart.data.labels = chartData.activityTypes.labels;
-    activityTypesChart.data.datasets[0].data = chartData.activityTypes.data;
-    activityTypesChart.update();
+    // Update Elevation Chart
+    if (data.elevationData) {
+        elevationChart.data.labels = data.elevationData.labels;
+        elevationChart.data.datasets[0].data = data.elevationData.distance;
+        elevationChart.data.datasets[1].data = data.elevationData.elevation;
+        elevationChart.update();
+    }
 
     // Update Pace Progression Chart
-    paceProgressionChart.data.labels = chartData.paceProgression.labels;
-    paceProgressionChart.data.datasets[0].data = chartData.paceProgression.data;
-    paceProgressionChart.update();
+    if (data.paceData) {
+        paceProgressionChart.data.labels = data.paceData.labels;
+        paceProgressionChart.data.datasets[0].data = data.paceData.pace;
+        paceProgressionChart.data.datasets[1].data = data.paceData.targetPace;
+        paceProgressionChart.update();
+    }
+
+    // Update Activity Types Chart
+    if (data.activityTypes) {
+        activityTypesChart.data.labels = data.activityTypes.labels;
+        activityTypesChart.data.datasets[0].data = data.activityTypes.values;
+        activityTypesChart.update();
+    }
 }
 
 function updateActivitiesTable(activities) {
     const tbody = document.getElementById('activitiesTableBody');
-    
-    if (activities.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No activities found</td></tr>';
+    if (!activities || activities.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-white-50">No activities found</td></tr>';
         return;
     }
-    
+
     tbody.innerHTML = activities.map(activity => `
         <tr>
             <td>${formatDate(activity.start_date)}</td>
@@ -379,25 +504,48 @@ function updateActivitiesTable(activities) {
             <td>${activity.name}</td>
             <td>${(activity.distance / 1000).toFixed(2)} km</td>
             <td>${formatDuration(activity.moving_time)}</td>
-            <td>${formatPace(activity.average_speed)}</td>
-            <td>${activity.average_heartrate ? Math.round(activity.average_heartrate) + ' bpm' : '-'}</td>
+            <td>${activity.average_heartrate || '--'} bpm</td>
+            <td>${formatPaceFromActivity(activity)}</td>
         </tr>
     `).join('');
 }
 
 function formatDuration(seconds) {
+    if (!seconds) return '0h 0m';
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+    return `${hours}h ${minutes}m`;
 }
 
-function formatPace(speedMs) {
-    if (!speedMs || speedMs === 0) return '--:--';
-    const paceMinKm = 1000 / (speedMs * 60);
-    const minutes = Math.floor(paceMinKm);
-    const seconds = Math.round((paceMinKm - minutes) * 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+function formatDate(dateString) {
+    return new Date(dateString).toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric' 
+    });
 }
+
+function formatPaceFromActivity(activity) {
+    if (!activity.distance || !activity.moving_time) return '--:--';
+    const paceSeconds = (activity.moving_time / (activity.distance / 1000));
+    return formatPaceFromSeconds(paceSeconds);
+}
+
+function formatPaceFromSeconds(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+function refreshData() {
+    loadAnalyticsData();
+}
+
+function showErrorMessage(message) {
+    console.error(message);
+    // Could add toast notification here
+}
+</script>
+{% endblock %}
 
 function formatDate(dateString) {
     return new Date(dateString).toLocaleDateString('en-US', {
