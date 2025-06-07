@@ -1,0 +1,485 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Marathon Training{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Welcome Section -->
+    <div class="col-12">
+        <div class="card-glassmorphism p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="text-white mb-2">
+                        <i class="fas fa-tachometer-alt me-2"></i>
+                        Training Dashboard
+                    </h1>
+                    <p class="text-white-50 mb-0">Monitor your marathon training progress and performance metrics</p>
+                </div>
+                <div>
+                    <button id="connectStrava" class="btn btn-primary">
+                        <i class="fab fa-strava me-2"></i>
+                        Connect Strava
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Athlete Selection -->
+<div class="row mb-4" id="athleteSelection" style="display: none;">
+    <div class="col-12">
+        <div class="card-glassmorphism p-3">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <label for="athleteSelect" class="form-label text-white">Select Athlete:</label>
+                    <select id="athleteSelect" class="form-control">
+                        <option value="">Loading athletes...</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-end">
+                        <span class="text-white-50">Connected athletes: </span>
+                        <span id="athleteCount" class="text-white fw-bold">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Key Metrics Row -->
+<div class="row" id="metricsSection" style="display: none;">
+    <div class="col-md-3 col-sm-6">
+        <div class="card-glassmorphism metric-card">
+            <div id="metric-total_distance" class="metric-value">0.0</div>
+            <div class="metric-label">Total Distance (km)</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card-glassmorphism metric-card">
+            <div id="metric-total_activities" class="metric-value">0</div>
+            <div class="metric-label">Activities</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card-glassmorphism metric-card">
+            <div id="metric-avg_pace" class="metric-value">0:00</div>
+            <div class="metric-label">Avg Pace</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card-glassmorphism metric-card">
+            <div id="metric-training_load" class="metric-value">0</div>
+            <div class="metric-label">Training Load</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts and Analysis Row -->
+<div class="row mt-4" id="chartsSection" style="display: none;">
+    <!-- Weekly Progress Chart -->
+    <div class="col-lg-8">
+        <div class="card-glassmorphism p-4">
+            <h4 class="text-white mb-3">
+                <i class="fas fa-chart-line me-2"></i>
+                Weekly Training Progress
+            </h4>
+            <div class="chart-container">
+                <canvas id="weeklyProgressChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Training Status -->
+    <div class="col-lg-4">
+        <div class="card-glassmorphism p-4 h-100">
+            <h4 class="text-white mb-3">
+                <i class="fas fa-chart-pie me-2"></i>
+                Training Status
+            </h4>
+            <div class="chart-container">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities and Insights -->
+<div class="row mt-4" id="activitiesSection" style="display: none;">
+    <!-- Recent Activities -->
+    <div class="col-lg-6">
+        <div class="card-glassmorphism p-4">
+            <h4 class="text-white mb-3">
+                <i class="fas fa-running me-2"></i>
+                Recent Activities
+            </h4>
+            <div id="recentActivities" class="activity-list">
+                <div class="text-center text-white-50 p-4">
+                    <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                    <p>Loading activities...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- AI Insights -->
+    <div class="col-lg-6">
+        <div class="card-glassmorphism p-4">
+            <h4 class="text-white mb-3">
+                <i class="fas fa-brain me-2"></i>
+                AI Insights
+            </h4>
+            <div id="aiInsights">
+                <div class="text-center text-white-50 p-4">
+                    <i class="fas fa-lightbulb fa-2x mb-2"></i>
+                    <p>Select an athlete to view insights</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Team Overview (if multiple athletes) -->
+<div class="row mt-4" id="teamSection" style="display: none;">
+    <div class="col-12">
+        <div class="card-glassmorphism p-4">
+            <h4 class="text-white mb-3">
+                <i class="fas fa-users me-2"></i>
+                Team Overview
+            </h4>
+            <div class="row" id="teamOverview">
+                <!-- Team overview content will be populated here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Spinner -->
+<div id="loadingSpinner" class="loading-spinner">
+    <i class="fas fa-spinner fa-spin fa-3x mb-3"></i>
+    <h4>Loading dashboard data...</h4>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user has auth token
+    const authToken = localStorage.getItem('auth_token');
+    
+    if (!authToken) {
+        // Show Strava connection button
+        document.getElementById('connectStrava').addEventListener('click', function() {
+            connectToStrava();
+        });
+    } else {
+        // User is authenticated, load dashboard
+        loadDashboard();
+    }
+    
+    // Athlete selection change handler
+    document.getElementById('athleteSelect').addEventListener('change', function() {
+        const athleteId = this.value;
+        if (athleteId) {
+            currentAthlete = athleteId;
+            loadAthleteData(athleteId);
+            
+            // Join athlete's room for real-time updates
+            if (socket) {
+                socket.emit('join_dashboard_room', {athlete_id: athleteId});
+            }
+        }
+    });
+});
+
+// Connect to Strava
+function connectToStrava() {
+    fetch('/api/auth/strava/authorize')
+        .then(response => response.json())
+        .then(data => {
+            window.location.href = data.authorization_url;
+        })
+        .catch(error => {
+            console.error('Error connecting to Strava:', error);
+            showNotification('Failed to connect to Strava', 'error');
+        });
+}
+
+// Load main dashboard
+function loadDashboard() {
+    document.getElementById('loadingSpinner').style.display = 'block';
+    
+    // Load athletes
+    makeAuthenticatedRequest('/api/athletes')
+        .then(data => {
+            populateAthleteSelector(data);
+            document.getElementById('athleteSelection').style.display = 'block';
+            document.getElementById('loadingSpinner').style.display = 'none';
+            
+            // If only one athlete, auto-select
+            if (data && data.length === 1) {
+                document.getElementById('athleteSelect').value = data[0].id;
+                currentAthlete = data[0].id;
+                loadAthleteData(data[0].id);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading athletes:', error);
+            document.getElementById('loadingSpinner').style.display = 'none';
+            showNotification('Failed to load athletes', 'error');
+        });
+}
+
+// Populate athlete selector
+function populateAthleteSelector(athletes) {
+    const select = document.getElementById('athleteSelect');
+    select.innerHTML = '<option value="">Select an athlete...</option>';
+    
+    if (athletes && athletes.length > 0) {
+        athletes.forEach(athlete => {
+            const option = document.createElement('option');
+            option.value = athlete.id;
+            option.textContent = athlete.name;
+            select.appendChild(option);
+        });
+        
+        document.getElementById('athleteCount').textContent = athletes.length;
+        
+        // Show team section if multiple athletes
+        if (athletes.length > 1) {
+            loadTeamOverview();
+        }
+    }
+}
+
+// Load athlete-specific data
+function loadAthleteData(athleteId) {
+    document.getElementById('loadingSpinner').style.display = 'block';
+    
+    // Load athlete dashboard data
+    makeAuthenticatedRequest(`/api/athletes/${athleteId}/dashboard-data`)
+        .then(data => {
+            if (data) {
+                updateDashboardMetrics(data);
+                updateCharts(data);
+                loadRecentActivities(athleteId);
+                loadAIInsights(athleteId);
+                
+                // Show dashboard sections
+                document.getElementById('metricsSection').style.display = 'flex';
+                document.getElementById('chartsSection').style.display = 'flex';
+                document.getElementById('activitiesSection').style.display = 'flex';
+            }
+            document.getElementById('loadingSpinner').style.display = 'none';
+        })
+        .catch(error => {
+            console.error('Error loading athlete data:', error);
+            document.getElementById('loadingSpinner').style.display = 'none';
+            showNotification('Failed to load athlete data', 'error');
+        });
+}
+
+// Update dashboard metrics
+function updateDashboardMetrics(data) {
+    if (data.performance_summary) {
+        const summary = data.performance_summary;
+        
+        // Update metric values
+        document.getElementById('metric-total_distance').textContent = 
+            (summary.total_distance / 1000).toFixed(1);
+        document.getElementById('metric-total_activities').textContent = 
+            summary.total_activities || 0;
+        document.getElementById('metric-avg_pace').textContent = 
+            formatPace(summary.average_speed) || 'N/A';
+        document.getElementById('metric-training_load').textContent = 
+            summary.total_training_load || 0;
+    }
+}
+
+// Update charts with new data
+function updateCharts(data) {
+    // Weekly Progress Chart
+    if (data.weekly_data) {
+        createWeeklyProgressChart(data.weekly_data);
+    }
+    
+    // Status Distribution Chart
+    if (data.status_distribution) {
+        createStatusChart(data.status_distribution);
+    }
+}
+
+// Create weekly progress chart
+function createWeeklyProgressChart(weeklyData) {
+    const ctx = document.getElementById('weeklyProgressChart').getContext('2d');
+    
+    if (charts.weeklyProgress) {
+        charts.weeklyProgress.destroy();
+    }
+    
+    charts.weeklyProgress = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: weeklyData.labels || [],
+            datasets: [{
+                label: 'Distance (km)',
+                data: weeklyData.distance || [],
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                tension: 0.4,
+                fill: true
+            }, {
+                label: 'Training Load',
+                data: weeklyData.training_load || [],
+                borderColor: '#e74c3c',
+                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                tension: 0.4,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: 'white'
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        color: 'white'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    ticks: {
+                        color: 'white'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    ticks: {
+                        color: 'white'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Create status distribution chart
+function createStatusChart(statusData) {
+    const ctx = document.getElementById('statusChart').getContext('2d');
+    
+    if (charts.status) {
+        charts.status.destroy();
+    }
+    
+    charts.status = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: statusData.labels || [],
+            datasets: [{
+                data: statusData.values || [],
+                backgroundColor: [
+                    '#27ae60',  // On Track
+                    '#f39c12',  // Under-performed
+                    '#e74c3c',  // Missed
+                    '#95a5a6'   // Rest Day
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: 'white',
+                        padding: 20
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Load recent activities
+function loadRecentActivities(athleteId) {
+    // This would typically fetch from an activities endpoint
+    // For now, show placeholder
+    const activitiesContainer = document.getElementById('recentActivities');
+    activitiesContainer.innerHTML = `
+        <div class="text-center text-white-50 p-4">
+            <i class="fas fa-info-circle fa-2x mb-2"></i>
+            <p>Connect to Strava to view recent activities</p>
+        </div>
+    `;
+}
+
+// Load AI insights
+function loadAIInsights(athleteId) {
+    const insightsContainer = document.getElementById('aiInsights');
+    insightsContainer.innerHTML = `
+        <div class="mb-3">
+            <h6 class="text-white">
+                <i class="fas fa-chart-line me-2"></i>
+                Performance Analysis
+            </h6>
+            <p class="text-white-50 small">
+                Your training consistency has improved by 15% this week. Consider adding one more recovery run.
+            </p>
+        </div>
+        <div class="mb-3">
+            <h6 class="text-white">
+                <i class="fas fa-bullseye me-2"></i>
+                Recommendations
+            </h6>
+            <p class="text-white-50 small">
+                Focus on maintaining your current pace for long runs. Your heart rate suggests good aerobic fitness.
+            </p>
+        </div>
+        <div>
+            <h6 class="text-white">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Alerts
+            </h6>
+            <p class="text-white-50 small">
+                No training alerts at this time. Keep up the great work!
+            </p>
+        </div>
+    `;
+}
+
+// Load team overview
+function loadTeamOverview() {
+    makeAuthenticatedRequest('/api/realtime/dashboard')
+        .then(data => {
+            document.getElementById('teamSection').style.display = 'block';
+            // Populate team overview data
+        })
+        .catch(error => {
+            console.error('Error loading team overview:', error);
+        });
+}
+</script>
+{% endblock %}

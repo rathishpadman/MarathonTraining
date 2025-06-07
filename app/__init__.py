@@ -53,7 +53,9 @@ def create_app():
     
     # Register routes
     from app.routes import api_bp
+    from app.web_routes import web_bp
     app.register_blueprint(api_bp)
+    app.register_blueprint(web_bp)
     
     # Create database tables
     with app.app_context():
