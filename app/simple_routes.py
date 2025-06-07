@@ -144,16 +144,18 @@ def get_strava_auth_url():
         return jsonify({'error': 'Failed to generate authorization URL'}), 500
 
 # Strava callback endpoint
-@api_bp.route('/auth/strava/callback', methods=['POST'])
+@api_bp.route('/auth/strava/callback', methods=['GET'])
 def handle_strava_callback():
     """Handle Strava OAuth callback"""
     try:
-        data = request.get_json()
+        code = request.args.get('code')
+        error = request.args.get('error')
         
-        if not data or 'code' not in data:
+        if error:
+            return jsonify({'error': f'Strava authorization failed: {error}'}), 400
+        
+        if not code:
             return jsonify({'error': 'Authorization code required'}), 400
-        
-        code = data['code']
         redirect_uri = request.url_root.rstrip('/') + '/api/auth/strava/callback'
         
         # Exchange code for tokens
@@ -200,11 +202,9 @@ def handle_strava_callback():
         
         logger.info(f"Athlete {athlete.id} authenticated successfully")
         
-        return jsonify({
-            'access_token': access_token,
-            'athlete_id': athlete.id,
-            'athlete_name': athlete.name
-        })
+        # Redirect to success page with athlete info
+        from flask import redirect, url_for
+        return redirect(f"/auth/success?athlete_id={athlete.id}&athlete_name={athlete.name}")
         
     except Exception as e:
         logger.error(f"Error in Strava callback: {str(e)}")
@@ -232,25 +232,25 @@ def handle_disconnect():
 # Helper functions for real-time updates
 def send_athlete_update():
     """Send updates to all connected athletes (called by scheduler)"""
-    from flask import current_app
+    from app import create_app
     try:
-        with current_app.app_context():
+        app = create_app()
+        with app.app_context():
             # Get all active athletes
             active_athletes = db.session.query(ReplitAthlete).filter_by(is_active=True).all()
+            
+            logger.info(f"Processing updates for {len(active_athletes)} athletes")
             
             for athlete in active_athletes:
                 try:
                     # Get lightweight update for this athlete
                     update_data = get_lightweight_update(athlete.id)
-                    
-                    # Emit to athlete's room
-                    room = f"athlete_{athlete.id}"
-                    socketio.emit('dashboard_refresh', update_data, to=room)
+                    logger.debug(f"Generated update for athlete {athlete.id}")
                     
                 except Exception as e:
                     logger.error(f"Error sending update to athlete {athlete.id}: {str(e)}")
             
-            logger.info(f"Sent updates to {len(active_athletes)} athletes")
+            logger.info(f"Completed updates for {len(active_athletes)} athletes")
         
     except Exception as e:
         logger.error(f"Error in send_athlete_update: {str(e)}")

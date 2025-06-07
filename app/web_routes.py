@@ -124,6 +124,16 @@ def strava_callback():
         flash('An error occurred during Strava authentication', 'error')
         return redirect(url_for('main_routes.dashboard'))
 
+@web_bp.route('/auth/success')
+def auth_success():
+    """Display authentication success page"""
+    athlete_id = request.args.get('athlete_id')
+    athlete_name = request.args.get('athlete_name')
+    
+    return render_template('auth_success.html', 
+                         athlete_id=athlete_id, 
+                         athlete_name=athlete_name)
+
 @web_bp.route('/logout')
 def logout():
     """Logout user"""
