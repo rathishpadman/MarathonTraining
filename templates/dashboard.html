@@ -706,5 +706,38 @@ function getRaceDistanceKm(raceDistance) {
     };
     return distances[raceDistance] || 10.0;
 }
+
+// Load dashboard data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Show athlete selection first
+    document.getElementById('athleteSelection').style.display = 'block';
+    
+    // Load athletes
+    loadAthletes();
+    
+    // Initialize with first athlete if athlete_id is provided
+    const urlParams = new URLSearchParams(window.location.search);
+    const athleteId = urlParams.get('athlete_id');
+    if (athleteId) {
+        // Wait a bit for athletes to load, then select
+        setTimeout(() => {
+            const select = document.getElementById('athleteSelect');
+            if (select && select.options.length > 0) {
+                select.value = athleteId;
+                loadAthleteData(athleteId);
+            }
+        }, 1000);
+    } else {
+        // Auto-load first athlete if available
+        setTimeout(() => {
+            const select = document.getElementById('athleteSelect');
+            if (select && select.options.length > 1) {
+                const firstAthleteId = select.options[1].value; // Skip the "loading" option
+                select.value = firstAthleteId;
+                loadAthleteData(firstAthleteId);
+            }
+        }, 1000);
+    }
+});
 </script>
 {% endblock %}
