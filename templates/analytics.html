@@ -546,21 +546,3 @@ function showErrorMessage(message) {
 }
 </script>
 {% endblock %}
-
-function formatDate(dateString) {
-    return new Date(dateString).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric'
-    });
-}
-
-function refreshData() {
-    loadAnalyticsData();
-}
-
-function showErrorMessage(message) {
-    // Simple error display - could be enhanced with toast notifications
-    alert(message);
-}
-</script>
-{% endblock %}

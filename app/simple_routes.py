@@ -574,7 +574,7 @@ def get_analytics_data():
         total_time = sum(a.moving_time or 0 for a in activities)
         activity_count = len(activities)
         
-        # Calculate average pace
+        # Calculate average pace and heart rate
         if total_distance > 0 and total_time > 0:
             avg_speed = (total_distance * 1000) / total_time  # m/s
         else:
@@ -612,26 +612,28 @@ def get_analytics_data():
             else:
                 pace_data.append(None)
         
+        # Calculate average heart rate
+        heart_rate_activities = [a for a in activities if a.average_heartrate]
+        avg_heart_rate = sum(a.average_heartrate for a in heart_rate_activities) / len(heart_rate_activities) if heart_rate_activities else 0
+        
+        # Prepare comprehensive chart data
+        heart_rate_data = prepare_heart_rate_analytics(activities)
+        elevation_data = prepare_elevation_analytics(activities)
+        pace_analytics = prepare_pace_analytics(activities)
+        
         return jsonify({
             'metrics': {
-                'totalDistance': total_distance,
+                'totalDistance': total_distance * 1000,  # Convert back to meters for frontend
                 'totalTime': total_time,
-                'avgPace': avg_speed,
+                'avgHeartRate': round(avg_heart_rate, 1) if avg_heart_rate else 0,
                 'activityCount': activity_count
             },
-            'charts': {
-                'trainingLoad': {
-                    'labels': chart_labels,
-                    'data': chart_data
-                },
-                'activityTypes': {
-                    'labels': list(activity_types.keys()),
-                    'data': list(activity_types.values())
-                },
-                'paceProgression': {
-                    'labels': chart_labels,
-                    'data': pace_data
-                }
+            'heartRateData': heart_rate_data,
+            'elevationData': elevation_data,
+            'paceData': pace_analytics,
+            'activityTypes': {
+                'labels': list(activity_types.keys()),
+                'values': list(activity_types.values())
             },
             'activities': [{
                 'id': a.id,
@@ -648,3 +650,110 @@ def get_analytics_data():
     except Exception as e:
         logger.error(f"Error fetching analytics data: {str(e)}")
         return jsonify({'error': 'Failed to fetch analytics data'}), 500
+
+
+def prepare_heart_rate_analytics(activities):
+    """Prepare heart rate zone analysis from real Strava activities"""
+    try:
+        # Filter activities with heart rate data
+        hr_activities = [a for a in activities if a.average_heartrate and a.max_heartrate]
+        
+        if not hr_activities:
+            return {'labels': [], 'avgHeartRate': [], 'maxHeartRate': []}
+        
+        # Group by week for trend analysis
+        weekly_data = {}
+        for activity in hr_activities:
+            week_start = activity.start_date - datetime.timedelta(days=activity.start_date.weekday())
+            week_key = week_start.strftime('%m/%d')
+            
+            if week_key not in weekly_data:
+                weekly_data[week_key] = {'avg_hr': [], 'max_hr': []}
+            
+            weekly_data[week_key]['avg_hr'].append(activity.average_heartrate)
+            weekly_data[week_key]['max_hr'].append(activity.max_heartrate)
+        
+        # Calculate weekly averages
+        labels = sorted(weekly_data.keys())
+        avg_heart_rate = []
+        max_heart_rate = []
+        
+        for week in labels:
+            week_avg = sum(weekly_data[week]['avg_hr']) / len(weekly_data[week]['avg_hr'])
+            week_max = max(weekly_data[week]['max_hr'])
+            avg_heart_rate.append(round(week_avg, 1))
+            max_heart_rate.append(week_max)
+        
+        return {
+            'labels': labels,
+            'avgHeartRate': avg_heart_rate,
+            'maxHeartRate': max_heart_rate
+        }
+    
+    except Exception as e:
+        app.logger.error(f"Error in heart rate analytics: {str(e)}")
+        return {'labels': [], 'avgHeartRate': [], 'maxHeartRate': []}
+
+
+def prepare_elevation_analytics(activities):
+    """Prepare elevation vs distance analysis from real Strava activities"""
+    try:
+        # Filter activities with elevation data
+        elevation_activities = [a for a in activities if a.total_elevation_gain and a.distance]
+        elevation_activities = sorted(elevation_activities, key=lambda x: x.start_date)
+        
+        if not elevation_activities:
+            return {'labels': [], 'distance': [], 'elevation': []}
+        
+        # Take last 15 activities for readability
+        recent_activities = elevation_activities[-15:]
+        
+        labels = [a.start_date.strftime('%m/%d') for a in recent_activities]
+        distance = [round(a.distance / 1000, 2) for a in recent_activities]  # Convert to km
+        elevation = [round(a.total_elevation_gain, 1) for a in recent_activities]
+        
+        return {
+            'labels': labels,
+            'distance': distance,
+            'elevation': elevation
+        }
+    
+    except Exception as e:
+        app.logger.error(f"Error in elevation analytics: {str(e)}")
+        return {'labels': [], 'distance': [], 'elevation': []}
+
+
+def prepare_pace_analytics(activities):
+    """Prepare pace progression analysis from real running activities"""
+    try:
+        # Filter running activities with speed data
+        running_activities = [a for a in activities 
+                            if a.sport_type == 'Run' and a.average_speed and a.average_speed > 0]
+        running_activities = sorted(running_activities, key=lambda x: x.start_date)
+        
+        if not running_activities:
+            return {'labels': [], 'pace': [], 'targetPace': []}
+        
+        # Take last 15 runs for readability
+        recent_runs = running_activities[-15:]
+        
+        labels = [a.start_date.strftime('%m/%d') for a in recent_runs]
+        pace = []
+        
+        for activity in recent_runs:
+            # Convert speed (m/s) to pace (min/km)
+            pace_min_km = 1000 / (activity.average_speed * 60)
+            pace.append(round(pace_min_km, 2))
+        
+        # Target pace line (example: 5:30 min/km for marathon training)
+        target_pace = [5.5] * len(labels)
+        
+        return {
+            'labels': labels,
+            'pace': pace,
+            'targetPace': target_pace
+        }
+    
+    except Exception as e:
+        app.logger.error(f"Error in pace analytics: {str(e)}")
+        return {'labels': [], 'pace': [], 'targetPace': []}
