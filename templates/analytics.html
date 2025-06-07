@@ -314,8 +314,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Use global variables from base template
-// currentAthlete and charts are already declared in base.html
+// Analytics-specific variables to avoid conflicts
+let analyticsCharts = {};
+let selectedAthleteId = null;
 
 // Load athletes and analytics on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -361,7 +362,7 @@ function loadAthleteAnalytics() {
         return;
     }
     
-    currentAthlete = athleteId;
+    selectedAthleteId = athleteId;
     showLoading();
     
     // Load athlete summary data
@@ -449,11 +450,11 @@ function loadCharts(athleteId, timePeriod) {
 function createVolumeChart(data) {
     const ctx = document.getElementById('volumeChart').getContext('2d');
     
-    if (charts.volume) {
-        charts.volume.destroy();
+    if (analyticsCharts.volume) {
+        analyticsCharts.volume.destroy();
     }
     
-    charts.volume = new Chart(ctx, {
+    analyticsCharts.volume = new Chart(ctx, {
         type: 'line',
         data: {
             labels: data.dates,
@@ -492,11 +493,11 @@ function createVolumeChart(data) {
 function createPaceChart(data) {
     const ctx = document.getElementById('paceChart').getContext('2d');
     
-    if (charts.pace) {
-        charts.pace.destroy();
+    if (analyticsCharts.pace) {
+        analyticsCharts.pace.destroy();
     }
     
-    charts.pace = new Chart(ctx, {
+    analyticsCharts.pace = new Chart(ctx, {
         type: 'line',
         data: {
             labels: data.dates,
@@ -535,11 +536,11 @@ function createPaceChart(data) {
 function createHeartRateChart(data) {
     const ctx = document.getElementById('heartRateChart').getContext('2d');
     
-    if (charts.heartRate) {
-        charts.heartRate.destroy();
+    if (analyticsCharts.heartRate) {
+        analyticsCharts.heartRate.destroy();
     }
     
-    charts.heartRate = new Chart(ctx, {
+    analyticsCharts.heartRate = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5'],
@@ -570,11 +571,11 @@ function createHeartRateChart(data) {
 function createTrainingLoadChart(data) {
     const ctx = document.getElementById('trainingLoadChart').getContext('2d');
     
-    if (charts.trainingLoad) {
-        charts.trainingLoad.destroy();
+    if (analyticsCharts.trainingLoad) {
+        analyticsCharts.trainingLoad.destroy();
     }
     
-    charts.trainingLoad = new Chart(ctx, {
+    analyticsCharts.trainingLoad = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: data.dates,
