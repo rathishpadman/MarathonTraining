@@ -27,6 +27,10 @@ def create_app():
     # Apply proxy fix for Replit
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
     
+    # Load environment variables from .env file
+    from dotenv import load_dotenv
+    load_dotenv()
+    
     # Load configuration
     from app.config import Config
     app.config.from_object(Config)
@@ -38,7 +42,8 @@ def create_app():
     # Initialize extensions
     db.init_app(app)
     jwt.init_app(app)
-    socketio.init_app(app, cors_allowed_origins="*")
+    # Disabled SocketIO to improve performance and fix timeout issues
+    # socketio.init_app(app, cors_allowed_origins="*")
     # Removed Flask-RESTX initialization to prevent routing conflicts
     
     # Configure JWT
@@ -82,12 +87,12 @@ def create_app():
             id='daily_processing'
         )
         
-        # Schedule athlete updates every 60 seconds
+        # Schedule athlete updates every 5 minutes for better performance
         from app.simple_routes import send_athlete_update
         scheduler.add_job(
             func=send_athlete_update,
             trigger='interval',
-            seconds=60,
+            minutes=5,
             id='athlete_updates'
         )
         
