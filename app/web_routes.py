@@ -9,15 +9,10 @@ from app.config import Config
 web_bp = Blueprint('main_routes', __name__)
 logger = logging.getLogger(__name__)
 
-@web_bp.route('/old-dashboard')
-def dashboard():
-    """Main dashboard page"""
-    return render_template('dashboard.html')
-
-@web_bp.route('/dashboard')
-def dashboard_page():
-    """Dashboard page with optional athlete_id parameter"""
-    athlete_id = request.args.get('athlete_id')
+@web_bp.route('/athlete-dashboard')
+def athlete_dashboard():
+    """Individual athlete dashboard page"""
+    athlete_id = request.args.get('athlete_id', 1)
     return render_template('dashboard.html', athlete_id=athlete_id)
 
 @web_bp.route('/athletes')
