@@ -730,21 +730,8 @@ def get_race_prediction(athlete_id):
         predictor = SimpleRacePredictor()
         prediction = predictor.predict_race_time(db.session, athlete_id, race_distance)
         
-        # Format prediction for frontend
-        hours = int(prediction.predicted_time // 3600)
-        minutes = int((prediction.predicted_time % 3600) // 60)
-        seconds = int(prediction.predicted_time % 60)
-        
-        return jsonify({
-            'race_distance': race_distance,
-            'predicted_time_seconds': prediction.predicted_time,
-            'predicted_time_formatted': f"{hours:02d}:{minutes:02d}:{seconds:02d}",
-            'confidence_score': round(prediction.confidence_score * 100, 1),
-            'fitness_score': round(prediction.fitness_score, 1),
-            'aerobic_capacity': round(prediction.aerobic_capacity, 1),
-            'pacing_strategy': prediction.pacing_strategy,
-            'training_recommendations': prediction.training_recommendations
-        })
+        # Return prediction data directly (already formatted)
+        return jsonify(prediction)
         
     except Exception as e:
         logger.error(f"Error predicting race performance: {str(e)}")
@@ -757,27 +744,11 @@ def get_fitness_analysis(athlete_id):
         days = int(request.args.get('days', 90))
         logger.info(f"Analyzing fitness for athlete {athlete_id} over {days} days")
         
-        optimizer = RacePerformanceOptimizer()
-        analysis = optimizer.analyze_athlete_fitness(db.session, athlete_id, days)
+        predictor = SimpleRacePredictor()
+        analysis = predictor.analyze_fitness(db.session, athlete_id, days)
         
-        return jsonify({
-            'fitness_metrics': {
-                'current_fitness': round(analysis['fitness_metrics']['current_fitness'], 1),
-                'aerobic_capacity': round(analysis['fitness_metrics']['aerobic_capacity'], 1),
-                'lactate_threshold_pace': f"{int(analysis['fitness_metrics']['lactate_threshold'] // 60)}:{int(analysis['fitness_metrics']['lactate_threshold'] % 60):02d}",
-                'training_load': round(analysis['fitness_metrics']['training_load'], 1),
-                'consistency_score': round(analysis['fitness_metrics']['consistency_score'], 1),
-                'injury_risk': round(analysis['fitness_metrics']['injury_risk'], 1),
-                'fatigue_level': round(analysis['fitness_metrics']['fatigue_level'], 1)
-            },
-            'zone_distribution': analysis['zone_distribution'],
-            'trends': analysis['trends'],
-            'summary': {
-                'total_activities': analysis['total_activities'],
-                'total_distance_km': round(analysis['total_distance'], 1),
-                'analysis_period_days': analysis['analysis_period']
-            }
-        })
+        # Return analysis data directly (already formatted)
+        return jsonify(analysis)
         
     except Exception as e:
         logger.error(f"Error analyzing fitness: {str(e)}")
