@@ -135,14 +135,18 @@ def get_athlete_dashboard_data(athlete_id):
                 'performance_summary': {
                     'total_distance': 0,
                     'total_activities': 0,
-                    'average_speed': 0,
-                    'total_training_load': 0
+                    'average_pace': None,
+                    'average_heart_rate': None,
+                    'training_load': 0,
+                    'total_elevation_gain': 0
                 },
-                'recent_summaries': [],
+                'activities': [],
                 'weekly_data': {
                     'labels': [],
                     'distance': [],
-                    'training_load': []
+                    'training_load': [],
+                    'heart_rate': [],
+                    'elevation': []
                 }
             })
         
@@ -175,9 +179,39 @@ def get_athlete_dashboard_data(athlete_id):
             'values': list(status_counts.values())
         }
         
+        # Create comprehensive weekly data from activities for charts
+        activities = performance_summary.get('activities', [])
+        weekly_chart_data = {
+            'labels': [],
+            'distance': [],
+            'heart_rate': [],
+            'elevation': [],
+            'pace': []
+        }
+        
+        for activity in activities[-7:]:  # Last 7 activities for chart
+            if activity.get('start_date'):
+                date_obj = datetime.fromisoformat(activity['start_date'].replace('Z', '+00:00'))
+                weekly_chart_data['labels'].append(date_obj.strftime('%m/%d'))
+                weekly_chart_data['distance'].append(activity.get('distance', 0))
+                weekly_chart_data['heart_rate'].append(activity.get('average_heartrate') or 0)
+                weekly_chart_data['elevation'].append(0)  # Will be enhanced with elevation data
+                
+                # Calculate pace from distance and time
+                distance_km = activity.get('distance', 0)
+                time_minutes = (activity.get('moving_time', 0)) / 60
+                pace = (time_minutes / distance_km) if distance_km > 0 else 0
+                weekly_chart_data['pace'].append(round(pace, 2))
+
         dashboard_data = {
+            'athlete': {
+                'id': athlete.id,
+                'name': athlete.name,
+                'strava_athlete_id': athlete.strava_athlete_id
+            },
             'performance_summary': performance_summary,
-            'weekly_data': weekly_data,
+            'activities': activities,
+            'weekly_data': weekly_chart_data,
             'status_distribution': status_distribution
         }
         
