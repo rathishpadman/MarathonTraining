@@ -7,6 +7,7 @@ from app import db, socketio
 from app.models import ReplitAthlete, DailySummary, Activity, PlannedWorkout, SystemLog
 from app.data_processor import get_athlete_performance_summary, get_team_overview
 from app.race_predictor_simple import SimpleRacePredictor
+from app.injury_predictor import predict_injury_risk, get_injury_prevention_plan
 from app.security import ReplitSecurity
 from app.strava_client import ReplitStravaClient
 from app.config import Config
@@ -929,3 +930,33 @@ def get_training_plan(athlete_id):
     except Exception as e:
         logger.error(f"Error generating training plan: {str(e)}")
         return jsonify({'error': 'Failed to generate training plan'}), 500
+
+@api_bp.route('/injury-risk/<int:athlete_id>')
+def get_injury_risk_api(athlete_id):
+    """API endpoint for injury risk prediction"""
+    try:
+        logger.info(f"Predicting injury risk for athlete {athlete_id}")
+        
+        # Get injury risk prediction
+        risk_prediction = predict_injury_risk(athlete_id)
+        
+        return jsonify(risk_prediction)
+        
+    except Exception as e:
+        logger.error(f"Error in injury risk prediction API: {str(e)}")
+        return jsonify({'error': 'Risk prediction failed'}), 500
+
+@api_bp.route('/injury-prevention/<int:athlete_id>')
+def get_injury_prevention_api(athlete_id):
+    """API endpoint for injury prevention plan"""
+    try:
+        logger.info(f"Generating injury prevention plan for athlete {athlete_id}")
+        
+        # Get comprehensive prevention plan
+        prevention_plan = get_injury_prevention_plan(athlete_id)
+        
+        return jsonify(prevention_plan)
+        
+    except Exception as e:
+        logger.error(f"Error generating prevention plan: {str(e)}")
+        return jsonify({'error': 'Prevention plan generation failed'}), 500
