@@ -53,6 +53,309 @@ def get_athletes():
         logger.error(f"Error fetching athletes: {str(e)}")
         return jsonify({'error': 'Failed to fetch athletes'}), 500
 
+# Athlete summary endpoint for analytics dashboard
+@api_bp.route('/athletes/<int:athlete_id>/summary', methods=['GET'])
+def get_athlete_summary(athlete_id):
+    """Get athlete summary data for analytics dashboard"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        
+        # Get athlete
+        athlete = db.session.query(ReplitAthlete).filter_by(id=athlete_id).first()
+        if not athlete:
+            return jsonify({'error': 'Athlete not found'}), 404
+        
+        # Get recent activities
+        start_date = datetime.now() - timedelta(days=days)
+        activities = db.session.query(Activity).filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= start_date
+        ).all()
+        
+        # Calculate summary metrics
+        total_distance = sum(a.distance or 0 for a in activities) / 1000  # Convert to km
+        total_time = sum(a.moving_time or 0 for a in activities) / 3600  # Convert to hours
+        activity_count = len(activities)
+        avg_pace = (total_time * 60 / total_distance) if total_distance > 0 else 0  # min/km
+        
+        # Get recent heart rate data
+        hr_activities = [a for a in activities if a.average_heartrate]
+        avg_hr = sum(a.average_heartrate for a in hr_activities) / len(hr_activities) if hr_activities else 0
+        
+        # Calculate training load (simplified)
+        training_load = sum(
+            (a.moving_time or 0) * (a.average_heartrate or 120) / 3600 
+            for a in activities
+        ) / 100 if activities else 0
+        
+        # Get latest daily summary for status
+        latest_summary = db.session.query(DailySummary).filter(
+            DailySummary.athlete_id == athlete_id
+        ).order_by(DailySummary.summary_date.desc()).first()
+        
+        status = latest_summary.status if latest_summary else "No Data"
+        
+        summary_data = {
+            'athlete_name': athlete.name,
+            'total_distance': round(total_distance, 1),
+            'total_time': round(total_time, 1),
+            'activity_count': activity_count,
+            'avg_pace': round(avg_pace, 2) if avg_pace > 0 else 0,
+            'avg_heart_rate': round(avg_hr, 0) if avg_hr > 0 else 0,
+            'training_load': round(training_load, 1),
+            'status': status,
+            'period_days': days
+        }
+        
+        return jsonify(summary_data)
+        
+    except Exception as e:
+        logger.error(f"Error getting athlete summary: {str(e)}")
+        return jsonify({'error': 'Failed to get athlete summary'}), 500
+
+# Volume trend endpoint
+@api_bp.route('/athletes/<int:athlete_id>/volume-trend', methods=['GET'])
+def get_volume_trend(athlete_id):
+    """Get training volume trend data"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.now() - timedelta(days=days)
+        
+        activities = db.session.query(Activity).filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= start_date
+        ).order_by(Activity.start_date).all()
+        
+        # Group by date
+        daily_volumes = {}
+        for activity in activities:
+            date_str = activity.start_date.strftime('%Y-%m-%d')
+            if date_str not in daily_volumes:
+                daily_volumes[date_str] = 0
+            daily_volumes[date_str] += (activity.distance or 0) / 1000  # Convert to km
+        
+        # Fill missing dates with 0
+        dates = []
+        distances = []
+        current_date = start_date
+        while current_date <= datetime.now():
+            date_str = current_date.strftime('%Y-%m-%d')
+            dates.append(date_str)
+            distances.append(daily_volumes.get(date_str, 0))
+            current_date += timedelta(days=1)
+        
+        return jsonify({
+            'dates': dates,
+            'distances': distances
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting volume trend: {str(e)}")
+        return jsonify({'error': 'Failed to get volume trend'}), 500
+
+# Pace analysis endpoint
+@api_bp.route('/athletes/<int:athlete_id>/pace-analysis', methods=['GET'])
+def get_pace_analysis(athlete_id):
+    """Get pace analysis data"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.now() - timedelta(days=days)
+        
+        activities = db.session.query(Activity).filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= start_date,
+            Activity.sport_type == 'Run'
+        ).order_by(Activity.start_date).all()
+        
+        dates = []
+        paces = []
+        
+        for activity in activities:
+            if activity.distance and activity.moving_time and activity.distance > 0:
+                pace = (activity.moving_time / 60) / (activity.distance / 1000)  # min/km
+                dates.append(activity.start_date.strftime('%Y-%m-%d'))
+                paces.append(round(pace, 2))
+        
+        return jsonify({
+            'dates': dates,
+            'paces': paces
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting pace analysis: {str(e)}")
+        return jsonify({'error': 'Failed to get pace analysis'}), 500
+
+# Heart rate zones endpoint
+@api_bp.route('/athletes/<int:athlete_id>/heart-rate-zones', methods=['GET'])
+def get_heart_rate_zones(athlete_id):
+    """Get heart rate zones distribution"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.now() - timedelta(days=days)
+        
+        activities = db.session.query(Activity).filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= start_date,
+            Activity.average_heartrate.isnot(None)
+        ).all()
+        
+        # Simplified heart rate zones (assuming max HR of 190)
+        zones = [0, 0, 0, 0, 0]  # Zone 1-5
+        
+        for activity in activities:
+            hr = activity.average_heartrate
+            if hr < 114:  # Zone 1: <60% max HR
+                zones[0] += 1
+            elif hr < 133:  # Zone 2: 60-70% max HR
+                zones[1] += 1
+            elif hr < 152:  # Zone 3: 70-80% max HR
+                zones[2] += 1
+            elif hr < 171:  # Zone 4: 80-90% max HR
+                zones[3] += 1
+            else:  # Zone 5: >90% max HR
+                zones[4] += 1
+        
+        return jsonify({
+            'zones': zones
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting heart rate zones: {str(e)}")
+        return jsonify({'error': 'Failed to get heart rate zones'}), 500
+
+# Training load endpoint
+@api_bp.route('/athletes/<int:athlete_id>/training-load', methods=['GET'])
+def get_training_load(athlete_id):
+    """Get training load trend"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.now() - timedelta(days=days)
+        
+        activities = db.session.query(Activity).filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= start_date
+        ).order_by(Activity.start_date).all()
+        
+        # Group by date and calculate training load
+        daily_loads = {}
+        for activity in activities:
+            date_str = activity.start_date.strftime('%Y-%m-%d')
+            if date_str not in daily_loads:
+                daily_loads[date_str] = 0
+            
+            # Simple training load calculation
+            load = (activity.moving_time or 0) * (activity.average_heartrate or 120) / 3600 / 100
+            daily_loads[date_str] += load
+        
+        # Fill missing dates with 0
+        dates = []
+        loads = []
+        current_date = start_date
+        while current_date <= datetime.now():
+            date_str = current_date.strftime('%Y-%m-%d')
+            dates.append(date_str)
+            loads.append(round(daily_loads.get(date_str, 0), 1))
+            current_date += timedelta(days=1)
+        
+        return jsonify({
+            'dates': dates,
+            'loads': loads
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting training load: {str(e)}")
+        return jsonify({'error': 'Failed to get training load'}), 500
+
+# Recent activities endpoint
+@api_bp.route('/athletes/<int:athlete_id>/recent-activities', methods=['GET'])
+def get_recent_activities(athlete_id):
+    """Get recent activities for athlete"""
+    try:
+        limit = request.args.get('limit', 10, type=int)
+        
+        activities = db.session.query(Activity).filter(
+            Activity.athlete_id == athlete_id
+        ).order_by(Activity.start_date.desc()).limit(limit).all()
+        
+        activities_data = []
+        for activity in activities:
+            pace = 0
+            if activity.distance and activity.moving_time and activity.distance > 0:
+                pace = (activity.moving_time / 60) / (activity.distance / 1000)
+            
+            activities_data.append({
+                'name': activity.name,
+                'date': activity.start_date.strftime('%Y-%m-%d'),
+                'distance': round((activity.distance or 0) / 1000, 2),
+                'time': round((activity.moving_time or 0) / 60, 0),
+                'pace': round(pace, 2) if pace > 0 else 0,
+                'sport_type': activity.sport_type
+            })
+        
+        return jsonify(activities_data)
+        
+    except Exception as e:
+        logger.error(f"Error getting recent activities: {str(e)}")
+        return jsonify({'error': 'Failed to get recent activities'}), 500
+
+# Performance insights endpoint
+@api_bp.route('/athletes/<int:athlete_id>/performance-insights', methods=['GET'])
+def get_performance_insights(athlete_id):
+    """Get performance insights for athlete"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.now() - timedelta(days=days)
+        
+        activities = db.session.query(Activity).filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= start_date
+        ).all()
+        
+        if not activities:
+            return jsonify({
+                'volume_trend': 'No data available',
+                'consistency': 'No data available',
+                'intensity': 'No data available'
+            })
+        
+        # Calculate insights
+        total_distance = sum(a.distance or 0 for a in activities) / 1000
+        activity_count = len(activities)
+        consistency = f"{activity_count} activities in {days} days"
+        
+        # Volume trend (compare to previous period)
+        prev_start = start_date - timedelta(days=days)
+        prev_activities = db.session.query(Activity).filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= prev_start,
+            Activity.start_date < start_date
+        ).all()
+        
+        prev_distance = sum(a.distance or 0 for a in prev_activities) / 1000
+        if prev_distance > 0:
+            volume_change = ((total_distance - prev_distance) / prev_distance) * 100
+            volume_trend = f"{volume_change:+.1f}% vs previous {days} days"
+        else:
+            volume_trend = "First training period"
+        
+        # Intensity analysis
+        hr_activities = [a for a in activities if a.average_heartrate]
+        if hr_activities:
+            avg_hr = sum(a.average_heartrate for a in hr_activities) / len(hr_activities)
+            intensity = f"Average HR: {avg_hr:.0f} bpm"
+        else:
+            intensity = "No heart rate data"
+        
+        return jsonify({
+            'volume_trend': volume_trend,
+            'consistency': consistency,
+            'intensity': intensity
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting performance insights: {str(e)}")
+        return jsonify({'error': 'Failed to get performance insights'}), 500
+
 # Athlete dashboard data endpoint
 @api_bp.route('/athletes/<int:athlete_id>/dashboard-data', methods=['GET'])
 def get_athlete_dashboard_data(athlete_id):
@@ -1021,12 +1324,8 @@ def get_athlete_training_optimization(athlete_id):
         logger.error(f"Error generating training optimization for athlete {athlete_id}: {str(e)}")
         return jsonify({'error': 'Failed to generate training optimization'}), 500
 
-@api_bp.route('/athletes/<int:athlete_id>/volume-trend')
-def get_volume_trend(athlete_id):
-    """Get training volume trend data for charts"""
-    try:
-        days = int(request.args.get('days', 30))
-        logger.info(f"Fetching volume trend for athlete {athlete_id}, {days} days")
+# Analytics endpoints are defined above in lines 117-362
+# All duplicate routes below this line have been removed to prevent Flask conflicts
         
         end_date = datetime.datetime.now()
         start_date = end_date - datetime.timedelta(days=days)
