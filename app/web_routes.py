@@ -30,6 +30,11 @@ def analytics():
     """Analytics page"""
     return render_template('analytics.html')
 
+@web_bp.route('/race-optimizer')
+def race_optimizer():
+    """Race Performance Optimizer page"""
+    return render_template('race_optimizer.html')
+
 @web_bp.route('/settings')
 def settings():
     """Settings page"""

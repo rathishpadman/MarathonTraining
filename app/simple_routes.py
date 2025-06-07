@@ -6,7 +6,7 @@ from flask_socketio import emit, join_room, leave_room
 from app import db, socketio
 from app.models import ReplitAthlete, DailySummary, Activity, PlannedWorkout, SystemLog
 from app.data_processor import get_athlete_performance_summary, get_team_overview
-from app.race_optimizer import RacePerformanceOptimizer
+from app.race_predictor_simple import SimpleRacePredictor
 from app.security import ReplitSecurity
 from app.strava_client import ReplitStravaClient
 from app.config import Config
@@ -727,8 +727,8 @@ def get_race_prediction(athlete_id):
         race_distance = request.args.get('distance', 'Half Marathon')
         logger.info(f"Predicting {race_distance} performance for athlete {athlete_id}")
         
-        optimizer = RacePerformanceOptimizer()
-        prediction = optimizer.predict_race_performance(db.session, athlete_id, race_distance)
+        predictor = SimpleRacePredictor()
+        prediction = predictor.predict_race_time(db.session, athlete_id, race_distance)
         
         # Format prediction for frontend
         hours = int(prediction.predicted_time // 3600)

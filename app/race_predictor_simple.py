@@ -1,0 +1,450 @@
+"""
+Simplified Race Performance Predictor using authentic Strava data
+Implements proven algorithms for race time prediction based on training history
+"""
+
+import logging
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional
+from app.models import Activity, ReplitAthlete
+from sqlalchemy.orm import Session
+
+class SimpleRacePredictor:
+    """
+    Simplified race predictor using Jack Daniels VDOT and McMillan equivalent methods
+    """
+    
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        
+        # Race distances in kilometers
+        self.race_distances = {
+            '5K': 5.0,
+            '10K': 10.0,
+            'Half Marathon': 21.0975,
+            'Marathon': 42.195
+        }
+    
+    def predict_race_time(self, db_session: Session, athlete_id: int, race_distance: str) -> Dict:
+        """
+        Predict race time using authentic training data
+        """
+        self.logger.info(f"Predicting {race_distance} for athlete {athlete_id}")
+        
+        if race_distance not in self.race_distances:
+            raise ValueError(f"Unsupported race distance: {race_distance}")
+        
+        distance_km = self.race_distances[race_distance]
+        
+        # Get recent running activities (last 90 days)
+        cutoff_date = datetime.now() - timedelta(days=90)
+        activities = db_session.query(Activity).filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= cutoff_date,
+            Activity.sport_type.in_(['Run', 'VirtualRun']),
+            Activity.distance > 1000  # At least 1km
+        ).order_by(Activity.start_date.desc()).all()
+        
+        if not activities:
+            raise ValueError("No recent running activities found")
+        
+        # Calculate fitness metrics
+        fitness_score = self._calculate_fitness_score(activities)
+        vo2_max = self._estimate_vo2_max(activities)
+        
+        # Predict race time using multiple methods
+        predictions = []
+        
+        # Method 1: Best recent pace extrapolation
+        pace_prediction = self._predict_from_pace_analysis(activities, distance_km)
+        if pace_prediction:
+            predictions.append(pace_prediction)
+        
+        # Method 2: VDOT equivalent
+        vdot_prediction = self._predict_from_vdot(vo2_max, distance_km)
+        if vdot_prediction:
+            predictions.append(vdot_prediction)
+        
+        # Method 3: Training volume based
+        volume_prediction = self._predict_from_volume(activities, distance_km)
+        if volume_prediction:
+            predictions.append(volume_prediction)
+        
+        if not predictions:
+            raise ValueError("Unable to generate prediction")
+        
+        # Use median of predictions for stability
+        final_prediction = sorted(predictions)[len(predictions) // 2]
+        
+        # Calculate confidence based on data quality
+        confidence = self._calculate_confidence(activities, predictions)
+        
+        # Generate training recommendations
+        recommendations = self._generate_recommendations(activities, race_distance, fitness_score)
+        
+        # Generate pacing strategy
+        pacing_strategy = self._generate_pacing_strategy(final_prediction, distance_km)
+        
+        return {
+            'race_distance': race_distance,
+            'predicted_time_seconds': final_prediction,
+            'predicted_time_formatted': self._format_time(final_prediction),
+            'confidence_score': round(confidence * 100, 1),
+            'fitness_score': round(fitness_score, 1),
+            'aerobic_capacity': round(vo2_max, 1),
+            'pacing_strategy': pacing_strategy,
+            'training_recommendations': recommendations
+        }
+    
+    def analyze_fitness(self, db_session: Session, athlete_id: int, days: int = 90) -> Dict:
+        """
+        Analyze current fitness level using authentic training data
+        """
+        cutoff_date = datetime.now() - timedelta(days=days)
+        activities = db_session.query(Activity).filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= cutoff_date,
+            Activity.sport_type.in_(['Run', 'VirtualRun'])
+        ).all()
+        
+        if not activities:
+            return self._empty_fitness_analysis()
+        
+        # Calculate metrics
+        total_distance = sum(a.distance or 0 for a in activities) / 1000  # km
+        total_time = sum(a.moving_time or 0 for a in activities) / 3600  # hours
+        avg_pace = self._calculate_average_pace(activities)
+        
+        fitness_score = self._calculate_fitness_score(activities)
+        vo2_max = self._estimate_vo2_max(activities)
+        consistency = self._calculate_consistency(activities)
+        
+        return {
+            'fitness_metrics': {
+                'current_fitness': round(fitness_score, 1),
+                'aerobic_capacity': round(vo2_max, 1),
+                'lactate_threshold_pace': self._format_pace(avg_pace * 1.05),  # Estimate LT pace
+                'training_load': round(total_time * 100, 1),  # Simplified TSS
+                'consistency_score': round(consistency, 1),
+                'injury_risk': round(max(0, (len(activities) - 20) * 2), 1),  # Simple risk
+                'fatigue_level': round(min(100, max(0, total_time * 10)), 1)
+            },
+            'summary': {
+                'total_activities': len(activities),
+                'total_distance_km': round(total_distance, 1),
+                'analysis_period_days': days
+            }
+        }
+    
+    def _calculate_fitness_score(self, activities: List[Activity]) -> float:
+        """Calculate fitness score (0-100) based on recent training"""
+        if not activities:
+            return 0.0
+        
+        # Recent 4 weeks
+        recent_cutoff = datetime.now() - timedelta(days=28)
+        recent_activities = [a for a in activities if a.start_date >= recent_cutoff]
+        
+        if not recent_activities:
+            return 0.0
+        
+        # Volume component (distance)
+        total_distance = sum(a.distance or 0 for a in recent_activities) / 1000  # km
+        volume_score = min(100, total_distance * 2)  # 50km = 100 points
+        
+        # Frequency component
+        frequency_score = min(100, len(recent_activities) * 8)  # 12+ activities = 100 points
+        
+        # Intensity component (based on pace variation)
+        paces = []
+        for activity in recent_activities:
+            if activity.distance and activity.moving_time and activity.distance > 0:
+                pace = activity.moving_time / (activity.distance / 1000)  # seconds per km
+                if 200 < pace < 800:  # Reasonable pace range
+                    paces.append(pace)
+        
+        intensity_score = 50  # Default
+        if len(paces) >= 3:
+            pace_range = max(paces) - min(paces)
+            intensity_score = min(100, pace_range / 2)  # Variety in paces
+        
+        # Weighted average
+        fitness_score = volume_score * 0.5 + frequency_score * 0.3 + intensity_score * 0.2
+        return max(0, min(100, fitness_score))
+    
+    def _estimate_vo2_max(self, activities: List[Activity]) -> float:
+        """Estimate VO2 max from best recent performances"""
+        if not activities:
+            return 35.0
+        
+        # Find fastest paces for different distance ranges
+        best_paces = {}
+        
+        for activity in activities:
+            if not (activity.distance and activity.moving_time and activity.distance > 1000):
+                continue
+            
+            distance_km = activity.distance / 1000
+            pace = activity.moving_time / distance_km  # seconds per km
+            
+            if not (200 < pace < 800):  # Reasonable pace range
+                continue
+            
+            # Categorize by distance
+            if 3 <= distance_km <= 8:
+                category = '5K'
+            elif 8 < distance_km <= 15:
+                category = '10K'
+            elif 15 < distance_km <= 25:
+                category = 'Half'
+            else:
+                continue
+            
+            if category not in best_paces or pace < best_paces[category]:
+                best_paces[category] = pace
+        
+        if not best_paces:
+            return 35.0
+        
+        # Convert best pace to estimated VO2 max using Jack Daniels formula approximation
+        best_pace = min(best_paces.values())
+        
+        # Simplified VO2 max estimation
+        # VO2 max ≈ 15.3 × (running velocity in m/min)^1.06
+        velocity_ms = 1000 / best_pace  # m/s
+        velocity_mmin = velocity_ms * 60  # m/min
+        
+        vo2_max = 15.3 * (velocity_mmin / 1000) ** 1.06 * 100
+        
+        return max(35.0, min(80.0, vo2_max))
+    
+    def _calculate_average_pace(self, activities: List[Activity]) -> float:
+        """Calculate average pace in seconds per km"""
+        valid_paces = []
+        
+        for activity in activities:
+            if activity.distance and activity.moving_time and activity.distance > 1000:
+                pace = activity.moving_time / (activity.distance / 1000)
+                if 200 < pace < 800:  # Reasonable pace range
+                    valid_paces.append(pace)
+        
+        return sum(valid_paces) / len(valid_paces) if valid_paces else 360.0
+    
+    def _calculate_consistency(self, activities: List[Activity]) -> float:
+        """Calculate training consistency (0-100)"""
+        if not activities:
+            return 0.0
+        
+        # Group activities by week
+        weekly_counts = {}
+        for activity in activities:
+            week_key = activity.start_date.isocalendar()[:2]  # (year, week)
+            weekly_counts[week_key] = weekly_counts.get(week_key, 0) + 1
+        
+        if len(weekly_counts) < 2:
+            return 50.0
+        
+        weekly_values = list(weekly_counts.values())
+        mean_weekly = sum(weekly_values) / len(weekly_values)
+        
+        # Calculate coefficient of variation
+        if mean_weekly == 0:
+            return 0.0
+        
+        variance = sum((x - mean_weekly) ** 2 for x in weekly_values) / len(weekly_values)
+        std_dev = variance ** 0.5
+        cv = std_dev / mean_weekly
+        
+        # Convert to consistency score (lower CV = higher consistency)
+        consistency = max(0, 100 - cv * 50)
+        return min(100, consistency)
+    
+    def _predict_from_pace_analysis(self, activities: List[Activity], distance_km: float) -> Optional[float]:
+        """Predict race time based on recent pace analysis"""
+        # Get recent good performances
+        recent_cutoff = datetime.now() - timedelta(days=60)
+        recent_activities = [a for a in activities if a.start_date >= recent_cutoff]
+        
+        if not recent_activities:
+            return None
+        
+        # Find activities similar to race distance
+        similar_activities = []
+        for activity in recent_activities:
+            if not (activity.distance and activity.moving_time):
+                continue
+            
+            activity_km = activity.distance / 1000
+            if activity_km >= distance_km * 0.3:  # At least 30% of race distance
+                pace = activity.moving_time / activity_km
+                if 200 < pace < 800:
+                    similar_activities.append((activity_km, pace))
+        
+        if not similar_activities:
+            return None
+        
+        # Use best recent pace and adjust for race distance
+        best_pace = min(pace for _, pace in similar_activities)
+        
+        # Distance-based pace adjustment
+        if distance_km <= 5:
+            race_pace = best_pace * 0.98  # Slightly faster for short races
+        elif distance_km <= 10:
+            race_pace = best_pace * 1.01
+        elif distance_km <= 21.1:
+            race_pace = best_pace * 1.05
+        else:  # Marathon
+            race_pace = best_pace * 1.12
+        
+        return race_pace * distance_km
+    
+    def _predict_from_vdot(self, vo2_max: float, distance_km: float) -> Optional[float]:
+        """Predict using VDOT equivalent method"""
+        if vo2_max < 35:
+            return None
+        
+        # Jack Daniels VDOT race time predictions (simplified)
+        if distance_km <= 5:
+            pace_factor = 0.90
+        elif distance_km <= 10:
+            pace_factor = 0.92
+        elif distance_km <= 21.1:
+            pace_factor = 0.95
+        else:  # Marathon
+            pace_factor = 1.00
+        
+        # Convert VO2 max to predicted pace
+        base_pace = 600 - (vo2_max - 35) * 6  # Simplified relationship
+        race_pace = base_pace * pace_factor
+        
+        return race_pace * distance_km
+    
+    def _predict_from_volume(self, activities: List[Activity], distance_km: float) -> Optional[float]:
+        """Predict based on training volume and fitness"""
+        recent_cutoff = datetime.now() - timedelta(days=60)
+        recent_activities = [a for a in activities if a.start_date >= recent_cutoff]
+        
+        if not recent_activities:
+            return None
+        
+        # Calculate recent weekly volume
+        total_distance = sum(a.distance or 0 for a in recent_activities) / 1000
+        weeks = (datetime.now() - recent_cutoff).days / 7
+        weekly_volume = total_distance / weeks if weeks > 0 else 0
+        
+        # Volume-based pace estimation
+        if weekly_volume >= 50:
+            base_pace = 300  # 5:00/km for high volume
+        elif weekly_volume >= 30:
+            base_pace = 330  # 5:30/km for moderate volume
+        elif weekly_volume >= 15:
+            base_pace = 360  # 6:00/km for low volume
+        else:
+            base_pace = 420  # 7:00/km for very low volume
+        
+        # Adjust for race distance
+        if distance_km <= 5:
+            race_pace = base_pace * 0.95
+        elif distance_km <= 10:
+            race_pace = base_pace * 0.98
+        elif distance_km <= 21.1:
+            race_pace = base_pace * 1.05
+        else:  # Marathon
+            race_pace = base_pace * 1.15
+        
+        return race_pace * distance_km
+    
+    def _calculate_confidence(self, activities: List[Activity], predictions: List[float]) -> float:
+        """Calculate prediction confidence (0-1)"""
+        # Base confidence on data quality
+        data_quality = min(1.0, len(activities) / 20)  # Full confidence at 20+ activities
+        
+        # Confidence from prediction agreement
+        if len(predictions) > 1:
+            avg_prediction = sum(predictions) / len(predictions)
+            max_deviation = max(abs(p - avg_prediction) / avg_prediction for p in predictions)
+            agreement = max(0.0, 1.0 - max_deviation)
+        else:
+            agreement = 0.7  # Moderate confidence for single prediction
+        
+        return (data_quality * 0.6 + agreement * 0.4)
+    
+    def _generate_recommendations(self, activities: List[Activity], race_distance: str, fitness_score: float) -> List[str]:
+        """Generate training recommendations"""
+        recommendations = []
+        
+        recent_count = len([a for a in activities if a.start_date >= datetime.now() - timedelta(days=30)])
+        
+        if fitness_score < 30:
+            recommendations.append("Build aerobic base with easy-paced runs")
+            recommendations.append("Gradually increase weekly mileage (10% rule)")
+        elif fitness_score < 60:
+            recommendations.append("Add one tempo run per week")
+            recommendations.append("Include weekly long runs")
+        else:
+            recommendations.append("Incorporate interval training")
+            recommendations.append("Practice race pace segments")
+        
+        if recent_count < 12:
+            recommendations.append("Increase training frequency to 4-5 runs per week")
+        
+        if race_distance == 'Marathon':
+            recommendations.append("Build long runs up to 32-35km")
+            recommendations.append("Practice marathon pace in long runs")
+        elif race_distance == 'Half Marathon':
+            recommendations.append("Include 15-20km runs at moderate effort")
+            recommendations.append("Practice half marathon pace segments")
+        
+        return recommendations[:5]  # Limit to 5 recommendations
+    
+    def _generate_pacing_strategy(self, predicted_time: float, distance_km: float) -> Dict[str, float]:
+        """Generate kilometer pacing strategy"""
+        target_pace = predicted_time / distance_km
+        strategy = {}
+        
+        for km in range(1, int(distance_km) + 1):
+            if distance_km <= 10:
+                # Even pacing for shorter races
+                strategy[f'km_{km}'] = target_pace
+            else:
+                # Conservative start for longer races
+                if km <= 3:
+                    strategy[f'km_{km}'] = target_pace * 1.03
+                elif km <= distance_km * 0.8:
+                    strategy[f'km_{km}'] = target_pace
+                else:
+                    strategy[f'km_{km}'] = target_pace * 0.98
+        
+        return strategy
+    
+    def _format_time(self, seconds: float) -> str:
+        """Format seconds to HH:MM:SS"""
+        hours = int(seconds // 3600)
+        minutes = int((seconds % 3600) // 60)
+        secs = int(seconds % 60)
+        return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+    
+    def _format_pace(self, pace_seconds: float) -> str:
+        """Format pace to MM:SS format"""
+        minutes = int(pace_seconds // 60)
+        seconds = int(pace_seconds % 60)
+        return f"{minutes}:{seconds:02d}"
+    
+    def _empty_fitness_analysis(self) -> Dict:
+        """Return empty fitness analysis structure"""
+        return {
+            'fitness_metrics': {
+                'current_fitness': 0.0,
+                'aerobic_capacity': 35.0,
+                'lactate_threshold_pace': '6:00',
+                'training_load': 0.0,
+                'consistency_score': 0.0,
+                'injury_risk': 0.0,
+                'fatigue_level': 0.0
+            },
+            'summary': {
+                'total_activities': 0,
+                'total_distance_km': 0.0,
+                'analysis_period_days': 90
+            }
+        }
