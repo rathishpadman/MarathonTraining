@@ -345,15 +345,15 @@ function updateDashboardMetrics(data) {
     if (data.performance_summary) {
         const summary = data.performance_summary;
         
-        // Update metric values
+        // Update metric values (backend already returns km, no conversion needed)
         document.getElementById('metric-total_distance').textContent = 
-            (summary.total_distance / 1000).toFixed(1);
+            (summary.total_distance || 0).toFixed(1);
         document.getElementById('metric-total_activities').textContent = 
             summary.total_activities || 0;
         document.getElementById('metric-avg_pace').textContent = 
-            formatPace(summary.average_speed) || 'N/A';
+            summary.average_pace ? summary.average_pace.toFixed(2) + ' min/km' : 'N/A';
         document.getElementById('metric-training_load').textContent = 
-            summary.total_training_load || 0;
+            (summary.training_load || 0).toFixed(1);
     }
 }
 
