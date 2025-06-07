@@ -9,7 +9,7 @@ from app.config import Config
 web_bp = Blueprint('main_routes', __name__)
 logger = logging.getLogger(__name__)
 
-@web_bp.route('/athlete-dashboard')
+@web_bp.route('/dashboard')
 def athlete_dashboard():
     """Individual athlete dashboard page"""
     athlete_id = request.args.get('athlete_id', 1)
