@@ -1,0 +1,25 @@
+# This file represents a placeholder for a lightweight ML model
+# In a real implementation, this would be a joblib-serialized scikit-learn model
+# For now, we'll create a simple dummy model that can be loaded
+
+import joblib
+import numpy as np
+from sklearn.linear_model import LinearRegression
+
+# Create a simple dummy model for demonstration
+# This would normally be a pre-trained model saved from a training script
+dummy_model = LinearRegression()
+
+# Fit with dummy data (5 features: avg_distance, avg_pace, weekly_distance, weekly_pace, race_distance)
+X_dummy = np.array([
+    [10, 300, 50, 320, 5],    # Short distance runner
+    [15, 280, 70, 290, 10],   # Medium distance runner  
+    [20, 350, 100, 360, 21],  # Long distance runner
+    [25, 380, 120, 390, 42]   # Marathon runner
+])
+y_dummy = np.array([25, 45, 90, 180])  # Predicted race times in minutes
+
+dummy_model.fit(X_dummy, y_dummy)
+
+# Save the model
+joblib.dump(dummy_model, 'data/models/light_perf_model.pkl')
