@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Authentication Success - Marathon Training{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card-glassmorphism p-5 text-center">
+            <div class="mb-4">
+                <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+            </div>
+            
+            <h2 class="text-white mb-3">Successfully Connected to Strava!</h2>
+            <p class="text-white-50 mb-4">
+                Welcome, {{ athlete_name }}! Your Strava account has been successfully linked to the Marathon Training Dashboard.
+            </p>
+            
+            <div class="mb-4">
+                <p class="text-white small">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Your authentication token has been saved. The dashboard will now load automatically.
+                </p>
+            </div>
+            
+            <button id="continueToDashboard" class="btn btn-primary btn-lg">
+                <i class="fas fa-tachometer-alt me-2"></i>
+                Continue to Dashboard
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Store the auth token
+    const authToken = '{{ auth_token }}';
+    if (authToken) {
+        localStorage.setItem('auth_token', authToken);
+    }
+    
+    // Auto-redirect after 3 seconds or when button is clicked
+    const redirectTimer = setTimeout(function() {
+        window.location.href = '/';
+    }, 3000);
+    
+    document.getElementById('continueToDashboard').addEventListener('click', function() {
+        clearTimeout(redirectTimer);
+        window.location.href = '/';
+    });
+});
+</script>
+{% endblock %}

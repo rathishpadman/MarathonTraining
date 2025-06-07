@@ -13,7 +13,7 @@ from app.config import Config
 
 # Create blueprint for API routes
 api_bp = Blueprint('api', __name__, url_prefix='/api')
-api = Api(api_bp, title='Marathon Training API', version='1.0')
+api = Api(api_bp, title='Marathon Training API', version='1.0', doc=False)
 
 # Initialize components
 config = Config()

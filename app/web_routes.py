@@ -58,7 +58,7 @@ def strava_callback():
         return redirect(url_for('main_routes.dashboard'))
     
     try:
-        strava_client = StravaClient(
+        strava_client = ReplitStravaClient(
             client_id=Config.STRAVA_CLIENT_ID,
             client_secret=Config.STRAVA_CLIENT_SECRET
         )
