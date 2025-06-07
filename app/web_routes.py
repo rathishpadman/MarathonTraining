@@ -41,6 +41,11 @@ def race_predictor():
     athlete_id = request.args.get('athlete_id', 1)
     return render_template('race_optimizer.html', athlete_id=athlete_id)
 
+@web_bp.route('/injury-risk')
+def injury_risk():
+    """Injury Risk Assessment page"""
+    return render_template('injury_risk.html')
+
 @web_bp.route('/settings')
 def settings():
     """Settings page"""
