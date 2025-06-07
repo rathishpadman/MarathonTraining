@@ -389,8 +389,7 @@ function loadAthleteAnalytics() {
 
 // Display analytics summary
 function displayAnalytics(data) {
-    const timePeriod = document.getElementById('timePeriodSelect').value;
-    const timeframeText = `Last ${timePeriod} days`;
+    const timeframeText = data.period_days ? `Last ${data.period_days} days` : 'Recent period';
     
     // Update data values
     document.getElementById('totalDistance').textContent = `${data.total_distance} km`;
@@ -398,7 +397,7 @@ function displayAnalytics(data) {
     document.getElementById('avgPace').textContent = data.avg_pace ? `${data.avg_pace.toFixed(2)} min/km` : '--';
     document.getElementById('avgHeartRate').textContent = data.avg_heart_rate ? `${Math.round(data.avg_heart_rate)} bpm` : '--';
     
-    // Update timeframe labels
+    // Update timeframe labels with actual data period
     document.getElementById('distanceTimeframe').textContent = timeframeText;
     document.getElementById('timeTimeframe').textContent = timeframeText;
     document.getElementById('paceTimeframe').textContent = timeframeText;
