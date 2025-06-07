@@ -360,14 +360,62 @@
         <div class="row">
             <!-- Leaderboard -->
             <div class="col-lg-6 mb-4">
-                <div class="glass-container">
+                <div class="glass-container h-100">
                     <h3 class="section-title">
                         <i data-feather="award" class="me-2"></i>
                         Performance Leaderboard
                     </h3>
-                    <div id="leaderboard" class="loading-spinner">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
+                    <div id="leaderboard" style="min-height: 420px; position: relative;">
+                        <!-- Top 3 Athletes Placeholders -->
+                        <div class="leaderboard-item" style="opacity: 0.7;">
+                            <div class="d-flex align-items-center">
+                                <div class="rank-badge rank-1 me-3">1</div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold text-light mb-1">Loading top athlete...</div>
+                                    <div class="text-muted small">Distance • Activities • Pace</div>
+                                </div>
+                            </div>
+                            <div class="athlete-links mt-2">
+                                <span class="athlete-link" style="opacity: 0.6;">Dashboard</span>
+                                <span class="athlete-link" style="opacity: 0.6;">Race Predictor</span>
+                                <span class="athlete-link" style="opacity: 0.6;">Risk Analyser</span>
+                            </div>
+                        </div>
+                        
+                        <div class="leaderboard-item" style="opacity: 0.6;">
+                            <div class="d-flex align-items-center">
+                                <div class="rank-badge rank-2 me-3">2</div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold text-light mb-1">Loading athlete...</div>
+                                    <div class="text-muted small">Distance • Activities • Pace</div>
+                                </div>
+                            </div>
+                            <div class="athlete-links mt-2">
+                                <span class="athlete-link" style="opacity: 0.6;">Dashboard</span>
+                                <span class="athlete-link" style="opacity: 0.6;">Race Predictor</span>
+                                <span class="athlete-link" style="opacity: 0.6;">Risk Analyser</span>
+                            </div>
+                        </div>
+                        
+                        <div class="leaderboard-item" style="opacity: 0.5;">
+                            <div class="d-flex align-items-center">
+                                <div class="rank-badge rank-3 me-3">3</div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold text-light mb-1">Loading athlete...</div>
+                                    <div class="text-muted small">Distance • Activities • Pace</div>
+                                </div>
+                            </div>
+                            <div class="athlete-links mt-2">
+                                <span class="athlete-link" style="opacity: 0.6;">Dashboard</span>
+                                <span class="athlete-link" style="opacity: 0.6;">Race Predictor</span>
+                                <span class="athlete-link" style="opacity: 0.6;">Risk Analyser</span>
+                            </div>
+                        </div>
+                        
+                        <div class="loading-spinner position-absolute top-50 start-50 translate-middle">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -375,13 +423,13 @@
 
             <!-- Training Load Distribution -->
             <div class="col-lg-6 mb-4">
-                <div class="glass-container">
+                <div class="glass-container h-100">
                     <h3 class="section-title">
                         <i data-feather="bar-chart-2" class="me-2"></i>
                         Training Load Distribution
                     </h3>
-                    <div class="chart-container">
-                        <canvas id="trainingLoadChart" width="400" height="300"></canvas>
+                    <div class="chart-container d-flex align-items-center justify-content-center" style="height: 420px;">
+                        <canvas id="trainingLoadChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -476,6 +524,9 @@
                                     </a>
                                     <a href="/race-predictor?athlete_id=${athlete.id}" class="athlete-link">
                                         <i data-feather="zap" width="14" height="14"></i> Race Predictor
+                                    </a>
+                                    <a href="/injury-risk?athlete_id=${athlete.id}" class="athlete-link">
+                                        <i data-feather="shield" width="14" height="14"></i> Risk Analyser
                                     </a>
                                 </div>
                             </div>

@@ -523,6 +523,9 @@ def display_main_dashboard(dashboard_data, performance_summary, athlete_id):
         
         st.markdown('</div>', unsafe_allow_html=True)
     
+    # Advanced Analytics Section - Race Predictor and Risk Analyser
+    display_advanced_analytics(athlete_id)
+    
     # Training insights
     display_training_insights(performance_summary)
 
@@ -572,6 +575,111 @@ def display_training_insights(performance_summary):
         # Add more personalized recommendations
         st.info("💡 Consider adding strength training sessions")
         st.info("🧘 Include recovery and stretching in your routine")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+
+def display_advanced_analytics(athlete_id):
+    """Display Race Predictor and Risk Analyser side by side with perfect alignment"""
+    st.markdown('<div class="glass-container">', unsafe_allow_html=True)
+    st.subheader("🔬 Advanced Performance Analytics")
+    
+    # Create two equal columns for perfect alignment
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### ⚡ Race Predictor")
+        try:
+            # Fetch race prediction data
+            import requests
+            race_response = requests.get(f"http://localhost:5000/api/race-predictor/{athlete_id}")
+            if race_response.status_code == 200:
+                race_data = race_response.json()
+                
+                # Display race predictions in organized format
+                st.markdown("**Marathon Predictions:**")
+                predictions = race_data.get('marathon_predictions', {})
+                
+                if predictions:
+                    # Create prediction cards
+                    for distance, time_pred in predictions.items():
+                        if isinstance(time_pred, dict) and 'predicted_time' in time_pred:
+                            time_str = time_pred['predicted_time']
+                            confidence = time_pred.get('confidence', 0)
+                            
+                            # Color coding based on confidence
+                            if confidence > 0.8:
+                                confidence_color = "🟢"
+                            elif confidence > 0.6:
+                                confidence_color = "🟡"
+                            else:
+                                confidence_color = "🔴"
+                            
+                            st.markdown(f"""
+                            <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin: 5px 0;">
+                                <strong>{distance}:</strong> {time_str}<br>
+                                <small>{confidence_color} Confidence: {confidence:.0%}</small>
+                            </div>
+                            """, unsafe_allow_html=True)
+                
+                # Training recommendations
+                recommendations = race_data.get('training_recommendations', [])
+                if recommendations:
+                    st.markdown("**Training Focus:**")
+                    for rec in recommendations[:3]:
+                        st.markdown(f"• {rec}")
+                        
+            else:
+                st.warning("Race prediction data unavailable")
+                
+        except Exception as e:
+            st.error(f"Unable to load race predictor: {str(e)}")
+    
+    with col2:
+        st.markdown("### 🛡️ Risk Analyser")
+        try:
+            # Fetch injury risk data
+            risk_response = requests.get(f"http://localhost:5000/api/injury-risk/{athlete_id}")
+            if risk_response.status_code == 200:
+                risk_data = risk_response.json()
+                
+                # Display risk assessment
+                risk_assessment = risk_data.get('risk_assessment', {})
+                overall_risk = risk_assessment.get('overall_risk', 0)
+                risk_level = risk_assessment.get('risk_level', 'unknown')
+                
+                # Risk level visualization
+                risk_color = {
+                    'low': '#10b981',
+                    'moderate': '#f59e0b', 
+                    'high': '#ef4444'
+                }.get(risk_level, '#6b7280')
+                
+                st.markdown(f"""
+                <div style="background: {risk_color}; padding: 15px; border-radius: 10px; text-align: center; color: white; margin: 10px 0;">
+                    <h4 style="margin: 0; color: white;">Risk Level: {risk_level.upper()}</h4>
+                    <h2 style="margin: 5px 0; color: white;">{overall_risk:.0%}</h2>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Key risk factors
+                risk_factors = risk_assessment.get('risk_factors', [])
+                if risk_factors:
+                    st.markdown("**Key Risk Factors:**")
+                    for factor in risk_factors[:3]:
+                        st.markdown(f"⚠️ {factor}")
+                
+                # Top prevention strategies
+                prevention = risk_data.get('prevention_strategies', [])
+                if prevention:
+                    st.markdown("**Prevention Focus:**")
+                    for strategy in prevention[:3]:
+                        st.markdown(f"✅ {strategy}")
+                        
+            else:
+                st.warning("Risk analysis data unavailable")
+                
+        except Exception as e:
+            st.error(f"Unable to load risk analyser: {str(e)}")
     
     st.markdown('</div>', unsafe_allow_html=True)
 
