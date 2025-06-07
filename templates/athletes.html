@@ -40,11 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadAthletes() {
-    fetch('/api/athletes', {
-        headers: {
-            'Authorization': 'Bearer ' + localStorage.getItem('access_token')
-        }
-    })
+    fetch('/api/athletes')
     .then(response => response.json())
     .then(athletes => {
         displayAthletes(athletes);
