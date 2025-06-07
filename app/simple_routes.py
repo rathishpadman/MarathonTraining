@@ -68,33 +68,56 @@ def get_athlete_dashboard_data(athlete_id):
                 strava_activities = strava_client.get_activities(athlete.access_token, per_page=10)
                 if strava_activities:
                     # Save activities to database
+                    saved_count = 0
                     for activity_data in strava_activities:
-                        existing_activity = Activity.query.filter_by(
-                            strava_activity_id=activity_data['id']
-                        ).first()
-                        
-                        if not existing_activity:
-                            activity = Activity(
-                                strava_activity_id=activity_data['id'],
-                                athlete_id=athlete_id,
-                                name=activity_data.get('name', 'Untitled'),
-                                sport_type=activity_data.get('sport_type', 'Unknown'),
-                                start_date=datetime.fromisoformat(activity_data['start_date_local'].replace('Z', '')),
-                                distance=activity_data.get('distance'),
-                                moving_time=activity_data.get('moving_time'),
-                                elapsed_time=activity_data.get('elapsed_time'),
-                                total_elevation_gain=activity_data.get('total_elevation_gain'),
-                                average_speed=activity_data.get('average_speed'),
-                                max_speed=activity_data.get('max_speed'),
-                                average_cadence=activity_data.get('average_cadence'),
-                                average_heartrate=activity_data.get('average_heartrate'),
-                                max_heartrate=activity_data.get('max_heartrate'),
-                                calories=activity_data.get('calories')
-                            )
-                            db.session.add(activity)
+                        try:
+                            existing_activity = Activity.query.filter_by(
+                                strava_activity_id=activity_data['id']
+                            ).first()
+                            
+                            if not existing_activity:
+                                # Parse datetime properly
+                                start_date_str = activity_data.get('start_date_local', activity_data.get('start_date', ''))
+                                if start_date_str:
+                                    # Remove timezone suffix and parse
+                                    start_date_clean = start_date_str.replace('Z', '').replace('+00:00', '')
+                                    if 'T' in start_date_clean:
+                                        start_date = datetime.fromisoformat(start_date_clean)
+                                    else:
+                                        start_date = datetime.now()
+                                else:
+                                    start_date = datetime.now()
+                                
+                                # Create activity with safe data conversion
+                                activity = Activity()
+                                activity.strava_activity_id = activity_data['id']
+                                activity.athlete_id = athlete_id
+                                activity.name = activity_data.get('name', 'Untitled')
+                                activity.sport_type = activity_data.get('sport_type', 'Unknown')
+                                activity.start_date = start_date
+                                activity.distance = float(activity_data.get('distance', 0)) if activity_data.get('distance') else None
+                                activity.moving_time = int(activity_data.get('moving_time', 0)) if activity_data.get('moving_time') else None
+                                activity.elapsed_time = int(activity_data.get('elapsed_time', 0)) if activity_data.get('elapsed_time') else None
+                                activity.total_elevation_gain = float(activity_data.get('total_elevation_gain', 0)) if activity_data.get('total_elevation_gain') else None
+                                activity.average_speed = float(activity_data.get('average_speed', 0)) if activity_data.get('average_speed') else None
+                                activity.max_speed = float(activity_data.get('max_speed', 0)) if activity_data.get('max_speed') else None
+                                activity.average_cadence = float(activity_data.get('average_cadence', 0)) if activity_data.get('average_cadence') else None
+                                activity.average_heartrate = float(activity_data.get('average_heartrate', 0)) if activity_data.get('average_heartrate') else None
+                                activity.max_heartrate = float(activity_data.get('max_heartrate', 0)) if activity_data.get('max_heartrate') else None
+                                activity.calories = float(activity_data.get('calories', 0)) if activity_data.get('calories') else None
+                                activity.created_at = datetime.now()
+                                
+                                db.session.add(activity)
+                                saved_count += 1
+                        except Exception as activity_error:
+                            logger.warning(f"Failed to save activity {activity_data.get('id', 'unknown')}: {str(activity_error)}")
+                            continue
                     
-                    db.session.commit()
-                    logger.info(f"Fetched and saved {len(strava_activities)} activities for athlete {athlete_id}")
+                    if saved_count > 0:
+                        db.session.commit()
+                        logger.info(f"Fetched and saved {saved_count} activities for athlete {athlete_id}")
+                    else:
+                        logger.warning(f"No activities were saved for athlete {athlete_id}")
             except Exception as e:
                 logger.warning(f"Failed to fetch Strava activities: {str(e)}")
         

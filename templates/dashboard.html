@@ -241,7 +241,8 @@ function loadDashboard() {
     document.getElementById('loadingSpinner').style.display = 'block';
     
     // Load athletes
-    makeAuthenticatedRequest('/api/athletes')
+    fetch('/api/athletes')
+        .then(response => response.json())
         .then(data => {
             populateAthleteSelector(data);
             document.getElementById('athleteSelection').style.display = 'block';
@@ -288,7 +289,8 @@ function loadAthleteData(athleteId) {
     document.getElementById('loadingSpinner').style.display = 'block';
     
     // Load athlete dashboard data
-    makeAuthenticatedRequest(`/api/athletes/${athleteId}/dashboard-data`)
+    fetch(`/api/athletes/${athleteId}/dashboard-data`)
+        .then(response => response.json())
         .then(data => {
             if (data) {
                 updateDashboardMetrics(data);
@@ -502,7 +504,8 @@ function loadAIInsights(athleteId) {
 
 // Load team overview
 function loadTeamOverview() {
-    makeAuthenticatedRequest('/api/realtime/dashboard')
+    fetch('/api/realtime/dashboard')
+        .then(response => response.json())
         .then(data => {
             document.getElementById('teamSection').style.display = 'block';
             // Populate team overview data
