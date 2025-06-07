@@ -339,3 +339,121 @@ def get_athlete_list_from_api():
     except Exception as e:
         logger.error(f"Error getting athlete list: {str(e)}")
         return []
+
+@api_bp.route('/analytics/data')
+def get_analytics_data():
+    """Get analytics data for charts and metrics"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        
+        # Get all athletes (for now, we'll aggregate data from all)
+        athletes = ReplitAthlete.query.filter_by(is_active=True).all()
+        
+        if not athletes:
+            return jsonify({
+                'metrics': {
+                    'totalDistance': 0,
+                    'totalTime': 0,
+                    'avgPace': 0,
+                    'activityCount': 0
+                },
+                'charts': {
+                    'trainingLoad': {'labels': [], 'data': []},
+                    'activityTypes': {'labels': [], 'data': []},
+                    'paceProgression': {'labels': [], 'data': []}
+                },
+                'activities': []
+            })
+        
+        # For demonstration, we'll use the first athlete
+        athlete = athletes[0]
+        
+        # Get activities from the last N days
+        from datetime import datetime, timedelta
+        from app.models import Activity
+        
+        start_date = datetime.now() - timedelta(days=days)
+        activities = Activity.query.filter(
+            Activity.athlete_id == athlete.id,
+            Activity.start_date >= start_date
+        ).order_by(Activity.start_date.desc()).all()
+        
+        # Calculate metrics
+        total_distance = sum(a.distance or 0 for a in activities) / 1000  # Convert to km
+        total_time = sum(a.moving_time or 0 for a in activities)
+        activity_count = len(activities)
+        
+        # Calculate average pace
+        if total_distance > 0 and total_time > 0:
+            avg_speed = (total_distance * 1000) / total_time  # m/s
+        else:
+            avg_speed = 0
+        
+        # Group activities by type
+        activity_types = {}
+        for activity in activities:
+            sport_type = activity.sport_type or 'Unknown'
+            activity_types[sport_type] = activity_types.get(sport_type, 0) + 1
+        
+        # Create sample chart data
+        import calendar
+        chart_labels = []
+        chart_data = []
+        pace_data = []
+        
+        # Generate last 7 days for charts
+        for i in range(6, -1, -1):
+            date = datetime.now() - timedelta(days=i)
+            chart_labels.append(date.strftime('%m/%d'))
+            
+            # Get activities for this day
+            day_activities = [a for a in activities if a.start_date.date() == date.date()]
+            day_distance = sum(a.distance or 0 for a in day_activities) / 1000
+            chart_data.append(day_distance)
+            
+            if day_activities:
+                day_time = sum(a.moving_time or 0 for a in day_activities)
+                if day_distance > 0 and day_time > 0:
+                    day_pace = (day_time / 60) / day_distance  # min/km
+                    pace_data.append(day_pace)
+                else:
+                    pace_data.append(None)
+            else:
+                pace_data.append(None)
+        
+        return jsonify({
+            'metrics': {
+                'totalDistance': total_distance,
+                'totalTime': total_time,
+                'avgPace': avg_speed,
+                'activityCount': activity_count
+            },
+            'charts': {
+                'trainingLoad': {
+                    'labels': chart_labels,
+                    'data': chart_data
+                },
+                'activityTypes': {
+                    'labels': list(activity_types.keys()),
+                    'data': list(activity_types.values())
+                },
+                'paceProgression': {
+                    'labels': chart_labels,
+                    'data': pace_data
+                }
+            },
+            'activities': [{
+                'id': a.id,
+                'name': a.name,
+                'sport_type': a.sport_type,
+                'start_date': a.start_date.isoformat(),
+                'distance': a.distance,
+                'moving_time': a.moving_time,
+                'average_speed': a.average_speed,
+                'average_heartrate': a.average_heartrate
+            } for a in activities[:20]]  # Limit to 20 recent activities
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching analytics data: {str(e)}")
+        return jsonify({'error': 'Failed to fetch analytics data'}), 500

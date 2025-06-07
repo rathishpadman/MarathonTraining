@@ -165,18 +165,13 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if user has auth token
-    const authToken = localStorage.getItem('auth_token');
+    // Always check for existing athletes first
+    checkForExistingAthletes();
     
-    if (!authToken) {
-        // Show Strava connection button
-        document.getElementById('connectStrava').addEventListener('click', function() {
-            connectToStrava();
-        });
-    } else {
-        // User is authenticated, load dashboard
-        loadDashboard();
-    }
+    // Setup Strava connection button
+    document.getElementById('connectStrava').addEventListener('click', function() {
+        connectToStrava();
+    });
     
     // Athlete selection change handler
     document.getElementById('athleteSelect').addEventListener('change', function() {
@@ -192,6 +187,41 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// Check for existing athletes on page load
+function checkForExistingAthletes() {
+    fetch('/api/athletes')
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.length > 0) {
+                // Athletes exist, hide connect button and show dashboard
+                document.getElementById('connectStrava').style.display = 'none';
+                populateAthleteSelector(data);
+                document.getElementById('athleteSelection').style.display = 'block';
+                
+                // Auto-select first athlete if only one
+                if (data.length === 1) {
+                    document.getElementById('athleteSelect').value = data[0].id;
+                    currentAthlete = data[0].id;
+                    loadAthleteData(data[0].id);
+                }
+                
+                // Update welcome message
+                const welcomeText = document.querySelector('.card-glassmorphism p');
+                if (welcomeText) {
+                    welcomeText.textContent = `Welcome back! You have ${data.length} connected athlete${data.length > 1 ? 's' : ''}.`;
+                }
+            } else {
+                // No athletes, show connect button
+                document.getElementById('connectStrava').style.display = 'inline-block';
+            }
+        })
+        .catch(error => {
+            console.error('Error checking athletes:', error);
+            // On error, show connect button
+            document.getElementById('connectStrava').style.display = 'inline-block';
+        });
+}
 
 // Connect to Strava
 function connectToStrava() {
