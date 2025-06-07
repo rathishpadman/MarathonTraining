@@ -2,7 +2,6 @@ import logging
 from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
-from flask_restx import Api, Resource, fields, Namespace
 from flask_socketio import emit, join_room, leave_room
 from app import db, socketio
 from app.models import ReplitAthlete, DailySummary, Activity, PlannedWorkout, SystemLog
@@ -13,7 +12,6 @@ from app.config import Config
 
 # Create blueprint for API routes
 api_bp = Blueprint('api', __name__, url_prefix='/api')
-api = Api(api_bp, title='Marathon Training API', version='1.0', doc='/api/docs')
 
 # Initialize components
 config = Config()
@@ -21,41 +19,35 @@ security = ReplitSecurity()
 strava_client = ReplitStravaClient(config.STRAVA_CLIENT_ID, config.STRAVA_CLIENT_SECRET)
 logger = logging.getLogger(__name__)
 
-# API Models for documentation and validation
-athlete_model = api.model('Athlete', {
-    'id': fields.Integer(required=True),
-    'name': fields.String(required=True),
-    'email': fields.String(required=True),
-    'strava_athlete_id': fields.Integer(required=True),
-    'is_active': fields.Boolean(required=True),
-    'created_at': fields.DateTime(required=True)
-})
-
-daily_summary_model = api.model('DailySummary', {
-    'id': fields.Integer(required=True),
-    'summary_date': fields.DateTime(required=True),
-    'total_distance': fields.Float(required=True),
-    'total_moving_time': fields.Integer(required=True),
-    'activity_count': fields.Integer(required=True),
-    'status': fields.String(required=True),
-    'training_load': fields.Float(),
-    'average_pace': fields.Float(),
-    'insights': fields.Raw()
-})
-
-# Create namespace for athletes
-athletes_ns = Namespace('athletes', description='Athlete operations')
-api.add_namespace(athletes_ns)
-
-@athletes_ns.route('')
-class AthletesResource(Resource):
-    @api.marshal_list_with(athlete_model)
-    @jwt_required()
-    def get(self):
-        """Get all athletes or current user's athlete data"""
-        try:
-            current_user_id = get_jwt_identity()
-            logger.info(f"Fetching athletes for user {current_user_id}")
+# Athletes API endpoint
+@api_bp.route('/athletes')
+@jwt_required()
+def get_athletes():
+    """Get all athletes or current user's athlete data"""
+    try:
+        current_user_id = get_jwt_identity()
+        logger.info(f"Fetching athletes for user {current_user_id}")
+        
+        # Get all active athletes
+        athletes = db.session.query(ReplitAthlete).filter_by(is_active=True).all()
+        
+        athlete_list = []
+        for athlete in athletes:
+            athlete_list.append({
+                'id': athlete.id,
+                'name': athlete.name,
+                'email': athlete.email,
+                'strava_athlete_id': athlete.strava_athlete_id,
+                'is_active': athlete.is_active,
+                'created_at': athlete.created_at.isoformat() if athlete.created_at else None
+            })
+        
+        logger.info(f"Found {len(athlete_list)} active athletes")
+        return jsonify(athlete_list)
+        
+    except Exception as e:
+        logger.error(f"Error fetching athletes: {str(e)}")
+        return jsonify({'error': 'Failed to fetch athletes'}), 500
             
             # For now, assume all users can see all athletes (team view)
             # In production, you might want to implement role-based access

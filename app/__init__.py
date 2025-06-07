@@ -53,8 +53,10 @@ def create_app():
     
     # Register routes - web routes first to take precedence
     from app.web_routes import web_bp
-    from app.routes import api_bp
     app.register_blueprint(web_bp)
+    
+    # Register API routes with prefix to avoid root conflict
+    from app.routes import api_bp
     app.register_blueprint(api_bp)
     
     # Create database tables
