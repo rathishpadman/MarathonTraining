@@ -7,16 +7,25 @@
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0">Performance Analytics</h1>
+                <div>
+                    <h1 class="h3 mb-0 text-white">Performance Analytics</h1>
+                    <div class="d-flex align-items-center mt-2">
+                        <div style="background: #000; padding: 3px 8px; border-radius: 4px; margin-right: 10px;">
+                            <span style="color: #fc4c02; font-weight: bold; font-size: 10px;">POWERED BY</span>
+                            <span style="color: #fc4c02; font-weight: bold; font-size: 14px; margin-left: 3px;">STRAVA</span>
+                        </div>
+                        <span class="text-white-50 small">Real-time data from your Strava activities</span>
+                    </div>
+                </div>
                 <div class="btn-group" role="group">
                     <input type="radio" class="btn-check" name="timeRange" id="week" autocomplete="off" checked>
-                    <label class="btn btn-outline-primary" for="week">7 Days</label>
+                    <label class="btn filter-button" for="week">7 Days</label>
                     
                     <input type="radio" class="btn-check" name="timeRange" id="month" autocomplete="off">
-                    <label class="btn btn-outline-primary" for="month">30 Days</label>
+                    <label class="btn filter-button" for="month">30 Days</label>
                     
                     <input type="radio" class="btn-check" name="timeRange" id="quarter" autocomplete="off">
-                    <label class="btn btn-outline-primary" for="quarter">90 Days</label>
+                    <label class="btn filter-button" for="quarter">90 Days</label>
                 </div>
             </div>
         </div>
@@ -25,15 +34,16 @@
     <!-- Key Metrics Row -->
     <div class="row mb-4">
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card bg-primary text-white">
+            <div class="card-glassmorphism text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h6 class="card-title">Total Distance</h6>
-                            <h3 class="mb-0" id="totalDistance">0 km</h3>
+                            <h6 class="card-title text-white-50">Total Distance</h6>
+                            <h3 class="mb-0 text-white" id="totalDistance">0 km</h3>
+                            <small class="text-success">+12% from last period</small>
                         </div>
                         <div class="align-self-center">
-                            <i class="fas fa-route fa-2x opacity-75"></i>
+                            <i class="fas fa-route fa-2x" style="color: #fc4c02;"></i>
                         </div>
                     </div>
                 </div>
@@ -41,15 +51,16 @@
         </div>
         
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card bg-success text-white">
+            <div class="card-glassmorphism text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h6 class="card-title">Training Time</h6>
-                            <h3 class="mb-0" id="totalTime">0h 0m</h3>
+                            <h6 class="card-title text-white-50">Training Time</h6>
+                            <h3 class="mb-0 text-white" id="totalTime">0h 0m</h3>
+                            <small class="text-info">Last 7 days</small>
                         </div>
                         <div class="align-self-center">
-                            <i class="fas fa-clock fa-2x opacity-75"></i>
+                            <i class="fas fa-clock fa-2x" style="color: #27ae60;"></i>
                         </div>
                     </div>
                 </div>
@@ -57,15 +68,16 @@
         </div>
         
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card bg-warning text-white">
+            <div class="card-glassmorphism text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h6 class="card-title">Avg Pace</h6>
-                            <h3 class="mb-0" id="avgPace">--:--</h3>
+                            <h6 class="card-title text-white-50">Avg Heart Rate</h6>
+                            <h3 class="mb-0 text-white" id="avgHeartRate">-- bpm</h3>
+                            <small class="text-warning">Zone 2-3 target</small>
                         </div>
                         <div class="align-self-center">
-                            <i class="fas fa-tachometer-alt fa-2x opacity-75"></i>
+                            <i class="fas fa-heartbeat fa-2x" style="color: #e74c3c;"></i>
                         </div>
                     </div>
                 </div>
@@ -73,15 +85,16 @@
         </div>
         
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card bg-info text-white">
+            <div class="card-glassmorphism text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h6 class="card-title">Activities</h6>
-                            <h3 class="mb-0" id="activityCount">0</h3>
+                            <h6 class="card-title text-white-50">Total Activities</h6>
+                            <h3 class="mb-0 text-white" id="activityCount">0</h3>
+                            <small class="text-primary">This period</small>
                         </div>
                         <div class="align-self-center">
-                            <i class="fas fa-running fa-2x opacity-75"></i>
+                            <i class="fas fa-running fa-2x" style="color: #3498db;"></i>
                         </div>
                     </div>
                 </div>
@@ -91,24 +104,32 @@
 
     <!-- Charts Row -->
     <div class="row mb-4">
-        <div class="col-lg-8 mb-3">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Training Load Over Time</h5>
-                </div>
+        <div class="col-lg-6 mb-3">
+            <div class="card-glassmorphism">
                 <div class="card-body">
-                    <canvas id="trainingLoadChart" height="100"></canvas>
+                    <h5 class="text-white mb-3">
+                        <i class="fas fa-heartbeat me-2" style="color: #e74c3c;"></i>
+                        Heart Rate Analysis
+                    </h5>
+                    <canvas id="heartRateChart" height="250"></canvas>
+                    <div class="mt-3">
+                        <small class="text-white-50">Track your heart rate zones to optimize training intensity</small>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <div class="col-lg-4 mb-3">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Activity Types</h5>
-                </div>
+        <div class="col-lg-6 mb-3">
+            <div class="card-glassmorphism">
                 <div class="card-body">
-                    <canvas id="activityTypesChart"></canvas>
+                    <h5 class="text-white mb-3">
+                        <i class="fas fa-mountain me-2" style="color: #27ae60;"></i>
+                        Elevation & Distance
+                    </h5>
+                    <canvas id="elevationChart" height="250"></canvas>
+                    <div class="mt-3">
+                        <small class="text-white-50">Monitor elevation gain and distance to build endurance</small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -116,13 +137,32 @@
 
     <!-- Performance Trends -->
     <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Pace Progression</h5>
-                </div>
+        <div class="col-lg-8 mb-3">
+            <div class="card-glassmorphism">
                 <div class="card-body">
-                    <canvas id="paceProgressionChart" height="80"></canvas>
+                    <h5 class="text-white mb-3">
+                        <i class="fas fa-tachometer-alt me-2" style="color: #3498db;"></i>
+                        Pace Progression & Performance
+                    </h5>
+                    <canvas id="paceProgressionChart" height="250"></canvas>
+                    <div class="mt-3">
+                        <small class="text-white-50">Track pace improvements to reach your marathon goals</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-3">
+            <div class="card-glassmorphism">
+                <div class="card-body">
+                    <h5 class="text-white mb-3">
+                        <i class="fas fa-chart-pie me-2" style="color: #f39c12;"></i>
+                        Training Distribution
+                    </h5>
+                    <canvas id="activityTypesChart" height="250"></canvas>
+                    <div class="mt-3">
+                        <small class="text-white-50">Balance your training across different activity types</small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -131,30 +171,33 @@
     <!-- Recent Activities Table -->
     <div class="row">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Recent Activities</h5>
-                    <button class="btn btn-sm btn-outline-primary" onclick="refreshData()">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
-                </div>
+            <div class="card-glassmorphism">
                 <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="text-white mb-0">
+                            <i class="fas fa-list me-2" style="color: #fc4c02;"></i>
+                            Recent Activities
+                        </h5>
+                        <button class="btn filter-button" onclick="refreshData()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
-                                <tr>
+                                <tr class="text-white-50">
                                     <th>Date</th>
                                     <th>Type</th>
                                     <th>Name</th>
                                     <th>Distance</th>
                                     <th>Time</th>
+                                    <th>Avg HR</th>
                                     <th>Pace</th>
-                                    <th>HR</th>
                                 </tr>
                             </thead>
-                            <tbody id="activitiesTableBody">
+                            <tbody id="activitiesTableBody" class="text-white">
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted">
+                                    <td colspan="7" class="text-center text-white-50">
                                         <div class="spinner-border spinner-border-sm me-2" role="status"></div>
                                         Loading activities...
                                     </td>

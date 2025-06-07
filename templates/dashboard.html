@@ -15,11 +15,14 @@
                     </h1>
                     <p class="text-white-50 mb-0">Monitor your marathon training progress and performance metrics</p>
                 </div>
-                <div>
-                    <button id="connectStrava" class="btn btn-primary">
-                        <i class="fab fa-strava me-2"></i>
-                        Connect Strava
-                    </button>
+                <div class="strava-branding">
+                    <div style="background: #fc4c02; padding: 8px 20px; border-radius: 6px; color: white; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+                        CONNECT WITH STRAVA
+                    </div>
+                    <div style="background: #000; padding: 5px 10px; border-radius: 4px;">
+                        <span style="color: #fc4c02; font-weight: bold; font-size: 12px;">POWERED BY</span>
+                        <span style="color: #fc4c02; font-weight: bold; font-size: 16px; margin-left: 5px;">STRAVA</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -39,7 +42,7 @@
                 </div>
                 <div class="col-md-4">
                     <div class="text-center">
-                        <button class="btn btn-outline-primary" id="syncButton" onclick="syncAthleteData()" title="Sync Strava Data">
+                        <button class="btn filter-button" id="syncButton" onclick="syncAthleteData()" title="Sync Strava Data">
                             <i class="fas fa-sync-alt"></i> Sync Data
                         </button>
                     </div>
