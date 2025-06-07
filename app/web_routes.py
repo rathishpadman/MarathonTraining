@@ -43,7 +43,7 @@ def strava_auth():
     logger.info(f"Redirecting to Strava authorization: {auth_url}")
     return redirect(auth_url)
 
-@web_bp.route('/auth/strava/callback')
+@web_bp.route('/auth/strava/callback', methods=['GET'])
 def strava_callback():
     """Handle Strava OAuth callback"""
     code = request.args.get('code')

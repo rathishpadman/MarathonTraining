@@ -22,8 +22,9 @@ class Config:
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET', 'default-jwt-secret-key')
     
     # Strava API configuration
-    STRAVA_CLIENT_ID = os.environ.get('STRAVA_CLIENT_ID', '67019')
-    STRAVA_CLIENT_SECRET = os.environ.get('STRAVA_CLIENT_SECRET', '94bec5162fd0b13ed7e91e49e8344c8518bf22b5')
+    STRAVA_CLIENT_ID = os.environ.get('STRAVA_CLIENT_ID')
+    STRAVA_CLIENT_SECRET = os.environ.get('STRAVA_CLIENT_SECRET')
+    STRAVA_CALLBACK_URL = os.environ.get('STRAVA_CALLBACK_URL')
     
     # Mail configuration
     MAIL_SMTP_SERVER = os.environ.get('MAIL_SMTP_SERVER', 'smtp.gmail.com')
