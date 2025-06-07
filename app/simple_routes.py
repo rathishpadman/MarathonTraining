@@ -8,6 +8,7 @@ from app.models import ReplitAthlete, DailySummary, Activity, PlannedWorkout, Sy
 from app.data_processor import get_athlete_performance_summary, get_team_overview
 from app.race_predictor_simple import SimpleRacePredictor
 from app.injury_predictor import predict_injury_risk, get_injury_prevention_plan
+from app.race_optimizer import optimize_race_performance, get_pacing_strategy, get_training_optimization
 from app.security import ReplitSecurity
 from app.strava_client import ReplitStravaClient
 from app.config import Config
@@ -960,3 +961,62 @@ def get_injury_prevention_api(athlete_id):
     except Exception as e:
         logger.error(f"Error generating prevention plan: {str(e)}")
         return jsonify({'error': 'Prevention plan generation failed'}), 500
+
+@api_bp.route('/athletes/<int:athlete_id>/race-optimization')
+def get_race_optimization(athlete_id):
+    """Get comprehensive race performance optimization for athlete"""
+    try:
+        logger.info(f"Generating race optimization for athlete {athlete_id}")
+        
+        race_distance = request.args.get('distance', 'Marathon')
+        target_time = request.args.get('target_time')
+        
+        optimization = optimize_race_performance(athlete_id, race_distance, target_time)
+        
+        if 'error' in optimization:
+            return jsonify(optimization), 400
+        
+        return jsonify(optimization)
+        
+    except Exception as e:
+        logger.error(f"Error generating race optimization for athlete {athlete_id}: {str(e)}")
+        return jsonify({'error': 'Failed to generate race optimization'}), 500
+
+@api_bp.route('/athletes/<int:athlete_id>/pacing-strategy')
+def get_athlete_pacing_strategy(athlete_id):
+    """Get optimal pacing strategy for specific race distance"""
+    try:
+        logger.info(f"Generating pacing strategy for athlete {athlete_id}")
+        
+        race_distance = request.args.get('distance', 'Marathon')
+        target_time = request.args.get('target_time')
+        
+        pacing_strategy = get_pacing_strategy(athlete_id, race_distance, target_time)
+        
+        if 'error' in pacing_strategy:
+            return jsonify(pacing_strategy), 400
+        
+        return jsonify(pacing_strategy)
+        
+    except Exception as e:
+        logger.error(f"Error generating pacing strategy for athlete {athlete_id}: {str(e)}")
+        return jsonify({'error': 'Failed to generate pacing strategy'}), 500
+
+@api_bp.route('/athletes/<int:athlete_id>/training-optimization')
+def get_athlete_training_optimization(athlete_id):
+    """Get training optimization recommendations for athlete"""
+    try:
+        logger.info(f"Generating training optimization for athlete {athlete_id}")
+        
+        race_distance = request.args.get('distance', 'Marathon')
+        
+        training_optimization = get_training_optimization(athlete_id, race_distance)
+        
+        if 'error' in training_optimization:
+            return jsonify(training_optimization), 400
+        
+        return jsonify(training_optimization)
+        
+    except Exception as e:
+        logger.error(f"Error generating training optimization for athlete {athlete_id}: {str(e)}")
+        return jsonify({'error': 'Failed to generate training optimization'}), 500
