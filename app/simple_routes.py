@@ -1020,3 +1020,267 @@ def get_athlete_training_optimization(athlete_id):
     except Exception as e:
         logger.error(f"Error generating training optimization for athlete {athlete_id}: {str(e)}")
         return jsonify({'error': 'Failed to generate training optimization'}), 500
+
+@api_bp.route('/athletes/<int:athlete_id>/volume-trend')
+def get_volume_trend(athlete_id):
+    """Get training volume trend data for charts"""
+    try:
+        days = int(request.args.get('days', 30))
+        logger.info(f"Fetching volume trend for athlete {athlete_id}, {days} days")
+        
+        end_date = datetime.datetime.now()
+        start_date = end_date - datetime.timedelta(days=days)
+        
+        activities = Activity.query.filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= start_date,
+            Activity.start_date <= end_date
+        ).order_by(Activity.start_date).all()
+        
+        # Group by date and sum distances
+        date_volumes = {}
+        for activity in activities:
+            date_key = activity.start_date.date().isoformat()
+            if date_key not in date_volumes:
+                date_volumes[date_key] = 0
+            date_volumes[date_key] += (activity.distance or 0) / 1000  # Convert to km
+        
+        # Create arrays for chart
+        dates = list(date_volumes.keys())
+        distances = list(date_volumes.values())
+        
+        return jsonify({
+            'dates': dates,
+            'distances': distances
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching volume trend: {str(e)}")
+        return jsonify({'error': 'Failed to fetch volume trend'}), 500
+
+@api_bp.route('/athletes/<int:athlete_id>/pace-analysis')
+def get_pace_analysis(athlete_id):
+    """Get pace analysis data for charts"""
+    try:
+        days = int(request.args.get('days', 30))
+        logger.info(f"Fetching pace analysis for athlete {athlete_id}, {days} days")
+        
+        end_date = datetime.datetime.now()
+        start_date = end_date - datetime.timedelta(days=days)
+        
+        activities = Activity.query.filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= start_date,
+            Activity.start_date <= end_date,
+            Activity.average_speed.isnot(None),
+            Activity.average_speed > 0
+        ).order_by(Activity.start_date).all()
+        
+        dates = []
+        paces = []
+        
+        for activity in activities:
+            dates.append(activity.start_date.date().isoformat())
+            # Convert speed to pace (min/km)
+            pace_min_per_km = 16.67 / activity.average_speed if activity.average_speed > 0 else 0
+            paces.append(round(pace_min_per_km, 2))
+        
+        return jsonify({
+            'dates': dates,
+            'paces': paces
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching pace analysis: {str(e)}")
+        return jsonify({'error': 'Failed to fetch pace analysis'}), 500
+
+@api_bp.route('/athletes/<int:athlete_id>/heart-rate-zones')
+def get_heart_rate_zones(athlete_id):
+    """Get heart rate zone distribution"""
+    try:
+        days = int(request.args.get('days', 30))
+        logger.info(f"Fetching heart rate zones for athlete {athlete_id}, {days} days")
+        
+        end_date = datetime.datetime.now()
+        start_date = end_date - datetime.timedelta(days=days)
+        
+        activities = Activity.query.filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= start_date,
+            Activity.start_date <= end_date,
+            Activity.average_heartrate.isnot(None)
+        ).all()
+        
+        # Simple zone distribution based on average heart rates
+        zones = [0, 0, 0, 0, 0]  # Zones 1-5
+        
+        for activity in activities:
+            if activity.average_heartrate:
+                hr = activity.average_heartrate
+                duration = activity.moving_time or 0
+                
+                # Simple zone assignment based on heart rate ranges
+                if hr < 120:
+                    zones[0] += duration
+                elif hr < 140:
+                    zones[1] += duration
+                elif hr < 160:
+                    zones[2] += duration
+                elif hr < 180:
+                    zones[3] += duration
+                else:
+                    zones[4] += duration
+        
+        # Convert to percentages
+        total_time = sum(zones)
+        if total_time > 0:
+            zones = [round((z / total_time) * 100, 1) for z in zones]
+        
+        return jsonify({
+            'zones': zones
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching heart rate zones: {str(e)}")
+        return jsonify({'error': 'Failed to fetch heart rate zones'}), 500
+
+@api_bp.route('/athletes/<int:athlete_id>/training-load')
+def get_training_load(athlete_id):
+    """Get training load data for charts"""
+    try:
+        days = int(request.args.get('days', 30))
+        logger.info(f"Fetching training load for athlete {athlete_id}, {days} days")
+        
+        end_date = datetime.datetime.now()
+        start_date = end_date - datetime.timedelta(days=days)
+        
+        activities = Activity.query.filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= start_date,
+            Activity.start_date <= end_date
+        ).order_by(Activity.start_date).all()
+        
+        # Group by date and calculate training load
+        date_loads = {}
+        for activity in activities:
+            date_key = activity.start_date.date().isoformat()
+            if date_key not in date_loads:
+                date_loads[date_key] = 0
+            
+            # Simple training load calculation
+            distance_km = (activity.distance or 0) / 1000
+            duration_hours = (activity.moving_time or 0) / 3600
+            load = distance_km * 10 + duration_hours * 50  # Basic formula
+            date_loads[date_key] += load
+        
+        dates = list(date_loads.keys())
+        loads = [round(load, 1) for load in date_loads.values()]
+        
+        return jsonify({
+            'dates': dates,
+            'loads': loads
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching training load: {str(e)}")
+        return jsonify({'error': 'Failed to fetch training load'}), 500
+
+@api_bp.route('/athletes/<int:athlete_id>/recent-activities')
+def get_recent_activities(athlete_id):
+    """Get recent activities for table display"""
+    try:
+        limit = int(request.args.get('limit', 10))
+        logger.info(f"Fetching recent activities for athlete {athlete_id}, limit {limit}")
+        
+        activities = Activity.query.filter(
+            Activity.athlete_id == athlete_id
+        ).order_by(Activity.start_date.desc()).limit(limit).all()
+        
+        activities_data = []
+        for activity in activities:
+            # Calculate pace if speed is available
+            pace_formatted = '--'
+            if activity.average_speed and activity.average_speed > 0:
+                pace_min_per_km = 16.67 / activity.average_speed
+                minutes = int(pace_min_per_km)
+                seconds = int((pace_min_per_km - minutes) * 60)
+                pace_formatted = f"{minutes}:{seconds:02d}/km"
+            
+            activities_data.append({
+                'start_date': activity.start_date.isoformat(),
+                'sport_type': activity.sport_type,
+                'distance': activity.distance or 0,
+                'moving_time': activity.moving_time or 0,
+                'pace_formatted': pace_formatted,
+                'average_heartrate': activity.average_heartrate,
+                'training_stress_score': activity.training_stress_score
+            })
+        
+        return jsonify(activities_data)
+        
+    except Exception as e:
+        logger.error(f"Error fetching recent activities: {str(e)}")
+        return jsonify({'error': 'Failed to fetch recent activities'}), 500
+
+@api_bp.route('/athletes/<int:athlete_id>/insights')
+def get_performance_insights(athlete_id):
+    """Get performance insights for athlete"""
+    try:
+        logger.info(f"Fetching insights for athlete {athlete_id}")
+        
+        # Get recent summary data
+        end_date = datetime.datetime.now()
+        start_date = end_date - datetime.timedelta(days=30)
+        
+        summaries = DailySummary.query.filter(
+            DailySummary.athlete_id == athlete_id,
+            DailySummary.summary_date >= start_date
+        ).all()
+        
+        insights = []
+        
+        if summaries:
+            total_distance = sum(s.total_distance or 0 for s in summaries) / 1000
+            avg_weekly_distance = (total_distance / 4) if total_distance > 0 else 0
+            
+            if avg_weekly_distance > 50:
+                insights.append({
+                    'category': 'Volume',
+                    'message': f'Excellent weekly volume averaging {avg_weekly_distance:.1f}km. Maintain consistency for optimal adaptation.'
+                })
+            elif avg_weekly_distance > 30:
+                insights.append({
+                    'category': 'Volume',
+                    'message': f'Good weekly volume at {avg_weekly_distance:.1f}km. Consider gradually increasing for marathon preparation.'
+                })
+            else:
+                insights.append({
+                    'category': 'Volume',
+                    'message': f'Current volume is {avg_weekly_distance:.1f}km/week. Building base mileage will improve endurance.'
+                })
+            
+            # Consistency insight
+            training_days = len([s for s in summaries if s.activity_count > 0])
+            consistency = (training_days / len(summaries)) * 100 if summaries else 0
+            
+            if consistency > 80:
+                insights.append({
+                    'category': 'Consistency',
+                    'message': f'Outstanding consistency at {consistency:.0f}%. This discipline will pay dividends in race performance.'
+                })
+            elif consistency > 60:
+                insights.append({
+                    'category': 'Consistency',
+                    'message': f'Good consistency at {consistency:.0f}%. Aim for 4-5 training days per week for optimal progress.'
+                })
+            else:
+                insights.append({
+                    'category': 'Consistency',
+                    'message': f'Training consistency at {consistency:.0f}%. Regular training is key to marathon success.'
+                })
+        
+        return jsonify(insights)
+        
+    except Exception as e:
+        logger.error(f"Error fetching insights: {str(e)}")
+        return jsonify({'error': 'Failed to fetch insights'}), 500

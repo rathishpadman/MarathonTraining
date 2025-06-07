@@ -314,8 +314,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-let currentAthlete = null;
 let charts = {};
+if (typeof currentAthlete === 'undefined') {
+    let currentAthlete = null;
+}
 
 // Load athletes and analytics on page load
 document.addEventListener('DOMContentLoaded', function() {
