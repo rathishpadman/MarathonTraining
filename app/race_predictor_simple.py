@@ -128,12 +128,12 @@ class SimpleRacePredictor:
         hr_activities = [a for a in activities if a.average_heartrate and a.average_heartrate > 0]
         avg_hr = sum(a.average_heartrate for a in hr_activities) / len(hr_activities) if hr_activities else 0
         
-        # Calculate realistic SpO2 based on training intensity (96-99% normal range)
-        spo2_estimate = 99.0  # Default healthy value
-        if avg_hr > 0:
-            # Estimate based on training intensity - higher intensity slightly lowers SpO2
-            intensity_factor = min(avg_hr / 180.0, 1.0)  # Normalize to max HR
-            spo2_estimate = 99.0 - (intensity_factor * 3.0)  # Range: 96-99%
+        # Calculate actual Training Stress Score (TSS) based on real activity data
+        actual_tss = self._calculate_training_stress_score(activities)
+        
+        # Calculate realistic SpO2 - only show if no actual data available
+        # Note: SpO2 should be measured, not calculated from running data
+        spo2_estimate = None  # Don't estimate without proper measurement
         
         return {
             'fitness_metrics': {
@@ -150,8 +150,8 @@ class SimpleRacePredictor:
                     'tooltip': 'Estimated lactate threshold pace - the fastest pace you can sustain for 60+ minutes'
                 },
                 'training_load': {
-                    'value': round(total_time * 100, 1),
-                    'tooltip': 'Training Stress Score (TSS) based on total training hours and intensity over the analysis period'
+                    'value': round(actual_tss, 1),
+                    'tooltip': 'Training Stress Score (TSS) calculated from activity duration, intensity, and athlete threshold pace'
                 },
                 'consistency_score': {
                     'value': round(consistency, 1),
@@ -161,9 +161,9 @@ class SimpleRacePredictor:
                     'value': round(actual_injury_risk, 1),
                     'tooltip': 'Injury risk percentage based on training load progression, recovery patterns, and biomechanical indicators'
                 },
-                'spo2_level': {
-                    'value': round(spo2_estimate, 1),
-                    'tooltip': 'Estimated blood oxygen saturation (%) - normal range is 96-99% for healthy athletes'
+                'weekly_distance': {
+                    'value': round(total_distance / (days / 7), 1),
+                    'tooltip': 'Average weekly running distance (km) calculated from total distance over analysis period'
                 },
                 'heart_rate_zones': {
                     'value': round(avg_hr, 0) if avg_hr > 0 else 'N/A',
@@ -214,50 +214,62 @@ class SimpleRacePredictor:
         return max(0, min(100, fitness_score))
     
     def _estimate_vo2_max(self, activities: List[Activity]) -> float:
-        """Estimate VO2 max from best recent performances"""
+        """Estimate VO2 max from best recent performances using Jack Daniels formula"""
         if not activities:
-            return 35.0
+            return 40.0  # Conservative baseline
         
-        # Find fastest paces for different distance ranges
-        best_paces = {}
+        # Find best running performance for VO2 max estimation
+        best_vdot = 0
         
         for activity in activities:
             if not (activity.distance and activity.moving_time and activity.distance > 1000):
                 continue
             
             distance_km = activity.distance / 1000
-            pace = activity.moving_time / distance_km  # seconds per km
+            pace_per_km = activity.moving_time / distance_km  # seconds per km
             
-            if not (200 < pace < 800):  # Reasonable pace range
+            # Only use reasonable paces (3:20 to 13:20 per km)
+            if not (200 <= pace_per_km <= 800):
                 continue
             
-            # Categorize by distance
-            if 3 <= distance_km <= 8:
-                category = '5K'
-            elif 8 < distance_km <= 15:
-                category = '10K'
-            elif 15 < distance_km <= 25:
-                category = 'Half'
-            else:
-                continue
+            # Convert to speed in m/min for Jack Daniels VDOT calculation
+            speed_mmin = 60000 / pace_per_km  # meters per minute
             
-            if category not in best_paces or pace < best_paces[category]:
-                best_paces[category] = pace
+            # Jack Daniels VDOT formula based on distance and time
+            # VDOT = -4.6 + 0.182258 * speed + 0.000104 * speed^2
+            if 3.0 <= distance_km <= 42.2:  # Valid racing distances
+                percent_max = self._get_percent_max_for_distance(distance_km)
+                if percent_max > 0:
+                    vdot = (-4.6 + 0.182258 * speed_mmin + 0.000104 * speed_mmin * speed_mmin) / (percent_max / 100)
+                    if vdot > best_vdot:
+                        best_vdot = vdot
         
-        if not best_paces:
-            return 35.0
+        # Return realistic VO2 max range (30-70 ml/kg/min)
+        if best_vdot == 0:
+            return 40.0
         
-        # Convert best pace to estimated VO2 max using Jack Daniels formula approximation
-        best_pace = min(best_paces.values())
-        
-        # Simplified VO2 max estimation
-        # VO2 max ≈ 15.3 × (running velocity in m/min)^1.06
-        velocity_ms = 1000 / best_pace  # m/s
-        velocity_mmin = velocity_ms * 60  # m/min
-        
-        vo2_max = 15.3 * (velocity_mmin / 1000) ** 1.06 * 100
-        
-        return max(35.0, min(80.0, vo2_max))
+        return max(30.0, min(70.0, best_vdot))
+    
+    def _get_percent_max_for_distance(self, distance_km: float) -> float:
+        """Get percentage of VO2 max typically used for different distances"""
+        if distance_km <= 1.5:  # 1500m
+            return 100.0
+        elif distance_km <= 3.2:  # 3K
+            return 97.0
+        elif distance_km <= 5.0:  # 5K
+            return 95.0
+        elif distance_km <= 10.0:  # 10K
+            return 90.0
+        elif distance_km <= 15.0:  # 15K
+            return 85.0
+        elif distance_km <= 21.1:  # Half marathon
+            return 80.0
+        elif distance_km <= 30.0:  # 30K
+            return 75.0
+        elif distance_km <= 42.2:  # Marathon
+            return 70.0
+        else:
+            return 65.0
     
     def _calculate_average_pace(self, activities: List[Activity]) -> float:
         """Calculate average pace in seconds per km"""
@@ -299,6 +311,37 @@ class SimpleRacePredictor:
         # Convert to consistency score (lower CV = higher consistency)
         consistency = max(0, 100 - cv * 50)
         return min(100, consistency)
+    
+    def _calculate_training_stress_score(self, activities: List[Activity]) -> float:
+        """Calculate Training Stress Score (TSS) from actual activity data"""
+        total_tss = 0.0
+        
+        # Calculate athlete's threshold pace for intensity factor calculation
+        threshold_pace = self._calculate_average_pace(activities) * 1.05  # Conservative LT pace
+        
+        for activity in activities:
+            if not (activity.distance and activity.moving_time and activity.distance > 1000):
+                continue
+            
+            distance_km = activity.distance / 1000
+            pace_per_km = activity.moving_time / distance_km
+            
+            # Skip unrealistic paces
+            if not (200 <= pace_per_km <= 800):
+                continue
+            
+            # Calculate Intensity Factor (IF) - ratio of pace to threshold pace
+            # Note: Faster pace = lower seconds/km, so invert the ratio
+            intensity_factor = min(threshold_pace / pace_per_km, 1.2)  # Cap at 1.2
+            
+            # Calculate Normalized Power equivalent for running
+            # TSS = (Training Time in hours × IF² × 100)
+            duration_hours = activity.moving_time / 3600
+            activity_tss = duration_hours * (intensity_factor ** 2) * 100
+            
+            total_tss += activity_tss
+        
+        return total_tss
     
     def _predict_from_pace_analysis(self, activities: List[Activity], distance_km: float) -> Optional[float]:
         """Predict race time based on recent pace analysis"""
