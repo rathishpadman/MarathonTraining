@@ -738,41 +738,41 @@ function showError(message) {
 
 // Navigation functions
 function openRacePredictor() {
-    if (currentAthlete) {
-        window.location.href = `/race-predictor?athlete_id=${currentAthlete}`;
+    if (selectedAthleteId) {
+        window.location.href = `/race-predictor?athlete_id=${selectedAthleteId}`;
     } else {
         alert('Please select an athlete first');
     }
 }
 
 function openInjuryRisk() {
-    if (currentAthlete) {
-        window.location.href = `/injury-risk?athlete_id=${currentAthlete}`;
+    if (selectedAthleteId) {
+        window.location.href = `/injury-risk?athlete_id=${selectedAthleteId}`;
     } else {
         alert('Please select an athlete first');
     }
 }
 
 function openRaceOptimizer() {
-    if (currentAthlete) {
-        window.location.href = `/race-optimizer?athlete_id=${currentAthlete}`;
+    if (selectedAthleteId) {
+        window.location.href = `/race-optimizer?athlete_id=${selectedAthleteId}`;
     } else {
         alert('Please select an athlete first');
     }
 }
 
 function openDashboard() {
-    if (currentAthlete) {
-        window.location.href = `/dashboard?athlete_id=${currentAthlete}`;
+    if (selectedAthleteId) {
+        window.location.href = `/dashboard?athlete_id=${selectedAthleteId}`;
     } else {
         alert('Please select an athlete first');
     }
 }
 
 function exportData() {
-    if (currentAthlete) {
+    if (selectedAthleteId) {
         const timePeriod = document.getElementById('timePeriodSelect').value;
-        window.open(`/api/athletes/${currentAthlete}/export?days=${timePeriod}`, '_blank');
+        window.open(`/api/athletes/${selectedAthleteId}/export?days=${timePeriod}`, '_blank');
     } else {
         alert('Please select an athlete first');
     }
