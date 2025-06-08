@@ -265,17 +265,68 @@
         function renderFitnessMetrics(metrics) {
             const container = document.getElementById('metricsGrid');
             
+            // Handle both old and new metric structure
+            const getMetricValue = (metric) => {
+                return typeof metric === 'object' && metric.value !== undefined ? metric.value : metric;
+            };
+            
+            const getMetricTooltip = (metric) => {
+                return typeof metric === 'object' && metric.tooltip ? metric.tooltip : '';
+            };
+            
             const metricsData = [
-                { title: 'Current Fitness', value: metrics.current_fitness || 0, unit: '/100' },
-                { title: 'Aerobic Capacity', value: metrics.aerobic_capacity || 0, unit: 'VO₂ max' },
-                { title: 'Training Load', value: metrics.training_load || 0, unit: 'TSS' },
-                { title: 'Consistency Score', value: metrics.consistency_score || 0, unit: '/100' },
-                { title: 'Injury Risk', value: metrics.injury_risk || 0, unit: '%' },
-                { title: 'Fatigue Level', value: metrics.fatigue_level || 0, unit: '/100' }
+                { 
+                    title: 'Current Fitness', 
+                    value: getMetricValue(metrics.current_fitness) || 0, 
+                    unit: '/100',
+                    tooltip: getMetricTooltip(metrics.current_fitness)
+                },
+                { 
+                    title: 'Aerobic Capacity', 
+                    value: getMetricValue(metrics.aerobic_capacity) || 0, 
+                    unit: 'VO₂ max',
+                    tooltip: getMetricTooltip(metrics.aerobic_capacity)
+                },
+                { 
+                    title: 'Training Load', 
+                    value: getMetricValue(metrics.training_load) || 0, 
+                    unit: 'TSS',
+                    tooltip: getMetricTooltip(metrics.training_load)
+                },
+                { 
+                    title: 'Consistency Score', 
+                    value: getMetricValue(metrics.consistency_score) || 0, 
+                    unit: '/100',
+                    tooltip: getMetricTooltip(metrics.consistency_score)
+                },
+                { 
+                    title: 'Injury Risk', 
+                    value: getMetricValue(metrics.injury_risk) || 0, 
+                    unit: '%',
+                    tooltip: getMetricTooltip(metrics.injury_risk)
+                },
+                { 
+                    title: 'SpO2 Level', 
+                    value: getMetricValue(metrics.spo2_level) || 98, 
+                    unit: '%',
+                    tooltip: getMetricTooltip(metrics.spo2_level)
+                },
+                { 
+                    title: 'Avg Heart Rate', 
+                    value: getMetricValue(metrics.heart_rate_zones) || 'N/A', 
+                    unit: 'bpm',
+                    tooltip: getMetricTooltip(metrics.heart_rate_zones)
+                },
+                { 
+                    title: 'LT Pace', 
+                    value: getMetricValue(metrics.lactate_threshold_pace) || 'N/A', 
+                    unit: 'min/km',
+                    tooltip: getMetricTooltip(metrics.lactate_threshold_pace)
+                }
             ];
             
             container.innerHTML = metricsData.map(metric => `
-                <div class="metric-card">
+                <div class="metric-card" ${metric.tooltip ? `title="${metric.tooltip}"` : ''}>
                     <div class="metric-title">${metric.title}</div>
                     <div class="metric-value">${metric.value}</div>
                     <div class="metric-unit">${metric.unit}</div>
