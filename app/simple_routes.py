@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_from_directory
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
 from flask_socketio import emit, join_room, leave_room
 from app import db, socketio
@@ -603,6 +603,12 @@ def auth_success():
     """Display success page after Strava authentication"""
     from flask import render_template
     return render_template('auth_success.html')
+
+@main_bp.route('/attached_assets/<path:filename>')
+def serve_attached_assets(filename):
+    """Serve files from the attached_assets directory"""
+    import os
+    return send_from_directory(os.path.join(os.getcwd(), 'attached_assets'), filename)
 
 # WebSocket event handlers
 @socketio.on('join_dashboard_room')
