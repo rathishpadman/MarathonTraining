@@ -14,6 +14,16 @@
             color: white;
         }
         
+        /* Ensure all text elements are white */
+        *, *::before, *::after {
+            color: white !important;
+        }
+        
+        /* Exception for loading states that should remain styled */
+        .loading {
+            color: white !important;
+        }
+        
         .container {
             max-width: 1400px;
             margin: 0 auto;
