@@ -695,16 +695,16 @@ function generateRaceRecommendation(distance, heartRate, athleteData) {
         };
         
         // Get athlete ID from current athlete
-        const athleteId = currentAthlete;
+        const selectedAthleteId = currentAthlete;
         
-        if (!athleteId) {
+        if (!selectedAthleteId) {
             // Fallback to rule-based recommendations
             resolve(generateFallbackRecommendations(distance, heartRate, athleteData));
             return;
         }
         
         // Call AI recommendations API
-        fetch(`/api/athletes/${athleteId}/ai-race-recommendations`, {
+        fetch(`/api/athletes/${selectedAthleteId}/ai-race-recommendations`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
