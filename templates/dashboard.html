@@ -150,6 +150,24 @@
     </div>
 </div>
 
+<!-- Fitness Analysis Section -->
+<div class="row mt-4" id="fitnessSection" style="display: none;">
+    <div class="col-12">
+        <div class="card-glassmorphism p-4">
+            <h4 class="text-white mb-3">
+                <i class="fas fa-chart-line me-2"></i>
+                Current Fitness Analysis
+            </h4>
+            <div id="fitnessAnalysis">
+                <div class="text-center text-white-50 p-4">
+                    <i class="fas fa-heartbeat fa-2x mb-2"></i>
+                    <p>Loading fitness analysis...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Team Overview (if multiple athletes) -->
 <div class="row mt-4" id="teamSection" style="display: none;">
     <div class="col-12">
@@ -397,10 +415,12 @@ function loadAthleteData(athleteId) {
                 const metricsSection = document.getElementById('metricsSection');
                 const chartsSection = document.getElementById('chartsSection');
                 const activitiesSection = document.getElementById('activitiesSection');
+                const fitnessSection = document.getElementById('fitnessSection');
                 
                 if (metricsSection) metricsSection.style.display = 'flex';
                 if (chartsSection) chartsSection.style.display = 'flex';
                 if (activitiesSection) activitiesSection.style.display = 'flex';
+                if (fitnessSection) fitnessSection.style.display = 'block';
             }
             
             const loadingSpinner = document.getElementById('loadingSpinner');
