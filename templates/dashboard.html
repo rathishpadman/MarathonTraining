@@ -402,7 +402,7 @@ function updateDashboardMetrics(data) {
 function updateCharts(data) {
     // Create weekly progress chart from recent activities
     if (data.recent_activities && data.recent_activities.length > 0) {
-        createWeeklyProgressChartFromActivities(data.recent_activities);
+        createWeeklyProgressChartFromActivities(data.recent_activities, data);
     }
     
     // Create status chart from metrics
@@ -410,7 +410,7 @@ function updateCharts(data) {
 }
 
 // Create weekly progress chart from actual activities
-function createWeeklyProgressChartFromActivities(activities) {
+function createWeeklyProgressChartFromActivities(activities, athleteData) {
     const ctx = document.getElementById('weeklyProgressChart').getContext('2d');
     
     if (charts.weeklyProgress) {
@@ -467,6 +467,27 @@ function createWeeklyProgressChartFromActivities(activities) {
                 legend: {
                     labels: {
                         color: 'white'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    titleColor: 'white',
+                    bodyColor: 'white',
+                    borderColor: '#007bff',
+                    borderWidth: 2,
+                    cornerRadius: 8,
+                    displayColors: true,
+                    callbacks: {
+                        afterBody: function(context) {
+                            const dataIndex = context[0].dataIndex;
+                            const distance = distances[dataIndex];
+                            const heartRate = avgHeartRates[dataIndex];
+                            
+                            if (distance > 0 && heartRate > 0) {
+                                return generateRaceRecommendation(distance, heartRate, athleteData);
+                            }
+                            return '';
+                        }
                     }
                 }
             },
@@ -591,6 +612,80 @@ function createStatusChartFromMetrics(metrics) {
             }
         }
     });
+}
+
+// ML-powered race recommendation function
+function generateRaceRecommendation(distance, heartRate, athleteData) {
+    const metrics = athleteData.metrics || {};
+    const avgPace = metrics.avg_pace || 7.0;
+    const totalDistance = metrics.total_distance || 0;
+    const totalActivities = metrics.total_activities || 0;
+    
+    // Calculate training readiness score (0-100)
+    let readinessScore = 0;
+    
+    // Distance factor (30% weight)
+    const weeklyAvg = totalDistance / 4; // Approximate weekly average
+    if (weeklyAvg >= 40) readinessScore += 30;
+    else if (weeklyAvg >= 25) readinessScore += 20;
+    else if (weeklyAvg >= 15) readinessScore += 10;
+    
+    // Heart rate efficiency factor (40% weight)
+    const maxHR = 185; // Assumed max HR
+    const hrEfficiency = (maxHR - heartRate) / maxHR;
+    if (hrEfficiency > 0.3) readinessScore += 40;
+    else if (hrEfficiency > 0.2) readinessScore += 30;
+    else if (hrEfficiency > 0.1) readinessScore += 20;
+    else readinessScore += 10;
+    
+    // Pace factor (30% weight)
+    if (avgPace <= 5.0) readinessScore += 30;
+    else if (avgPace <= 6.0) readinessScore += 25;
+    else if (avgPace <= 7.0) readinessScore += 20;
+    else if (avgPace <= 8.0) readinessScore += 15;
+    else readinessScore += 10;
+    
+    // Generate recommendations based on ML analysis
+    let recommendations = [];
+    
+    // Race distance recommendations
+    if (distance >= 15 && readinessScore >= 70) {
+        recommendations.push('🏃‍♂️ Ready for Half Marathon (21.1km)');
+        if (readinessScore >= 85) {
+            recommendations.push('🏆 Marathon potential detected!');
+        }
+    } else if (distance >= 8 && readinessScore >= 60) {
+        recommendations.push('🎯 10K race ready');
+        recommendations.push('📈 Build to Half Marathon');
+    } else if (distance >= 4 && readinessScore >= 50) {
+        recommendations.push('⚡ 5K race optimal');
+        recommendations.push('🔄 Focus on 10K training');
+    } else {
+        recommendations.push('🌟 Building base fitness');
+        recommendations.push('📊 Target 5K in 4-6 weeks');
+    }
+    
+    // Training intensity recommendations
+    if (heartRate < maxHR * 0.7) {
+        recommendations.push('💚 Great aerobic base');
+    } else if (heartRate < maxHR * 0.8) {
+        recommendations.push('🟡 Moderate intensity zone');
+    } else {
+        recommendations.push('🔴 High intensity - monitor recovery');
+    }
+    
+    // Performance prediction
+    const predicted5K = (avgPace * 5).toFixed(1);
+    const predicted10K = (avgPace * 10 * 1.05).toFixed(1);
+    const predictedHalf = (avgPace * 21.1 * 1.1).toFixed(1);
+    
+    recommendations.push('');
+    recommendations.push('🎯 Predicted Times:');
+    recommendations.push(`5K: ${Math.floor(predicted5K)}:${String(Math.round((predicted5K % 1) * 60)).padStart(2, '0')}`);
+    recommendations.push(`10K: ${Math.floor(predicted10K)}:${String(Math.round((predicted10K % 1) * 60)).padStart(2, '0')}`);
+    recommendations.push(`Half: ${Math.floor(predictedHalf / 60)}:${String(Math.floor(predictedHalf % 60)).padStart(2, '0')}:00`);
+    
+    return recommendations;
 }
 
 // Create weekly progress chart (legacy function)
