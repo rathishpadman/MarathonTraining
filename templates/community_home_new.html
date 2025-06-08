@@ -482,6 +482,16 @@
         background: linear-gradient(90deg, var(--primary-teal), var(--accent-purple));
     }
 
+    .chart-container canvas {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+
+    canvas {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+
     .chart-title {
         font-size: 1.5rem;
         font-weight: 700;
@@ -943,9 +953,26 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCommunityData();
     setupEventListeners();
     
+    // Force canvas transparency
+    forceCanvasTransparency();
+    setInterval(forceCanvasTransparency, 1000);
+    
     // Auto-refresh every 30 seconds
     setInterval(loadCommunityData, 30000);
 });
+
+function forceCanvasTransparency() {
+    const canvases = document.querySelectorAll('canvas');
+    canvases.forEach(canvas => {
+        canvas.style.backgroundColor = 'transparent';
+        canvas.style.background = 'transparent';
+        // Force redraw for Chart.js
+        if (canvas.style.backgroundColor !== 'transparent') {
+            canvas.style.setProperty('background-color', 'transparent', 'important');
+            canvas.style.setProperty('background', 'transparent', 'important');
+        }
+    });
+}
 
 function setupEventListeners() {
     // Filter buttons
@@ -1179,32 +1206,68 @@ function renderTrainingTrendsChart(data) {
         trainingTrendsChart.destroy();
     }
     
+    // Force canvas transparency
+    ctx.canvas.style.backgroundColor = 'transparent';
+    ctx.canvas.style.background = 'transparent';
+    
     trainingTrendsChart = new Chart(ctx, {
         type: 'line',
         data: data,
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            backgroundColor: 'transparent',
             plugins: {
                 legend: {
                     labels: {
                         color: 'rgba(255, 255, 255, 0.9)',
-                        font: { size: 12 }
+                        font: { size: 12, weight: '500' }
                     }
                 }
             },
             scales: {
                 x: {
-                    ticks: { color: 'rgba(255, 255, 255, 0.7)' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    ticks: { 
+                        color: 'rgba(255, 255, 255, 0.8)',
+                        font: { size: 11 }
+                    },
+                    grid: { 
+                        color: 'rgba(255, 255, 255, 0.1)',
+                        borderColor: 'rgba(255, 255, 255, 0.2)'
+                    }
                 },
                 y: {
-                    ticks: { color: 'rgba(255, 255, 255, 0.7)' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    ticks: { 
+                        color: 'rgba(255, 255, 255, 0.8)',
+                        font: { size: 11 }
+                    },
+                    grid: { 
+                        color: 'rgba(255, 255, 255, 0.1)',
+                        borderColor: 'rgba(255, 255, 255, 0.2)'
+                    }
+                }
+            },
+            elements: {
+                point: {
+                    backgroundColor: 'rgba(20, 184, 166, 0.8)',
+                    borderColor: 'rgba(255, 255, 255, 0.9)',
+                    borderWidth: 2,
+                    radius: 4,
+                    hoverRadius: 6
+                },
+                line: {
+                    tension: 0.4,
+                    borderWidth: 3
                 }
             }
         }
     });
+    
+    // Force transparency after creation
+    setTimeout(() => {
+        ctx.canvas.style.backgroundColor = 'transparent';
+        ctx.canvas.style.background = 'transparent';
+    }, 100);
 }
 
 function renderTrainingLoadChart(data) {
@@ -1213,6 +1276,10 @@ function renderTrainingLoadChart(data) {
     if (trainingLoadChart) {
         trainingLoadChart.destroy();
     }
+    
+    // Force canvas transparency
+    ctx.canvas.style.backgroundColor = 'transparent';
+    ctx.canvas.style.background = 'transparent';
     
     trainingLoadChart = new Chart(ctx, {
         type: 'doughnut',
@@ -1225,27 +1292,47 @@ function renderTrainingLoadChart(data) {
                     'rgba(249, 115, 22, 0.8)',
                     'rgba(139, 92, 246, 0.8)',
                     'rgba(236, 72, 153, 0.8)',
-                    'rgba(251, 191, 36, 0.8)'
+                    'rgba(251, 191, 36, 0.8)',
+                    'rgba(34, 197, 94, 0.8)'
                 ],
-                borderColor: 'rgba(255, 255, 255, 0.2)',
-                borderWidth: 2
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+                borderWidth: 2,
+                hoverBorderColor: 'rgba(255, 255, 255, 0.8)',
+                hoverBorderWidth: 3
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            backgroundColor: 'transparent',
+            cutout: '60%',
             plugins: {
                 legend: {
                     position: 'bottom',
                     labels: {
                         color: 'rgba(255, 255, 255, 0.9)',
-                        font: { size: 12 },
-                        padding: 20
+                        font: { size: 12, weight: '500' },
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
                     }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: 'rgba(255, 255, 255, 0.9)',
+                    bodyColor: 'rgba(255, 255, 255, 0.8)',
+                    borderColor: 'rgba(20, 184, 166, 0.5)',
+                    borderWidth: 1
                 }
             }
         }
     });
+    
+    // Force transparency after creation
+    setTimeout(() => {
+        ctx.canvas.style.backgroundColor = 'transparent';
+        ctx.canvas.style.background = 'transparent';
+    }, 100);
 }
 
 async function loadLeaderboard(period = 'weekly') {

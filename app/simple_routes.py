@@ -1036,7 +1036,7 @@ def get_community_training_zones():
         return jsonify({'error': str(e)}), 500
 
 # Community Activity Stream API
-@api_bp.route('/community/activity_stream', methods=['GET'])
+@api_bp.route('/community/activity-stream', methods=['GET'])
 def get_community_activity_stream():
     """Get recent community activities and milestones"""
     try:
