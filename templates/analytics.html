@@ -1,82 +1,36 @@
 {% extends "base.html" %}
 
-{% block title %}Individual Analytics - Marathon Training Dashboard{% endblock %}
-
-{% block head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-{% endblock %}
+{% block title %}Individual Analytics{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <!-- Page Header -->
-    <div class="row mb-4">
+<div class="container-fluid">
+    <div class="row">
         <div class="col-12">
-            <div class="card card-glassmorphism">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h1 class="text-white mb-2">
-                                <i class="fas fa-chart-line me-2"></i>
-                                Individual Analytics
-                            </h1>
-                            <p class="text-white-75 mb-0">
-                                Comprehensive performance analysis and insights for individual athletes
-                            </p>
-                        </div>
-                    </div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Individual Analytics
+                    </h4>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Athlete Selection -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card card-glassmorphism">
                 <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-4">
-                            <label for="athleteSelect" class="form-label text-white fw-bold">Select Athlete:</label>
-                            <select class="form-select" id="athleteSelect" onchange="loadAthleteAnalytics()">
-                                <option value="">Loading athletes...</option>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="athleteSelect" class="form-label">Select Athlete:</label>
+                            <select id="athleteSelect" class="form-select" onchange="loadAnalytics()">
+                                <option value="">Choose an athlete...</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <label for="timePeriodSelect" class="form-label text-white fw-bold">Time Period:</label>
-                            <select class="form-select" id="timePeriodSelect" onchange="loadAthleteAnalytics()">
+                        <div class="col-md-6">
+                            <label for="timePeriod" class="form-label">Time Period:</label>
+                            <select id="timePeriod" class="form-select" onchange="loadAnalytics()">
                                 <option value="7">Last 7 days</option>
+                                <option value="14">Last 14 days</option>
                                 <option value="30" selected>Last 30 days</option>
                                 <option value="90">Last 90 days</option>
-                                <option value="365">Last year</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <div class="d-flex gap-2 mt-4">
-                                <button class="btn btn-primary" onclick="loadAthleteAnalytics()">
-                                    <i class="fas fa-sync-alt me-2"></i>
-                                    Refresh Data
-                                </button>
-                                <button class="btn btn-success" onclick="exportData()">
-                                    <i class="fas fa-download me-2"></i>
-                                    Export
-                                </button>
-                            </div>
-                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Loading State -->
-    <div class="row mb-4" id="loadingState" style="display: none;">
-        <div class="col-12">
-            <div class="card card-glassmorphism">
-                <div class="card-body text-center">
-                    <div class="spinner-border text-primary mb-3" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <h5 class="text-white">Loading Analytics Data...</h5>
                 </div>
             </div>
         </div>
@@ -84,389 +38,186 @@
 
     <!-- Analytics Content -->
     <div id="analyticsContent" style="display: none;">
-        
-        <!-- Performance Summary Cards -->
+        <!-- Summary Stats -->
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="card card-glassmorphism h-100">
-                    <div class="card-body text-center">
-                        <i class="fas fa-route text-primary fs-1 mb-3"></i>
-                        <h5 class="text-white">Total Distance</h5>
-                        <h2 class="text-primary mb-0" id="totalDistance">--</h2>
-                        <small class="text-white-75" id="distanceTimeframe">Last 30 days</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card card-glassmorphism h-100">
-                    <div class="card-body text-center">
-                        <i class="fas fa-clock text-warning fs-1 mb-3"></i>
-                        <h5 class="text-white">Training Time</h5>
-                        <h2 class="text-warning mb-0" id="totalTime">--</h2>
-                        <small class="text-white-75" id="timeTimeframe">Last 30 days</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card card-glassmorphism h-100">
-                    <div class="card-body text-center">
-                        <i class="fas fa-tachometer-alt text-success fs-1 mb-3"></i>
-                        <h5 class="text-white">Avg Pace</h5>
-                        <h2 class="text-success mb-0" id="avgPace">--</h2>
-                        <small class="text-white-75" id="paceTimeframe">Last 30 days</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card card-glassmorphism h-100">
-                    <div class="card-body text-center">
-                        <i class="fas fa-heartbeat text-danger fs-1 mb-3"></i>
-                        <h5 class="text-white">Avg Heart Rate</h5>
-                        <h2 class="text-danger mb-0" id="avgHeartRate">--</h2>
-                        <small class="text-white-75" id="hrTimeframe">Last 30 days</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Charts Section -->
-        <div class="row mb-4">
-            <!-- Training Volume Chart -->
-            <div class="col-md-6">
-                <div class="card card-glassmorphism">
-                    <div class="card-header">
-                        <h5 class="text-white mb-0">
-                            <i class="fas fa-chart-bar me-2"></i>
-                            Training Volume Trend
-                        </h5>
-                    </div>
-                    <div class="card-body" style="height: 350px;">
-                        <canvas id="trainingVolumeChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Pace Analysis Chart -->
-            <div class="col-md-6">
-                <div class="card card-glassmorphism">
-                    <div class="card-header">
-                        <h5 class="text-white mb-0">
-                            <i class="fas fa-running me-2"></i>
-                            Pace Analysis
-                        </h5>
-                    </div>
-                    <div class="card-body" style="height: 350px;">
-                        <canvas id="paceAnalysisChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row mb-4">
-            <!-- Heart Rate Zones -->
-            <div class="col-md-6">
-                <div class="card card-glassmorphism">
-                    <div class="card-header">
-                        <h5 class="text-white mb-0">
-                            <i class="fas fa-heart me-2"></i>
-                            Heart Rate Zones
-                        </h5>
-                    </div>
-                    <div class="card-body" style="height: 350px;">
-                        <canvas id="heartRateZonesChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Training Load -->
-            <div class="col-md-6">
-                <div class="card card-glassmorphism">
-                    <div class="card-header">
-                        <h5 class="text-white mb-0">
-                            <i class="fas fa-weight-hanging me-2"></i>
-                            Training Load
-                        </h5>
-                    </div>
-                    <div class="card-body" style="height: 350px;">
-                        <canvas id="trainingLoadChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Activities Table -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card card-glassmorphism">
-                    <div class="card-header">
-                        <h5 class="text-white mb-0">
-                            <i class="fas fa-list me-2"></i>
-                            Recent Activities
-                        </h5>
-                    </div>
+                <div class="card text-center">
                     <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-dark table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Type</th>
-                                        <th>Distance</th>
-                                        <th>Duration</th>
-                                        <th>Pace</th>
-                                        <th>Avg HR</th>
-                                        <th>Training Load</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="activitiesTableBody">
-                                    <tr>
-                                        <td colspan="7" class="text-center text-white-75">Loading activities...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                        <h5 class="card-title text-primary">Total Distance</h5>
+                        <h3 id="totalDistance">--</h3>
+                        <p class="text-muted">kilometers</p>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Performance Insights -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card card-glassmorphism">
-                    <div class="card-header">
-                        <h5 class="text-white mb-0">
-                            <i class="fas fa-lightbulb me-2"></i>
-                            Performance Insights
-                        </h5>
-                    </div>
+            <div class="col-md-3">
+                <div class="card text-center">
                     <div class="card-body">
-                        <div id="performanceInsights">
-                            <div class="text-center text-white-75">
-                                <i class="fas fa-chart-line fs-1 mb-3"></i>
-                                <p>Performance insights will appear here after selecting an athlete</p>
-                            </div>
-                        </div>
+                        <h5 class="card-title text-success">Total Time</h5>
+                        <h3 id="totalTime">--</h3>
+                        <p class="text-muted">hours</p>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card card-glassmorphism">
-                    <div class="card-header">
-                        <h5 class="text-white mb-0">
-                            <i class="fas fa-rocket me-2"></i>
-                            Quick Actions
-                        </h5>
-                    </div>
+            <div class="col-md-3">
+                <div class="card text-center">
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <button class="btn btn-primary w-100 mb-2" onclick="openRacePredictor()">
-                                    <i class="fas fa-trophy me-2"></i>
-                                    Race Predictor
-                                </button>
-                            </div>
-                            <div class="col-md-3">
-                                <button class="btn btn-warning w-100 mb-2" onclick="openInjuryRisk()">
-                                    <i class="fas fa-shield-alt me-2"></i>
-                                    Injury Risk
-                                </button>
-                            </div>
-                            <div class="col-md-3">
-                                <button class="btn btn-success w-100 mb-2" onclick="openRaceOptimizer()">
-                                    <i class="fas fa-magic me-2"></i>
-                                    Race Optimizer
-                                </button>
-                            </div>
-                            <div class="col-md-3">
-                                <button class="btn btn-info w-100 mb-2" onclick="openDashboard()">
-                                    <i class="fas fa-dashboard me-2"></i>
-                                    Full Dashboard
-                                </button>
-                            </div>
-                        </div>
+                        <h5 class="card-title text-warning">Average Pace</h5>
+                        <h3 id="avgPace">--</h3>
+                        <p class="text-muted">min/km</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-danger">Avg Heart Rate</h5>
+                        <h3 id="avgHeartRate">--</h3>
+                        <p class="text-muted">bpm</p>
                     </div>
                 </div>
             </div>
         </div>
 
-    </div>
-
-    <!-- Error Display -->
-    <div id="errorDisplay" style="display: none;">
+        <!-- Charts -->
         <div class="row">
-            <div class="col-12">
-                <div class="alert alert-danger" role="alert">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <span id="errorMessage">An error occurred while loading analytics data.</span>
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Training Volume</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="volumeChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Pace Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="paceChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Heart Rate Zones</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="heartRateChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Training Load</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="trainingLoadChart" width="400" height="200"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Loading State -->
+    <div id="loadingState" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3">Loading analytics data...</p>
+    </div>
+
+    <!-- No Data State -->
+    <div id="noDataState" class="text-center py-5" style="display: none;">
+        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+        <h5>No Analytics Data</h5>
+        <p class="text-muted">Select an athlete to view their performance analytics.</p>
+    </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Analytics-specific variables to avoid conflicts
-let analyticsCharts = {};
-let selectedAthleteId = null;
+let charts = {};
+let currentAthleteId = null;
 
-// Load athletes and analytics on page load
+// Load athletes on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadAthletes();
-    
-    // Check if athlete_id is in URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const athleteId = urlParams.get('athlete_id');
-    if (athleteId) {
-        // Wait a moment for athletes to load, then select the athlete
-        setTimeout(() => {
-            const select = document.getElementById('athleteSelect');
-            select.value = athleteId;
-            loadAthleteAnalytics();
-        }, 500);
-    }
 });
 
-// Load athletes for selection
 function loadAthletes() {
     fetch('/api/athletes')
         .then(response => response.json())
         .then(athletes => {
             const select = document.getElementById('athleteSelect');
-            select.innerHTML = '<option value="">Select an athlete...</option>';
+            select.innerHTML = '<option value="">Choose an athlete...</option>';
             
-            if (athletes && athletes.length > 0) {
-                athletes.forEach(athlete => {
-                    const option = document.createElement('option');
-                    option.value = athlete.id;
-                    option.textContent = athlete.name;
-                    select.appendChild(option);
-                });
-                
-                // Auto-select first athlete
-                if (athletes.length === 1) {
-                    select.value = athletes[0].id;
-                    loadAthleteAnalytics();
-                }
+            athletes.forEach(athlete => {
+                const option = document.createElement('option');
+                option.value = athlete.id;
+                option.textContent = athlete.name;
+                select.appendChild(option);
+            });
+
+            // Auto-select first athlete if only one exists
+            if (athletes.length === 1) {
+                select.value = athletes[0].id;
+                loadAnalytics();
             }
         })
         .catch(error => {
             console.error('Error loading athletes:', error);
-            showError('Failed to load athletes');
         });
 }
 
-// Load analytics data for selected athlete
-function loadAthleteAnalytics() {
+function loadAnalytics() {
     const athleteId = document.getElementById('athleteSelect').value;
-    const timePeriod = document.getElementById('timePeriodSelect').value;
-    
+    const timePeriod = document.getElementById('timePeriod').value;
+
     if (!athleteId) {
-        hideAnalytics();
+        showNoData();
         return;
     }
-    
-    selectedAthleteId = athleteId;
+
+    currentAthleteId = athleteId;
     showLoading();
-    
-    // Load athlete summary data from working endpoint
+
+    // Load analytics summary
     fetch(`/api/athletes/${athleteId}/summary?days=${timePeriod}`)
         .then(response => response.json())
         .then(data => {
-            console.log('Analytics data received:', data);
             if (data.error) {
-                showError(data.error);
-            } else {
-                displayAnalyticsSummary(data);
-                loadRecentActivities(athleteId);
-                console.log('About to call loadBasicCharts from loadAthleteAnalytics');
-                loadBasicCharts(athleteId, timePeriod);
-                showAnalytics();
+                throw new Error(data.error);
             }
+            updateSummaryStats(data);
+            loadCharts(athleteId, timePeriod);
+            showAnalytics();
         })
         .catch(error => {
             console.error('Error loading analytics:', error);
             showError('Failed to load analytics data');
-        })
-        .finally(() => {
-            hideLoading();
         });
 }
 
-// Display analytics summary data
-function displayAnalyticsSummary(data) {
-    const timeframeText = data.period_days ? `Last ${data.period_days} days` : 'Recent period';
-    
-    // Update data values from analytics API
+function updateSummaryStats(data) {
     document.getElementById('totalDistance').textContent = `${data.total_distance.toFixed(1)} km`;
-    document.getElementById('totalTime').textContent = formatDuration(data.total_time * 3600); // Convert hours to seconds
+    document.getElementById('totalTime').textContent = `${data.total_time.toFixed(1)} hrs`;
     document.getElementById('avgPace').textContent = data.avg_pace ? `${data.avg_pace.toFixed(2)} min/km` : '--';
     document.getElementById('avgHeartRate').textContent = data.avg_heart_rate ? `${Math.round(data.avg_heart_rate)} bpm` : '--';
-    
-    // Update timeframe labels
-    document.getElementById('distanceTimeframe').textContent = timeframeText;
-    document.getElementById('timeTimeframe').textContent = timeframeText;
-    document.getElementById('paceTimeframe').textContent = timeframeText;
-    document.getElementById('hrTimeframe').textContent = timeframeText;
-    
-    // Update athlete name in title if available
-    if (data.athlete_name) {
-        const titleElement = document.querySelector('h1');
-        titleElement.innerHTML = `<i class="fas fa-chart-line me-2"></i>Individual Analytics - ${data.athlete_name}`;
-    }
 }
 
-// Display analytics summary (legacy function for compatibility)
-function displayAnalytics(data) {
-    const timeframeText = data.period_days ? `Last ${data.period_days} days` : 'Recent period';
-    
-    // Update data values
-    document.getElementById('totalDistance').textContent = `${data.total_distance} km`;
-    document.getElementById('totalTime').textContent = formatDuration(data.total_time * 3600); // Convert hours to seconds
-    document.getElementById('avgPace').textContent = data.avg_pace ? `${data.avg_pace.toFixed(2)} min/km` : '--';
-    document.getElementById('avgHeartRate').textContent = data.avg_heart_rate ? `${Math.round(data.avg_heart_rate)} bpm` : '--';
-    
-    // Update timeframe labels with actual data period
-    document.getElementById('distanceTimeframe').textContent = timeframeText;
-    document.getElementById('timeTimeframe').textContent = timeframeText;
-    document.getElementById('paceTimeframe').textContent = timeframeText;
-    document.getElementById('hrTimeframe').textContent = timeframeText;
-    
-    showAnalytics();
-}
-
-// Load basic charts with simplified functionality
-function loadBasicCharts(athleteId, timePeriod) {
-    console.log('loadBasicCharts called with:', athleteId, timePeriod);
-    
-    // Wait for Chart.js to be available
-    if (typeof Chart === 'undefined') {
-        console.log('Chart.js not ready, retrying in 100ms');
-        setTimeout(() => loadBasicCharts(athleteId, timePeriod), 100);
-        return;
-    }
-    
-    console.log('Chart.js is available, creating charts...');
-    
-    // Add a small delay to ensure DOM is ready
-    setTimeout(() => {
-        console.log('Creating all charts now...');
-        createSimpleVolumeChart(athleteId, timePeriod);
-        createPaceAnalysisChart(athleteId, timePeriod);
-        createHeartRateZonesChart(athleteId, timePeriod);
-        createTrainingLoadChart(athleteId, timePeriod);
-    }, 100);
-}
-
-// Load and display charts (legacy function)
 function loadCharts(athleteId, timePeriod) {
-    // Training Volume Chart
+    // Destroy existing charts
+    Object.values(charts).forEach(chart => chart.destroy());
+    charts = {};
+
+    // Load volume chart
     fetch(`/api/athletes/${athleteId}/volume-trend?days=${timePeriod}`)
         .then(response => response.json())
         .then(data => {
@@ -474,872 +225,166 @@ function loadCharts(athleteId, timePeriod) {
                 createVolumeChart(data);
             }
         })
-        .catch(error => console.error('Error loading volume chart:', error));
-    
-    // Pace Analysis Chart
+        .catch(error => console.error('Volume chart error:', error));
+
+    // Load pace chart
     fetch(`/api/athletes/${athleteId}/pace-analysis?days=${timePeriod}`)
         .then(response => response.json())
         .then(data => {
-            if (data.dates && data.paces) {
+            if (data.dates && data.average_paces) {
                 createPaceChart(data);
             }
         })
-        .catch(error => console.error('Error loading pace chart:', error));
-    
-    // Heart Rate Zones
+        .catch(error => console.error('Pace chart error:', error));
+
+    // Load heart rate zones chart
     fetch(`/api/athletes/${athleteId}/heart-rate-zones?days=${timePeriod}`)
         .then(response => response.json())
         .then(data => {
-            if (data.zones) {
+            if (data.zones && data.percentages) {
                 createHeartRateChart(data);
             }
         })
-        .catch(error => console.error('Error loading heart rate chart:', error));
-    
-    // Training Load
+        .catch(error => console.error('Heart rate chart error:', error));
+
+    // Load training load chart
     fetch(`/api/athletes/${athleteId}/training-load?days=${timePeriod}`)
         .then(response => response.json())
         .then(data => {
-            if (data.dates && data.loads) {
+            if (data.dates && data.training_loads) {
                 createTrainingLoadChart(data);
             }
         })
-        .catch(error => console.error('Error loading training load chart:', error));
+        .catch(error => console.error('Training load chart error:', error));
 }
 
-// Create volume chart
 function createVolumeChart(data) {
-    const ctx = document.getElementById('trainingVolumeChart').getContext('2d');
-    
-    if (analyticsCharts.volume) {
-        analyticsCharts.volume.destroy();
-    }
-    
-    analyticsCharts.volume = new Chart(ctx, {
+    const ctx = document.getElementById('volumeChart').getContext('2d');
+    charts.volume = new Chart(ctx, {
         type: 'line',
         data: {
             labels: data.dates,
             datasets: [{
                 label: 'Distance (km)',
                 data: data.distances,
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                tension: 0.4,
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                tension: 0.1,
                 fill: true
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    labels: { color: '#ffffff' }
-                }
-            },
             scales: {
-                x: {
-                    ticks: { color: '#ffffff' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                },
                 y: {
-                    ticks: { color: '#ffffff' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    beginAtZero: true
                 }
             }
         }
     });
 }
 
-// Create pace chart
 function createPaceChart(data) {
-    const ctx = document.getElementById('paceAnalysisChart').getContext('2d');
-    
-    if (analyticsCharts.pace) {
-        analyticsCharts.pace.destroy();
-    }
-    
-    analyticsCharts.pace = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: data.dates,
-            datasets: [{
-                label: 'Pace (min/km)',
-                data: data.paces,
-                borderColor: '#10b981',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    labels: { color: '#ffffff' }
-                }
-            },
-            scales: {
-                x: {
-                    ticks: { color: '#ffffff' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                },
-                y: {
-                    ticks: { color: '#ffffff' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                }
-            }
-        }
-    });
-}
-
-// Create heart rate chart
-function createHeartRateChart(data) {
-    const ctx = document.getElementById('heartRateZonesChart').getContext('2d');
-    
-    if (analyticsCharts.heartRate) {
-        analyticsCharts.heartRate.destroy();
-    }
-    
-    analyticsCharts.heartRate = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5'],
-            datasets: [{
-                data: data.zones,
-                backgroundColor: [
-                    '#6b7280', // Zone 1 - Gray
-                    '#3b82f6', // Zone 2 - Blue
-                    '#10b981', // Zone 3 - Green
-                    '#f59e0b', // Zone 4 - Yellow
-                    '#ef4444'  // Zone 5 - Red
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    labels: { color: '#ffffff' }
-                }
-            }
-        }
-    });
-}
-
-// Create training load chart
-function createTrainingLoadChart(data) {
-    const ctx = document.getElementById('trainingLoadChart').getContext('2d');
-    
-    if (analyticsCharts.trainingLoad) {
-        analyticsCharts.trainingLoad.destroy();
-    }
-    
-    analyticsCharts.trainingLoad = new Chart(ctx, {
+    const ctx = document.getElementById('paceChart').getContext('2d');
+    charts.pace = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: data.dates,
             datasets: [{
-                label: 'Training Load',
-                data: data.loads,
-                backgroundColor: 'rgba(139, 69, 19, 0.8)',
-                borderColor: '#8b4513',
+                label: 'Average Pace (min/km)',
+                data: data.average_paces,
+                backgroundColor: '#28a745',
+                borderColor: '#1e7e34',
                 borderWidth: 1
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    labels: { color: '#ffffff' }
-                }
-            },
             scales: {
-                x: {
-                    ticks: { color: '#ffffff' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                },
                 y: {
-                    ticks: { color: '#ffffff' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    beginAtZero: true
                 }
             }
         }
     });
 }
 
-// Simplified chart functions for basic charts
-function createSimpleVolumeChart(athleteId, timePeriod) {
-    console.log('Creating volume chart for athlete:', athleteId);
-    fetch(`/api/athletes/${athleteId}/volume-trend?days=${timePeriod}`)
-        .then(response => response.json())
-        .then(data => {
-            console.log('Volume chart data:', data);
-            if (data.dates && data.distances) {
-                console.log('Volume chart - valid data found, proceeding with chart creation');
-                const canvas = document.getElementById('trainingVolumeChart');
-                console.log('Canvas element found:', canvas);
-                if (!canvas) {
-                    console.error('Volume chart canvas not found');
-                    return;
-                }
-                const ctx = canvas.getContext('2d');
-                
-                if (analyticsCharts.volume) {
-                    analyticsCharts.volume.destroy();
-                }
-                
-                try {
-                    console.log('Creating Chart.js instance with data:', data.dates, data.distances);
-                    analyticsCharts.volume = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: data.dates,
-                            datasets: [{
-                                label: 'Distance (km)',
-                                data: data.distances,
-                                borderColor: '#3b82f6',
-                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                tension: 0.4,
-                                fill: true
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { labels: { color: '#343a40' } }
-                            },
-                            scales: {
-                                x: {
-                                    ticks: { color: '#343a40' },
-                                    grid: { color: 'rgba(52, 58, 64, 0.1)' }
-                                },
-                                y: {
-                                    ticks: { color: '#343a40' },
-                                    grid: { color: 'rgba(52, 58, 64, 0.1)' }
-                                }
-                            }
-                        }
-                    });
-                    console.log('Volume chart created successfully:', analyticsCharts.volume);
-                } catch (error) {
-                    console.error('Error creating volume chart:', error);
-                }
-            } else {
-                console.log('Volume chart data validation failed. Data structure:', data);
-                console.log('Has dates?', !!data.dates, 'Has distances?', !!data.distances);
-            }
-        })
-        .catch(error => console.error('Error loading volume chart:', error));
+function createHeartRateChart(data) {
+    const ctx = document.getElementById('heartRateChart').getContext('2d');
+    charts.heartRate = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: data.zones,
+            datasets: [{
+                data: data.percentages,
+                backgroundColor: [
+                    '#28a745',
+                    '#ffc107',
+                    '#fd7e14',
+                    '#dc3545'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
 }
 
-function createPaceAnalysisChart(athleteId, timePeriod) {
-    fetch(`/api/athletes/${athleteId}/pace-analysis?days=${timePeriod}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.dates && data.paces) {
-                const ctx = document.getElementById('paceAnalysisChart').getContext('2d');
-                
-                if (analyticsCharts.pace) {
-                    analyticsCharts.pace.destroy();
+function createTrainingLoadChart(data) {
+    const ctx = document.getElementById('trainingLoadChart').getContext('2d');
+    charts.trainingLoad = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.dates,
+            datasets: [{
+                label: 'Training Load',
+                data: data.training_loads,
+                borderColor: '#dc3545',
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
                 }
-                
-                analyticsCharts.pace = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: data.dates,
-                        datasets: [{
-                            label: 'Pace (min/km)',
-                            data: data.paces,
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { labels: { color: '#ffffff' } }
-                        },
-                        scales: {
-                            x: {
-                                ticks: { color: '#ffffff' },
-                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                            },
-                            y: {
-                                ticks: { color: '#ffffff' },
-                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                            }
-                        }
-                    }
-                });
             }
-        })
-        .catch(error => console.error('Error loading pace chart:', error));
-}
-
-function createHeartRateZonesChart(athleteId, timePeriod) {
-    fetch(`/api/athletes/${athleteId}/heart-rate-zones?days=${timePeriod}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.zones) {
-                const ctx = document.getElementById('heartRateZonesChart').getContext('2d');
-                
-                if (analyticsCharts.heartRate) {
-                    analyticsCharts.heartRate.destroy();
-                }
-                
-                analyticsCharts.heartRate = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5'],
-                        datasets: [{
-                            data: data.zones,
-                            backgroundColor: [
-                                '#6b7280', // Zone 1 - Gray
-                                '#3b82f6', // Zone 2 - Blue
-                                '#10b981', // Zone 3 - Green
-                                '#f59e0b', // Zone 4 - Yellow
-                                '#ef4444'  // Zone 5 - Red
-                            ]
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { labels: { color: '#ffffff' } }
-                        }
-                    }
-                });
-            }
-        })
-        .catch(error => console.error('Error loading heart rate chart:', error));
-}
-
-function createTrainingLoadChart(athleteId, timePeriod) {
-    fetch(`/api/athletes/${athleteId}/training-load?days=${timePeriod}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.dates && data.loads) {
-                const ctx = document.getElementById('trainingLoadChart').getContext('2d');
-                
-                if (analyticsCharts.trainingLoad) {
-                    analyticsCharts.trainingLoad.destroy();
-                }
-                
-                analyticsCharts.trainingLoad = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.dates,
-                        datasets: [{
-                            label: 'Training Load',
-                            data: data.loads,
-                            backgroundColor: 'rgba(139, 69, 19, 0.8)',
-                            borderColor: '#8b4513',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { labels: { color: '#ffffff' } }
-                        },
-                        scales: {
-                            x: {
-                                ticks: { color: '#ffffff' },
-                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                            },
-                            y: {
-                                ticks: { color: '#ffffff' },
-                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                            }
-                        }
-                    }
-                });
-            }
-        })
-        .catch(error => console.error('Error loading training load chart:', error));
-}
-
-// Load recent activities using API endpoint
-function loadRecentActivities(athleteId) {
-    const tbody = document.getElementById('activitiesTableBody');
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-white-75">Loading activities...</td></tr>';
-    
-    fetch(`/api/athletes/${athleteId}/recent-activities?limit=10`)
-        .then(response => response.json())
-        .then(data => {
-            tbody.innerHTML = '';
-            
-            if (data && data.activities && data.activities.length > 0) {
-                data.activities.forEach(activity => {
-                    const distance = activity.distance ? (activity.distance / 1000).toFixed(2) : '0.00';
-                    const pace = activity.moving_time && activity.distance ? 
-                        ((activity.moving_time / 60) / (activity.distance / 1000)).toFixed(2) : '--';
-                    const heartRate = activity.average_heartrate ? Math.round(activity.average_heartrate) : '--';
-                    
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${new Date(activity.start_date).toLocaleDateString()}</td>
-                        <td>${activity.sport_type || 'Run'}</td>
-                        <td>${distance} km</td>
-                        <td>${formatDuration(activity.moving_time || 0)}</td>
-                        <td>${pace !== '--' ? pace + ' min/km' : '--'}</td>
-                        <td>${heartRate !== '--' ? heartRate + ' bpm' : '--'}</td>
-                        <td>${activity.calories || '--'}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            } else {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-white-75">No activities found</td></tr>';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading recent activities:', error);
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error loading activities</td></tr>';
-        });
-}
-
-// Load performance insights
-function loadPerformanceInsights(athleteId) {
-    const timePeriod = document.getElementById('timePeriodSelect').value;
-    fetch(`/api/athletes/${athleteId}/performance-insights?days=${timePeriod}`)
-        .then(response => response.json())
-        .then(data => {
-            const container = document.getElementById('performanceInsights');
-            
-            if (data && (data.volume_trend || data.consistency || data.intensity)) {
-                const insights = [];
-                if (data.volume_trend) {
-                    insights.push({
-                        category: 'Volume Trend',
-                        message: data.volume_trend
-                    });
-                }
-                if (data.consistency) {
-                    insights.push({
-                        category: 'Training Consistency',
-                        message: data.consistency
-                    });
-                }
-                if (data.intensity) {
-                    insights.push({
-                        category: 'Training Intensity',
-                        message: data.intensity
-                    });
-                }
-                
-                container.innerHTML = insights.map(insight => `
-                    <div class="alert alert-info mb-3">
-                        <h6 class="text-primary">${insight.category}</h6>
-                        <p class="mb-0">${insight.message}</p>
-                    </div>
-                `).join('');
-            } else {
-                container.innerHTML = `
-                    <div class="text-center text-white-75">
-                        <i class="fas fa-info-circle fs-1 mb-3"></i>
-                        <p>No specific insights available. Continue training consistently!</p>
-                    </div>
-                `;
-            }
-        })
-        .catch(error => {
-            console.error('Error loading insights:', error);
-            document.getElementById('performanceInsights').innerHTML = `
-                <div class="text-center text-white-75">
-                    <i class="fas fa-exclamation-triangle fs-1 mb-3"></i>
-                    <p>Unable to load performance insights</p>
-                </div>
-            `;
-        });
-}
-
-// Utility functions
-function formatDuration(seconds) {
-    if (!seconds) return '--';
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-        return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
+        }
+    });
 }
 
 function showLoading() {
     document.getElementById('loadingState').style.display = 'block';
     document.getElementById('analyticsContent').style.display = 'none';
-    document.getElementById('errorDisplay').style.display = 'none';
-}
-
-function hideLoading() {
-    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('noDataState').style.display = 'none';
 }
 
 function showAnalytics() {
+    document.getElementById('loadingState').style.display = 'none';
     document.getElementById('analyticsContent').style.display = 'block';
-    document.getElementById('errorDisplay').style.display = 'none';
+    document.getElementById('noDataState').style.display = 'none';
 }
 
-function hideAnalytics() {
+function showNoData() {
+    document.getElementById('loadingState').style.display = 'none';
     document.getElementById('analyticsContent').style.display = 'none';
+    document.getElementById('noDataState').style.display = 'block';
 }
 
 function showError(message) {
-    document.getElementById('errorMessage').textContent = message;
-    document.getElementById('errorDisplay').style.display = 'block';
+    document.getElementById('loadingState').style.display = 'none';
     document.getElementById('analyticsContent').style.display = 'none';
+    document.getElementById('noDataState').style.display = 'block';
+    document.querySelector('#noDataState h5').textContent = 'Error Loading Data';
+    document.querySelector('#noDataState p').textContent = message;
 }
-
-// Navigation functions
-function openRacePredictor() {
-    if (selectedAthleteId) {
-        window.location.href = `/race-predictor?athlete_id=${selectedAthleteId}`;
-    } else {
-        alert('Please select an athlete first');
-    }
-}
-
-function openInjuryRisk() {
-    if (selectedAthleteId) {
-        window.location.href = `/injury-risk?athlete_id=${selectedAthleteId}`;
-    } else {
-        alert('Please select an athlete first');
-    }
-}
-
-function openRaceOptimizer() {
-    if (selectedAthleteId) {
-        window.location.href = `/race-optimizer?athlete_id=${selectedAthleteId}`;
-    } else {
-        alert('Please select an athlete first');
-    }
-}
-
-function openDashboard() {
-    if (selectedAthleteId) {
-        window.location.href = `/dashboard?athlete_id=${selectedAthleteId}`;
-    } else {
-        alert('Please select an athlete first');
-    }
-}
-
-function exportData() {
-    if (selectedAthleteId) {
-        const timePeriod = document.getElementById('timePeriodSelect').value;
-        window.open(`/api/athletes/${selectedAthleteId}/export?days=${timePeriod}`, '_blank');
-    } else {
-        alert('Please select an athlete first');
-    }
-}
-
-// Create volume chart with real athlete data
-function createSimpleVolumeChart(athleteId, timePeriod) {
-    try {
-        const canvas = document.getElementById('trainingVolumeChart');
-        if (!canvas) {
-            console.warn('Training volume chart canvas not found');
-            return;
-        }
-        
-        // Check if Chart.js is available
-        if (typeof Chart === 'undefined') {
-            console.error('Chart.js library not loaded');
-            canvas.innerHTML = '<div class="text-center text-white p-4">Chart library loading...</div>';
-            return;
-        }
-        
-        // Fetch real volume data from API
-        fetch(`/api/athletes/${athleteId}/volume-trend?days=${timePeriod}`)
-            .then(response => response.json())
-            .then(data => {
-                const ctx = canvas.getContext('2d');
-                
-                // Destroy existing chart if it exists
-                if (window.volumeChart) {
-                    window.volumeChart.destroy();
-                }
-                
-                window.volumeChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: data.dates,
-                        datasets: [{
-                            label: 'Weekly Distance (km)',
-                            data: data.distances,
-                            borderColor: '#ff6b35',
-                            backgroundColor: 'rgba(255, 107, 53, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Training Volume Trend',
-                                color: 'white'
-                            },
-                            legend: {
-                                labels: {
-                                    color: 'white'
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    color: 'white'
-                                },
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    color: 'white'
-                                },
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                }
-                            }
-                        }
-                    }
-                });
-            })
-            .catch(error => {
-                console.error('Error fetching volume data:', error);
-                canvas.innerHTML = '<div class="text-center text-white p-4">Error loading chart data</div>';
-            });
-    } catch (error) {
-        console.error('Error creating training volume chart:', error);
-    }
-}
-
-// Create pace analysis chart with real athlete data
-function createPaceAnalysisChart(athleteId, timePeriod) {
-    try {
-        const canvas = document.getElementById('paceAnalysisChart');
-        if (!canvas) return;
-        
-        if (typeof Chart === 'undefined') {
-            console.error('Chart.js library not loaded');
-            return;
-        }
-        
-        fetch(`/api/athletes/${athleteId}/pace-analysis?days=${timePeriod}`)
-            .then(response => response.json())
-            .then(data => {
-                const ctx = canvas.getContext('2d');
-                
-                if (window.paceChart) {
-                    window.paceChart.destroy();
-                }
-                
-                window.paceChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: data.dates,
-                        datasets: [{
-                            label: 'Pace (min/km)',
-                            data: data.paces,
-                            borderColor: '#4fc3f7',
-                            backgroundColor: 'rgba(79, 195, 247, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Pace Analysis',
-                                color: 'white'
-                            },
-                            legend: {
-                                labels: {
-                                    color: 'white'
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                ticks: {
-                                    color: 'white'
-                                },
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    color: 'white'
-                                },
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                }
-                            }
-                        }
-                    }
-                });
-            })
-            .catch(error => {
-                console.error('Error fetching pace data:', error);
-            });
-    } catch (error) {
-        console.error('Error creating pace analysis chart:', error);
-    }
-}
-
-// Create heart rate zones chart with real athlete data
-function createHeartRateZonesChart(athleteId, timePeriod) {
-    try {
-        const canvas = document.getElementById('heartRateZonesChart');
-        if (!canvas) return;
-        
-        if (typeof Chart === 'undefined') {
-            console.error('Chart.js library not loaded');
-            return;
-        }
-        
-        fetch(`/api/athletes/${athleteId}/heart-rate-zones?days=${timePeriod}`)
-            .then(response => response.json())
-            .then(data => {
-                const ctx = canvas.getContext('2d');
-                
-                if (window.hrZonesChart) {
-                    window.hrZonesChart.destroy();
-                }
-                
-                const zones = data.zones;
-                window.hrZonesChart = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: Object.keys(zones),
-                        datasets: [{
-                            data: Object.values(zones),
-                            backgroundColor: [
-                                '#81c784',  // Zone 1 - Light green
-                                '#ffb74d',  // Zone 2 - Orange
-                                '#ff8a65',  // Zone 3 - Light red
-                                '#f06292',  // Zone 4 - Pink
-                                '#ba68c8'   // Zone 5 - Purple
-                            ],
-                            borderWidth: 2,
-                            borderColor: '#2c3e50'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Heart Rate Zones Distribution (%)',
-                                color: 'white'
-                            },
-                            legend: {
-                                labels: {
-                                    color: 'white'
-                                }
-                            }
-                        }
-                    }
-                });
-            })
-            .catch(error => {
-                console.error('Error fetching heart rate zones data:', error);
-            });
-    } catch (error) {
-        console.error('Error creating heart rate zones chart:', error);
-    }
-}
-
-// Create training load chart with real athlete data
-function createTrainingLoadChart(athleteId, timePeriod) {
-    try {
-        const canvas = document.getElementById('trainingLoadChart');
-        if (!canvas) return;
-        
-        if (typeof Chart === 'undefined') {
-            console.error('Chart.js library not loaded');
-            return;
-        }
-        
-        fetch(`/api/athletes/${athleteId}/training-load?days=${timePeriod}`)
-            .then(response => response.json())
-            .then(data => {
-                const ctx = canvas.getContext('2d');
-                
-                if (window.loadChart) {
-                    window.loadChart.destroy();
-                }
-                
-                window.loadChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.dates,
-                        datasets: [{
-                            label: 'Training Load (TRIMP)',
-                            data: data.loads,
-                            backgroundColor: 'rgba(156, 39, 176, 0.6)',
-                            borderColor: '#9c27b0',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Training Load Trend',
-                                color: 'white'
-                            },
-                            legend: {
-                                labels: {
-                                    color: 'white'
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    color: 'white'
-                                },
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    color: 'white'
-                                },
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                }
-                            }
-                        }
-                    }
-                });
-            })
-            .catch(error => {
-                console.error('Error fetching training load data:', error);
-            });
-    } catch (error) {
-        console.error('Error creating training load chart:', error);
-    }
-}
-
 </script>
 {% endblock %}
