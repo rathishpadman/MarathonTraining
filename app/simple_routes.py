@@ -20,6 +20,17 @@ api_bp = Blueprint('api', __name__, url_prefix='/api')
 # Main routes blueprint
 main_bp = Blueprint('main', __name__)
 
+@main_bp.route('/community')
+def community_dashboard():
+    """Community dashboard with transparent background"""
+    try:
+        from flask import render_template
+        logger.info("Accessing community dashboard")
+        return render_template('community_standalone.html')
+    except Exception as e:
+        logger.error(f"Error rendering community dashboard: {str(e)}")
+        return f"<h1>Error loading dashboard: {str(e)}</h1>", 500
+
 # Initialize components
 config = Config()
 security = ReplitSecurity()
@@ -1577,11 +1588,7 @@ def home():
     from flask import render_template
     return render_template('home.html')
 
-@main_bp.route('/community')
-def community_dashboard():
-    """Simplified community dashboard with performance leaderboard"""
-    from flask import render_template
-    return render_template('community_simple.html')
+
 
 @api_bp.route('/api/athletes/<int:athlete_id>/training-plan', methods=['POST'])
 def get_training_plan(athlete_id):
