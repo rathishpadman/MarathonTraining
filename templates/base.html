@@ -262,12 +262,21 @@
         }
         
         .table {
-            color: white !important;
+            color: var(--charcoal) !important;
         }
         
         .table th, .table td {
-            color: white !important;
-            border-color: rgba(255, 255, 255, 0.2);
+            color: var(--charcoal) !important;
+            border-color: rgba(52, 58, 64, 0.2);
+        }
+        
+        .card-glassmorphism .table {
+            color: var(--charcoal) !important;
+        }
+        
+        .card-glassmorphism .table th, .card-glassmorphism .table td {
+            color: var(--charcoal) !important;
+            border-color: rgba(52, 58, 64, 0.2);
         }
         
         .btn {
@@ -296,7 +305,16 @@
         .card-glassmorphism p,
         .card-glassmorphism span,
         .card-glassmorphism div,
-        .card-glassmorphism label {
+        .card-glassmorphism label,
+        .card-glassmorphism .activity-name,
+        .card-glassmorphism .activity-details,
+        .card-glassmorphism .prediction-title,
+        .card-glassmorphism .prediction-time,
+        .card-glassmorphism small,
+        .card-glassmorphism .small,
+        .card-glassmorphism th,
+        .card-glassmorphism td,
+        .card-glassmorphism .table {
             color: var(--charcoal) !important;
             text-shadow: none;
         }
