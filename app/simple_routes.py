@@ -1594,6 +1594,59 @@ def get_training_load(athlete_id):
         logger.error(f"Error fetching training load: {str(e)}")
         return jsonify({'dates': [], 'loads': []}), 500
 
+@main_bp.route('/api/ai_recommendations/<int:athlete_id>')
+def get_ai_recommendations(athlete_id):
+    """Get AI race recommendations for an athlete"""
+    try:
+        logger.info(f"Generating AI recommendations for athlete {athlete_id}")
+        
+        # Get athlete data
+        athlete = ReplitAthlete.query.get_or_404(athlete_id)
+        
+        # Get recent activities for analysis
+        recent_activities = Activity.query.filter_by(athlete_id=athlete_id)\
+            .order_by(Activity.start_date.desc())\
+            .limit(30).all()
+        
+        if not recent_activities:
+            return jsonify({'recommendations': ['No recent activity data available for AI analysis']})
+        
+        # Calculate athlete metrics
+        total_distance = sum(a.distance or 0 for a in recent_activities) / 1000  # Convert to km
+        valid_pace_activities = [a for a in recent_activities if a.average_speed and a.average_speed > 0]
+        valid_hr_activities = [a for a in recent_activities if a.average_heartrate and a.average_heartrate > 0]
+        
+        avg_pace = sum(60 / a.average_speed for a in valid_pace_activities) / len(valid_pace_activities) if valid_pace_activities else 6.5
+        avg_hr = sum(a.average_heartrate for a in valid_hr_activities) / len(valid_hr_activities) if valid_hr_activities else 150
+        
+        athlete_data = {
+            'metrics': {
+                'total_distance': round(total_distance, 1),
+                'total_activities': len(recent_activities),
+                'avg_pace': round(avg_pace, 2),
+                'avg_heart_rate': round(avg_hr, 1),
+                'training_load': 850  # Estimated based on activities
+            }
+        }
+        
+        # Current activity (most recent)
+        latest_activity = recent_activities[0]
+        current_activity = {
+            'distance': (latest_activity.distance or 0) / 1000,
+            'heart_rate': latest_activity.average_heartrate or 150,
+            'pace': 60 / latest_activity.average_speed if latest_activity.average_speed else 6.5
+        }
+        
+        # Get AI recommendations
+        from app.ai_race_advisor import get_race_recommendations
+        recommendations = get_race_recommendations(athlete_data, current_activity)
+        
+        return jsonify({'recommendations': recommendations})
+    
+    except Exception as e:
+        logger.error(f"Error generating AI recommendations: {str(e)}")
+        return jsonify({'recommendations': ['AI recommendations temporarily unavailable. Please try again later.']})
+
 # Race Performance Optimization Endpoints
 @api_bp.route('/athletes/<int:athlete_id>/race-prediction', methods=['GET'])
 def get_race_prediction(athlete_id):
