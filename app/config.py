@@ -26,6 +26,9 @@ class Config:
     STRAVA_CLIENT_SECRET = os.environ.get('STRAVA_CLIENT_SECRET')
     STRAVA_CALLBACK_URL = os.environ.get('STRAVA_CALLBACK_URL')
     
+    # AI API configuration
+    GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+    
     # Mail configuration
     MAIL_SMTP_SERVER = os.environ.get('MAIL_SMTP_SERVER', 'smtp.gmail.com')
     MAIL_SMTP_PORT = int(os.environ.get('MAIL_SMTP_PORT', '587'))
