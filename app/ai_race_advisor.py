@@ -99,7 +99,13 @@ class AIRaceAdvisor:
             Focus on data-driven insights rather than generic advice.
             """
             
+            # Log the prompt being sent to Gemini
+            logger.info(f"Sending prompt to Gemini API: {prompt[:200]}...")
+            
             response = self.model.generate_content(prompt)
+            
+            # Log the full response from Gemini
+            logger.info(f"Gemini API Response: {response.text if response else 'No response'}")
             
             # Parse AI response into list of recommendations
             recommendations = []
