@@ -1798,9 +1798,8 @@ def get_race_optimization(athlete_id):
         logger.info(f"Generating race optimization for athlete {athlete_id}")
         
         race_distance = request.args.get('distance', 'Marathon')
-        target_time = request.args.get('target_time')
         
-        optimization = optimize_race_performance(athlete_id, race_distance, target_time)
+        optimization = optimize_race_performance(db.session, athlete_id, race_distance)
         
         if 'error' in optimization:
             return jsonify(optimization), 400
