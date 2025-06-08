@@ -834,20 +834,27 @@ def get_community_overview():
         from datetime import datetime, timedelta
         from app.models import Activity
         
-        start_date = datetime.now() - timedelta(days=30)  # Last 30 days
+        # Different date ranges for different metrics
+        start_date_30d = datetime.now() - timedelta(days=30)  # Last 30 days for KPIs
+        start_date_7d = datetime.now() - timedelta(days=7)   # Last 7 days for leaderboard
         
-        # Get all activities for community analysis
-        all_activities = Activity.query.filter(
-            Activity.start_date >= start_date
+        # Get all activities for 30-day KPIs
+        all_activities_30d = Activity.query.filter(
+            Activity.start_date >= start_date_30d
         ).all()
         
-        # Safe calculation with null checks
-        total_distance = sum((a.distance or 0) for a in all_activities if a.distance is not None) / 1000  # km
-        total_activities = len(all_activities)
-        active_athletes = len(set(a.athlete_id for a in all_activities if a.athlete_id))
+        # Get activities for 7-day leaderboard
+        all_activities_7d = Activity.query.filter(
+            Activity.start_date >= start_date_7d
+        ).all()
         
-        # Calculate community average pace
-        valid_activities = [a for a in all_activities if a.distance and a.moving_time and a.distance > 0]
+        # Safe calculation with null checks for 30-day KPIs
+        total_distance = sum((a.distance or 0) for a in all_activities_30d if a.distance is not None) / 1000  # km
+        total_activities = len(all_activities_30d)
+        active_athletes = len(set(a.athlete_id for a in all_activities_30d if a.athlete_id))
+        
+        # Calculate community average pace from 30-day data
+        valid_activities = [a for a in all_activities_30d if a.distance and a.moving_time and a.distance > 0]
         if valid_activities:
             total_time = sum(a.moving_time for a in valid_activities)
             total_distance_m = sum(a.distance for a in valid_activities)
@@ -855,9 +862,9 @@ def get_community_overview():
         else:
             avg_pace = 0
         
-        # Generate leaderboard (top performers by distance)
+        # Generate leaderboard from 7-day data (top performers by distance)
         athlete_stats = {}
-        for activity in all_activities:
+        for activity in all_activities_7d:
             athlete_id = activity.athlete_id
             if athlete_id not in athlete_stats:
                 athlete = ReplitAthlete.query.get(athlete_id)
@@ -874,9 +881,9 @@ def get_community_overview():
             athlete_stats[athlete_id]['distance'] += (activity.distance or 0) / 1000
             athlete_stats[athlete_id]['activities'] += 1
         
-        # Calculate average pace and HR for each athlete
+        # Calculate average pace and HR for each athlete using 7-day data
         for athlete_id, stats in athlete_stats.items():
-            athlete_activities = [a for a in all_activities if a.athlete_id == athlete_id]
+            athlete_activities = [a for a in all_activities_7d if a.athlete_id == athlete_id]
             if athlete_activities:
                 # Calculate average pace
                 valid_acts = [a for a in athlete_activities if a.distance and a.moving_time and a.distance > 0]
@@ -893,9 +900,9 @@ def get_community_overview():
         # Sort leaderboard by distance
         leaderboard = sorted(athlete_stats.values(), key=lambda x: x['distance'], reverse=True)
         
-        # Training load distribution by activity type (authentic data only)
+        # Training load distribution by activity type (30-day authentic data)
         activity_breakdown = {}
-        for activity in all_activities:
+        for activity in all_activities_30d:
             sport = activity.sport_type or 'Other'
             distance_km = (activity.distance or 0) / 1000
             if distance_km > 0:  # Only include activities with distance
@@ -915,7 +922,7 @@ def get_community_overview():
             date = datetime.now() - timedelta(days=i)
             trend_labels.append(date.strftime('%m/%d'))
             
-            day_activities = [a for a in all_activities if a.start_date and a.start_date.date() == date.date()]
+            day_activities = [a for a in all_activities_30d if a.start_date and a.start_date.date() == date.date()]
             day_distance = sum(a.distance or 0 for a in day_activities) / 1000
             day_count = len(day_activities)
             
