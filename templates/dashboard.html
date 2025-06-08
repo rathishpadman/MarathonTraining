@@ -408,7 +408,8 @@ function loadAthleteData(athleteId) {
             if (data) {
                 updateDashboardMetrics(data);
                 updateCharts(data);
-                loadRecentActivities(athleteId);
+                loadCommunityTrainingZones();
+                loadCommunityActivityStream();
                 loadRacePredictions(athleteId);
                 loadFitnessAnalysis(athleteId);
                 
@@ -497,6 +498,158 @@ function updateCharts(data) {
     if (data.metrics) {
         createStatusChartFromMetrics(data.metrics);
     }
+}
+
+// Load Community Training Zones
+function loadCommunityTrainingZones() {
+    fetch('/api/community/training_zones')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Community training zones data:', data);
+            createCommunityZonesChart(data);
+        })
+        .catch(error => {
+            console.error('Error loading community training zones:', error);
+        });
+}
+
+// Load Community Activity Stream
+function loadCommunityActivityStream() {
+    fetch('/api/community/activity_stream')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Community activity stream data:', data);
+            displayCommunityActivityStream(data);
+        })
+        .catch(error => {
+            console.error('Error loading community activity stream:', error);
+        });
+}
+
+// Create Community Training Zones Chart
+function createCommunityZonesChart(data) {
+    const ctx = document.getElementById('communityZonesChart');
+    if (!ctx) return;
+
+    // Destroy existing chart if it exists
+    if (charts.communityZones) {
+        charts.communityZones.destroy();
+    }
+
+    const zones = data.zones || {};
+    const percentages = data.percentages || {};
+    
+    charts.communityZones = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Low', 'Moderate', 'High', 'Overreaching'],
+            datasets: [{
+                data: [
+                    zones.Low || 0,
+                    zones.Moderate || 0,
+                    zones.High || 0,
+                    zones.Overreaching || 0
+                ],
+                backgroundColor: [
+                    '#28a745',  // Green for Low
+                    '#ffc107',  // Yellow for Moderate
+                    '#fd7e14',  // Orange for High
+                    '#dc3545'   // Red for Overreaching
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#343a40',
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        },
+                        padding: 15,
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            return data.labels.map((label, i) => ({
+                                text: `${label}: ${percentages[label] || 0}%`,
+                                fillStyle: data.datasets[0].backgroundColor[i],
+                                strokeStyle: data.datasets[0].borderColor,
+                                lineWidth: data.datasets[0].borderWidth,
+                                hidden: false,
+                                index: i
+                            }));
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label;
+                            const value = context.parsed;
+                            const percentage = percentages[label] || 0;
+                            return `${label}: ${value} athletes (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Display Community Activity Stream
+function displayCommunityActivityStream(data) {
+    const container = document.getElementById('communityActivityStream');
+    if (!container) return;
+
+    const stream = data.stream || [];
+    
+    if (stream.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted p-4">No recent community activities</div>';
+        return;
+    }
+
+    let html = '';
+    
+    stream.forEach(item => {
+        if (item.type === 'milestone') {
+            html += `
+                <div class="activity-item border-left-warning">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="activity-name">
+                            <i class="fas fa-trophy text-warning me-2"></i>
+                            <strong>${item.athlete_name}</strong> achieved ${item.achievement}
+                        </div>
+                        <small class="text-muted">${item.relative_time}</small>
+                    </div>
+                    <div class="activity-details text-muted">
+                        ${item.details}
+                    </div>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="activity-item">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="activity-name">
+                            <i class="fas fa-running text-primary me-2"></i>
+                            <strong>${item.athlete_name}</strong> - ${item.activity_name}
+                        </div>
+                        <small class="text-muted">${item.relative_time}</small>
+                    </div>
+                    <div class="activity-details text-muted">
+                        ${item.sport_type} • ${item.distance_km}km • ${item.pace} pace
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    container.innerHTML = html;
 }
 
 // Create weekly progress chart from actual activities
