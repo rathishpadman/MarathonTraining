@@ -893,12 +893,17 @@ def get_community_overview():
         # Sort leaderboard by distance
         leaderboard = sorted(athlete_stats.values(), key=lambda x: x['distance'], reverse=True)
         
-        # Training load distribution by athlete
-        training_load_labels = []
-        training_load_data = []
-        for athlete_data in leaderboard[:5]:  # Top 5 athletes
-            training_load_labels.append(athlete_data['name'])
-            training_load_data.append(round(athlete_data['distance'], 1))
+        # Training load distribution by sport type
+        sport_breakdown = {}
+        for activity in all_activities:
+            sport = activity.sport_type or 'Other'
+            distance_km = (activity.distance or 0) / 1000
+            if sport not in sport_breakdown:
+                sport_breakdown[sport] = 0
+            sport_breakdown[sport] += distance_km
+        
+        training_load_labels = list(sport_breakdown.keys())
+        training_load_data = [round(distance, 1) for distance in sport_breakdown.values()]
         
         # Community trends (last 7 days)
         trend_labels = []
