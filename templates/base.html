@@ -16,17 +16,22 @@
     
     <style>
         :root {
-            --primary-color: #e74c3c;
-            --secondary-color: #3498db;
-            --success-color: #27ae60;
-            --warning-color: #f39c12;
-            --danger-color: #e74c3c;
-            --dark-color: #2c3e50;
-            --light-color: #ecf0f1;
+            --primary-blue: #007bff;
+            --success-green: #28a745;
+            --charcoal: #343a40;
+            --light-grey: #f8f9fa;
+            --amber: #ffc107;
+            --primary-color: #007bff;
+            --secondary-color: #28a745;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --dark-color: #343a40;
+            --light-color: #f8f9fa;
         }
         
         body {
-            background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 50%, #1e40af 100%);
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 50%, #004085 100%);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
             color: #ffffff;
@@ -50,7 +55,7 @@
         }
         
         .filter-button {
-            background: linear-gradient(135deg, #fc4c02, #ff7b02);
+            background: linear-gradient(135deg, var(--primary-blue), #0056b3);
             border: none;
             color: white;
             padding: 8px 16px;
@@ -62,13 +67,14 @@
         
         .filter-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(252, 76, 2, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
             color: white;
+            background: linear-gradient(135deg, var(--success-green), #1e7e34);
         }
         
         .filter-button.active {
-            background: linear-gradient(135deg, #ff7b02, #fc4c02);
-            box-shadow: 0 3px 10px rgba(252, 76, 2, 0.4);
+            background: linear-gradient(135deg, var(--success-green), #1e7e34);
+            box-shadow: 0 3px 10px rgba(40, 167, 69, 0.4);
         }
         
         .strava-connect-btn {
