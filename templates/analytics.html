@@ -315,6 +315,18 @@ let selectedAthleteId = null;
 // Load athletes and analytics on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadAthletes();
+    
+    // Check if athlete_id is in URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const athleteId = urlParams.get('athlete_id');
+    if (athleteId) {
+        // Wait a moment for athletes to load, then select the athlete
+        setTimeout(() => {
+            const select = document.getElementById('athleteSelect');
+            select.value = athleteId;
+            loadAthleteAnalytics();
+        }, 500);
+    }
 });
 
 // Load athletes for selection
@@ -359,17 +371,18 @@ function loadAthleteAnalytics() {
     selectedAthleteId = athleteId;
     showLoading();
     
-    // Load athlete summary data
-    fetch(`/api/athletes/${athleteId}/summary?days=${timePeriod}`)
+    // Load athlete dashboard data (working endpoint)
+    fetch(`/api/dashboard?athlete_id=${athleteId}`)
         .then(response => response.json())
         .then(data => {
+            console.log('Dashboard data received:', data);
             if (data.error) {
                 showError(data.error);
             } else {
-                displayAnalytics(data);
-                loadCharts(athleteId, timePeriod);
-                loadRecentActivities(athleteId);
-                loadPerformanceInsights(athleteId);
+                displayDashboardAnalytics(data);
+                loadRecentActivities(data.performance_summary);
+                // Remove complex chart loading for now - focus on core metrics
+                showAnalytics();
             }
         })
         .catch(error => {
@@ -381,7 +394,30 @@ function loadAthleteAnalytics() {
         });
 }
 
-// Display analytics summary
+// Display dashboard analytics data
+function displayDashboardAnalytics(data) {
+    const timeframeText = 'Last 30 days';
+    
+    // Update data values from dashboard API
+    document.getElementById('totalDistance').textContent = `${data.metrics.total_distance.toFixed(1)} km`;
+    document.getElementById('totalTime').textContent = formatDuration(data.metrics.total_time);
+    document.getElementById('avgPace').textContent = data.metrics.avg_pace ? `${data.metrics.avg_pace.toFixed(2)} min/km` : '--';
+    document.getElementById('avgHeartRate').textContent = data.metrics.avg_heart_rate ? `${Math.round(data.metrics.avg_heart_rate)} bpm` : '--';
+    
+    // Update timeframe labels
+    document.getElementById('distanceTimeframe').textContent = timeframeText;
+    document.getElementById('timeTimeframe').textContent = timeframeText;
+    document.getElementById('paceTimeframe').textContent = timeframeText;
+    document.getElementById('hrTimeframe').textContent = timeframeText;
+    
+    // Update athlete name in title if available
+    if (data.athlete && data.athlete.name) {
+        const titleElement = document.querySelector('h1');
+        titleElement.innerHTML = `<i class="fas fa-chart-line me-2"></i>Individual Analytics - ${data.athlete.name}`;
+    }
+}
+
+// Display analytics summary (legacy function for compatibility)
 function displayAnalytics(data) {
     const timeframeText = data.period_days ? `Last ${data.period_days} days` : 'Recent period';
     
@@ -606,37 +642,36 @@ function createTrainingLoadChart(data) {
     });
 }
 
-// Load recent activities
-function loadRecentActivities(athleteId) {
-    fetch(`/api/athletes/${athleteId}/recent-activities?limit=10`)
-        .then(response => response.json())
-        .then(activities => {
-            const tbody = document.getElementById('activitiesTableBody');
-            tbody.innerHTML = '';
+// Load recent activities from performance summary
+function loadRecentActivities(performanceSummary) {
+    const tbody = document.getElementById('activitiesTableBody');
+    tbody.innerHTML = '';
+    
+    if (performanceSummary && performanceSummary.activities && performanceSummary.activities.length > 0) {
+        // Take only the first 10 activities
+        const activities = performanceSummary.activities.slice(0, 10);
+        
+        activities.forEach(activity => {
+            const distance = activity.distance ? (activity.distance / 1000).toFixed(2) : '0.00'; // Convert meters to km
+            const pace = activity.moving_time && activity.distance ? 
+                ((activity.moving_time / 60) / (activity.distance / 1000)).toFixed(2) : '--';
+            const heartRate = activity.average_heartrate ? Math.round(activity.average_heartrate) : '--';
             
-            if (activities && activities.length > 0) {
-                activities.forEach(activity => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${new Date(activity.date).toLocaleDateString()}</td>
-                        <td>${activity.sport_type}</td>
-                        <td>${activity.distance.toFixed(2)} km</td>
-                        <td>${formatDuration(activity.time * 60)}</td>
-                        <td>${activity.pace ? activity.pace.toFixed(2) + ' min/km' : '--'}</td>
-                        <td>--</td>
-                        <td>--</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            } else {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-white-75">No activities found</td></tr>';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading recent activities:', error);
-            const tbody = document.getElementById('activitiesTableBody');
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error loading activities</td></tr>';
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${new Date(activity.start_date).toLocaleDateString()}</td>
+                <td>${activity.sport_type || 'Run'}</td>
+                <td>${distance} km</td>
+                <td>${formatDuration(activity.moving_time || 0)}</td>
+                <td>${pace !== '--' ? pace + ' min/km' : '--'}</td>
+                <td>${heartRate !== '--' ? heartRate + ' bpm' : '--'}</td>
+                <td>${activity.calories || '--'}</td>
+            `;
+            tbody.appendChild(row);
         });
+    } else {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-white-75">No activities found</td></tr>';
+    }
 }
 
 // Load performance insights
