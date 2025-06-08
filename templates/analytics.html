@@ -831,7 +831,7 @@ function exportData() {
     }
 }
 
-// Create simple volume chart using basic data
+// Create volume chart with real athlete data
 function createSimpleVolumeChart(athleteId, timePeriod) {
     try {
         const canvas = document.getElementById('trainingVolumeChart');
@@ -843,60 +843,74 @@ function createSimpleVolumeChart(athleteId, timePeriod) {
         // Check if Chart.js is available
         if (typeof Chart === 'undefined') {
             console.error('Chart.js library not loaded');
+            canvas.innerHTML = '<div class="text-center text-white p-4">Chart library loading...</div>';
             return;
         }
         
-        const ctx = canvas.getContext('2d');
-        
-        // Create a basic chart with current metrics
-        const chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Week 4', 'Week 3', 'Week 2', 'Week 1', 'Current'],
-                datasets: [{
-                    label: 'Training Load',
-                    data: [80, 85, 90, 88, 92],
-                    borderColor: '#ff6b35',
-                    backgroundColor: 'rgba(255, 107, 53, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Training Volume Trend',
-                        color: 'white'
-                    },
-                    legend: {
-                        labels: {
-                            color: 'white'
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            color: 'white'
-                        },
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            color: 'white'
-                        },
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
-                        }
-                    }
+        // Fetch real volume data from API
+        fetch(`/api/athletes/${athleteId}/volume-trend?days=${timePeriod}`)
+            .then(response => response.json())
+            .then(data => {
+                const ctx = canvas.getContext('2d');
+                
+                // Destroy existing chart if it exists
+                if (window.volumeChart) {
+                    window.volumeChart.destroy();
                 }
-            }
-        });
+                
+                window.volumeChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: 'Weekly Distance (km)',
+                            data: data.distances,
+                            borderColor: '#ff6b35',
+                            backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Training Volume Trend',
+                                color: 'white'
+                            },
+                            legend: {
+                                labels: {
+                                    color: 'white'
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: 'white'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: 'white'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching volume data:', error);
+                canvas.innerHTML = '<div class="text-center text-white p-4">Error loading chart data</div>';
+            });
     } catch (error) {
         console.error('Error creating training volume chart:', error);
     }
