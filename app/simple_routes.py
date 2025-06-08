@@ -243,9 +243,13 @@ def get_training_load(athlete_id):
             if date_str not in daily_loads:
                 daily_loads[date_str] = 0
             
-            # Simple training load calculation
-            load = (activity.moving_time or 0) * (activity.average_heartrate or 120) / 3600 / 100
-            daily_loads[date_str] += load
+            # TRIMP-based training load calculation
+            if activity.moving_time and activity.average_heartrate:
+                duration_min = activity.moving_time / 60
+                avg_hr = activity.average_heartrate
+                hr_reserve_factor = max(0, (avg_hr - 60) / (190 - 60))
+                load = duration_min * hr_reserve_factor * 1.92
+                daily_loads[date_str] += load
         
         # Fill missing dates with 0
         dates = []
@@ -459,8 +463,17 @@ def get_athlete_dashboard_data(athlete_id):
         hr_activities = [a for a in recent_activities if a.average_heartrate]
         avg_heart_rate = sum(a.average_heartrate for a in hr_activities) / len(hr_activities) if hr_activities else 0
         
-        # Training load (sum of suffer scores)
-        training_load = sum(a.suffer_score or 0 for a in recent_activities)
+        # Training load calculation using TRIMP (Training Impulse) method
+        # TRIMP = Duration (min) × Average HR × HR Reserve Factor
+        training_load = 0
+        for activity in recent_activities:
+            if activity.moving_time and activity.average_heartrate:
+                duration_min = activity.moving_time / 60
+                avg_hr = activity.average_heartrate
+                # Simplified HR reserve factor (assumes max HR 190, resting HR 60)
+                hr_reserve_factor = max(0, (avg_hr - 60) / (190 - 60))
+                activity_load = duration_min * hr_reserve_factor * 1.92  # 1.92 is gender factor for male
+                training_load += activity_load
         
         logger.info(f"Calculated metrics - Distance: {total_distance_km:.2f}km, Activities: {total_activities}, Pace: {avg_pace_min_km:.2f}min/km, HR: {avg_heart_rate:.1f}, Load: {training_load}")
         
