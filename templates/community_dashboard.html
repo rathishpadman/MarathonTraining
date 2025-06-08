@@ -115,27 +115,28 @@
             text-transform: uppercase;
             letter-spacing: 1.5px;
             font-weight: 600;
-            color: var(--neutral-300);
+            color: var(--text-dark);
         }
         
         .chart-container {
-            background: var(--neutral-50);
+            background: var(--background-light);
             border-radius: 20px;
             padding: 2rem;
             margin: 1rem 0;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            border: 1px solid var(--neutral-200);
+            border: 1px solid var(--neutral-300);
         }
         
         .leaderboard-item {
-            background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+            background: var(--background-light);
             backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            border: 1px solid var(--neutral-300);
             border-radius: 16px;
             padding: 1.2rem;
             margin: 0.8rem 0;
-            color: var(--neutral-100);
+            color: var(--text-dark);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
         
         .leaderboard-item:hover {
@@ -179,7 +180,7 @@
         }
         
         .athlete-link {
-            background: linear-gradient(135deg, var(--primary-blue-light), var(--secondary-purple-light));
+            background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent));
             color: white;
             padding: 0.4rem 1rem;
             border-radius: 25px;
@@ -191,7 +192,7 @@
         }
         
         .athlete-link:hover {
-            background: linear-gradient(135deg, var(--accent-emerald), var(--accent-emerald-light));
+            background: linear-gradient(135deg, var(--secondary-accent), var(--highlight-warning));
             color: white;
             text-decoration: none;
             transform: translateY(-2px);
@@ -218,7 +219,7 @@
             font-size: 1.2rem;
             opacity: 0.85;
             margin-bottom: 2rem;
-            color: var(--neutral-300);
+            color: var(--text-dark);
             font-weight: 400;
         }
         
