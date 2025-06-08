@@ -5,11 +5,12 @@
 {% block content %}
 <style>
     .performance-leaderboard {
-        background: linear-gradient(135deg, var(--primary-teal) 0%, var(--dark-teal) 100%);
+        background: linear-gradient(135deg, #14B8A6 0%, #0F766E 100%);
         border-radius: 20px;
         padding: 2rem;
-        margin: 2rem 0;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        margin: 0;
+        min-height: 100vh;
+        box-shadow: none;
     }
     
     .leaderboard-header {
@@ -33,7 +34,7 @@
     }
     
     .athlete-rank {
-        background: var(--yellow-400);
+        background: #FBBF24;
         color: #1f2937;
         width: 40px;
         height: 40px;
@@ -87,17 +88,17 @@
     }
     
     .btn-dashboard {
-        background: var(--blue-500);
+        background: #3B82F6;
         color: white;
     }
     
     .btn-race-predictor {
-        background: var(--green-500);
+        background: #10B981;
         color: white;
     }
     
     .btn-risk-analyzer {
-        background: var(--purple-500);
+        background: #8B5CF6;
         color: white;
     }
     
@@ -135,18 +136,16 @@
     }
 </style>
 
-<div class="container-fluid">
-    <div class="performance-leaderboard">
-        <div class="leaderboard-header">
-            <i class="fas fa-trophy performance-icon"></i>
-            Performance Leaderboard
-        </div>
-        
-        <div id="leaderboardContent">
-            <div class="loading-spinner">
-                <div class="spinner-border text-light" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
+<div class="performance-leaderboard">
+    <div class="leaderboard-header">
+        <i class="fas fa-trophy performance-icon"></i>
+        Performance Leaderboard
+    </div>
+    
+    <div id="leaderboardContent">
+        <div class="loading-spinner">
+            <div class="spinner-border text-light" role="status">
+                <span class="visually-hidden">Loading...</span>
             </div>
         </div>
     </div>
