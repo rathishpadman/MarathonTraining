@@ -2,6 +2,10 @@
 
 {% block title %}Individual Analytics - Marathon Training Dashboard{% endblock %}
 
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid mt-4">
     <!-- Page Header -->
@@ -826,6 +830,12 @@ function createSimpleVolumeChart(athleteId, timePeriod) {
         const canvas = document.getElementById('trainingVolumeChart');
         if (!canvas) {
             console.warn('Training volume chart canvas not found');
+            return;
+        }
+        
+        // Check if Chart.js is available
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js library not loaded');
             return;
         }
         
