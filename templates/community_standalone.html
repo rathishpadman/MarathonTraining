@@ -757,12 +757,19 @@
             
             const width = container.clientWidth;
             const height = 300;
-            const radius = Math.min(width, height) / 2 - 40;
-            const centerX = width / 2;
-            const centerY = height / 2;
             
             // Clear previous chart
             container.innerHTML = '';
+            
+            // If only one data point, render as bar chart for better visibility
+            if (data.data.length === 1) {
+                renderSingleBarChart(container, data, width, height);
+                return;
+            }
+            
+            const radius = Math.min(width, height) / 2 - 40;
+            const centerX = width / 2;
+            const centerY = height / 2;
             
             // Create SVG with transparent background
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -838,6 +845,88 @@
             });
             
             container.appendChild(legend);
+        }
+
+        function renderSingleBarChart(container, data, width, height) {
+            // Create SVG with transparent background
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', width);
+            svg.setAttribute('height', height);
+            svg.style.background = 'transparent';
+            
+            const margin = { top: 40, right: 40, bottom: 60, left: 60 };
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+            
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${margin.left}, ${margin.top})`);
+            
+            const value = data.data[0];
+            const label = data.labels[0];
+            const color = '#14B8A6';
+            
+            // Create bar
+            const barWidth = Math.min(chartWidth * 0.4, 120);
+            const barHeight = (value / (value * 1.2)) * chartHeight;
+            const barX = (chartWidth - barWidth) / 2;
+            const barY = chartHeight - barHeight;
+            
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', barX);
+            rect.setAttribute('y', barY);
+            rect.setAttribute('width', barWidth);
+            rect.setAttribute('height', barHeight);
+            rect.setAttribute('fill', color);
+            rect.setAttribute('stroke', 'rgba(255, 255, 255, 0.3)');
+            rect.setAttribute('stroke-width', 2);
+            rect.setAttribute('rx', 8);
+            
+            // Add hover effects
+            rect.addEventListener('mouseenter', function() {
+                this.style.filter = 'brightness(1.2)';
+                showTooltip(barX + barWidth/2 + margin.left, barY + margin.top, `${label}: ${value.toFixed(1)}km`);
+            });
+            
+            rect.addEventListener('mouseleave', function() {
+                this.style.filter = 'brightness(1)';
+                hideTooltip();
+            });
+            
+            g.appendChild(rect);
+            
+            // Add value label on top of bar
+            const valueText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            valueText.setAttribute('x', barX + barWidth/2);
+            valueText.setAttribute('y', barY - 10);
+            valueText.setAttribute('text-anchor', 'middle');
+            valueText.setAttribute('fill', 'white');
+            valueText.setAttribute('font-size', '16');
+            valueText.setAttribute('font-weight', 'bold');
+            valueText.textContent = `${value.toFixed(1)}km`;
+            g.appendChild(valueText);
+            
+            // Add label below bar
+            const labelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            labelText.setAttribute('x', barX + barWidth/2);
+            labelText.setAttribute('y', chartHeight + 30);
+            labelText.setAttribute('text-anchor', 'middle');
+            labelText.setAttribute('fill', 'rgba(255, 255, 255, 0.8)');
+            labelText.setAttribute('font-size', '14');
+            labelText.textContent = label;
+            g.appendChild(labelText);
+            
+            // Add subtitle
+            const subtitleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            subtitleText.setAttribute('x', chartWidth/2);
+            subtitleText.setAttribute('y', -10);
+            subtitleText.setAttribute('text-anchor', 'middle');
+            subtitleText.setAttribute('fill', 'rgba(255, 255, 255, 0.6)');
+            subtitleText.setAttribute('font-size', '12');
+            subtitleText.textContent = 'Total Distance by Sport Type';
+            g.appendChild(subtitleText);
+            
+            svg.appendChild(g);
+            container.appendChild(svg);
         }
 
         // Tooltip functions
