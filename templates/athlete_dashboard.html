@@ -48,6 +48,37 @@
             font-weight: 300;
         }
         
+        .filter-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0 40px 0;
+        }
+        
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+        }
+        
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .filter-btn.active {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.7);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+        
         .metrics-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -202,7 +233,14 @@
         <div class="header">
             <h1>🏃‍♂️ Athlete Analytics Dashboard</h1>
             <p>Comprehensive fitness insights powered by machine learning</p>
-            <div class="period-info">Analysis Period: Last 90 days of activity data</div>
+            <div class="period-info" id="periodInfo">Analysis Period: Last 90 days of activity data</div>
+        </div>
+        
+        <!-- Date Range Filters -->
+        <div class="filter-controls">
+            <button class="filter-btn" data-days="30">30 Days</button>
+            <button class="filter-btn" data-days="60">60 Days</button>
+            <button class="filter-btn active" data-days="90">90 Days</button>
         </div>
         
         <!-- Fitness Metrics -->
@@ -243,15 +281,40 @@
     </div>
 
     <script>
+        let currentDays = 90; // Default to 90 days
+        
         document.addEventListener('DOMContentLoaded', function() {
+            setupFilterButtons();
             loadAthleteAnalytics();
         });
+        
+        function setupFilterButtons() {
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Update current days and reload data
+                    currentDays = parseInt(this.dataset.days);
+                    updatePeriodInfo();
+                    loadAthleteAnalytics();
+                });
+            });
+        }
+        
+        function updatePeriodInfo() {
+            const periodInfo = document.getElementById('periodInfo');
+            periodInfo.textContent = `Analysis Period: Last ${currentDays} days of activity data`;
+        }
 
         async function loadAthleteAnalytics() {
             try {
                 // Get athlete ID from template variable or default to 1
                 const athleteId = {{ athlete_id | default(1) }};
-                const response = await fetch(`/api/athletes/${athleteId}/fitness-analytics`);
+                const response = await fetch(`/api/athletes/${athleteId}/fitness-analytics?days=${currentDays}`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

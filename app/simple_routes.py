@@ -1734,19 +1734,21 @@ def get_injury_prevention_api(athlete_id):
 def get_fitness_analytics(athlete_id):
     """Get comprehensive fitness analytics for athlete dashboard"""
     try:
-        logger.info(f"Generating fitness analytics for athlete {athlete_id}")
+        # Get days parameter from query string, default to 90
+        days = request.args.get('days', 90, type=int)
+        logger.info(f"Generating fitness analytics for athlete {athlete_id} with {days} days of data")
         
         # Initialize race predictor for fitness analysis
         race_predictor = SimpleRacePredictor()
         
-        # Get fitness analysis
-        fitness_data = race_predictor.analyze_fitness(db.session, athlete_id, days=90)
+        # Get fitness analysis with dynamic days
+        fitness_data = race_predictor.analyze_fitness(db.session, athlete_id, days=days)
         
         # Get injury risk assessment
         injury_risk = predict_injury_risk(athlete_id)
         
-        # Get recent activities for trends
-        cutoff_date = datetime.now() - timedelta(days=30)
+        # Get recent activities for trends using the same period
+        cutoff_date = datetime.now() - timedelta(days=days)
         recent_activities = db.session.query(Activity).filter(
             Activity.athlete_id == athlete_id,
             Activity.start_date >= cutoff_date,
