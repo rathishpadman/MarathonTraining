@@ -501,7 +501,7 @@ function loadCharts(athleteId, timePeriod) {
 
 // Create volume chart
 function createVolumeChart(data) {
-    const ctx = document.getElementById('volumeChart').getContext('2d');
+    const ctx = document.getElementById('trainingVolumeChart').getContext('2d');
     
     if (analyticsCharts.volume) {
         analyticsCharts.volume.destroy();
@@ -544,7 +544,7 @@ function createVolumeChart(data) {
 
 // Create pace chart
 function createPaceChart(data) {
-    const ctx = document.getElementById('paceChart').getContext('2d');
+    const ctx = document.getElementById('paceAnalysisChart').getContext('2d');
     
     if (analyticsCharts.pace) {
         analyticsCharts.pace.destroy();
@@ -587,7 +587,7 @@ function createPaceChart(data) {
 
 // Create heart rate chart
 function createHeartRateChart(data) {
-    const ctx = document.getElementById('heartRateChart').getContext('2d');
+    const ctx = document.getElementById('heartRateZonesChart').getContext('2d');
     
     if (analyticsCharts.heartRate) {
         analyticsCharts.heartRate.destroy();
@@ -660,6 +660,186 @@ function createTrainingLoadChart(data) {
             }
         }
     });
+}
+
+// Simplified chart functions for basic charts
+function createSimpleVolumeChart(athleteId, timePeriod) {
+    fetch(`/api/athletes/${athleteId}/volume-trend?days=${timePeriod}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.dates && data.distances) {
+                const ctx = document.getElementById('trainingVolumeChart').getContext('2d');
+                
+                if (analyticsCharts.volume) {
+                    analyticsCharts.volume.destroy();
+                }
+                
+                analyticsCharts.volume = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: 'Distance (km)',
+                            data: data.distances,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#ffffff' } }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: '#ffffff' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            },
+                            y: {
+                                ticks: { color: '#ffffff' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error loading volume chart:', error));
+}
+
+function createPaceAnalysisChart(athleteId, timePeriod) {
+    fetch(`/api/athletes/${athleteId}/pace-analysis?days=${timePeriod}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.dates && data.paces) {
+                const ctx = document.getElementById('paceAnalysisChart').getContext('2d');
+                
+                if (analyticsCharts.pace) {
+                    analyticsCharts.pace.destroy();
+                }
+                
+                analyticsCharts.pace = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: 'Pace (min/km)',
+                            data: data.paces,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#ffffff' } }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: '#ffffff' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            },
+                            y: {
+                                ticks: { color: '#ffffff' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error loading pace chart:', error));
+}
+
+function createHeartRateZonesChart(athleteId, timePeriod) {
+    fetch(`/api/athletes/${athleteId}/heart-rate-zones?days=${timePeriod}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.zones) {
+                const ctx = document.getElementById('heartRateZonesChart').getContext('2d');
+                
+                if (analyticsCharts.heartRate) {
+                    analyticsCharts.heartRate.destroy();
+                }
+                
+                analyticsCharts.heartRate = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5'],
+                        datasets: [{
+                            data: data.zones,
+                            backgroundColor: [
+                                '#6b7280', // Zone 1 - Gray
+                                '#3b82f6', // Zone 2 - Blue
+                                '#10b981', // Zone 3 - Green
+                                '#f59e0b', // Zone 4 - Yellow
+                                '#ef4444'  // Zone 5 - Red
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#ffffff' } }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error loading heart rate chart:', error));
+}
+
+function createTrainingLoadChart(athleteId, timePeriod) {
+    fetch(`/api/athletes/${athleteId}/training-load?days=${timePeriod}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.dates && data.loads) {
+                const ctx = document.getElementById('trainingLoadChart').getContext('2d');
+                
+                if (analyticsCharts.trainingLoad) {
+                    analyticsCharts.trainingLoad.destroy();
+                }
+                
+                analyticsCharts.trainingLoad = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: 'Training Load',
+                            data: data.loads,
+                            backgroundColor: 'rgba(139, 69, 19, 0.8)',
+                            borderColor: '#8b4513',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#ffffff' } }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: '#ffffff' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            },
+                            y: {
+                                ticks: { color: '#ffffff' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error loading training load chart:', error));
 }
 
 // Load recent activities using API endpoint
