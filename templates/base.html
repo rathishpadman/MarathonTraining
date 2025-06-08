@@ -222,18 +222,94 @@
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 10px;
-            color: white;
+            color: white !important;
         }
         
         .form-control:focus {
             background: rgba(255, 255, 255, 0.15);
             border-color: var(--secondary-color);
             box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
-            color: white;
+            color: white !important;
         }
         
         .form-control::placeholder {
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(255, 255, 255, 0.7) !important;
+        }
+        
+        .form-control option {
+            background: var(--charcoal);
+            color: white;
+        }
+        
+        /* Enhanced text contrast for all elements */
+        h1, h2, h3, h4, h5, h6 {
+            color: white !important;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        p, span, div, label, .form-label {
+            color: white !important;
+        }
+        
+        .card-body, .card-text, .card-title {
+            color: white !important;
+        }
+        
+        .table {
+            color: white !important;
+        }
+        
+        .table th, .table td {
+            color: white !important;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn {
+            color: white !important;
+            font-weight: 500;
+        }
+        
+        .activity-name, .activity-details {
+            color: white !important;
+        }
+        
+        .prediction-time, .prediction-title {
+            color: white !important;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Specific contrast fixes for dashboard elements */
+        .metric-value, .metric-label {
+            color: white !important;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .nav-link, .navbar-brand {
+            color: white !important;
+        }
+        
+        .text-muted {
+            color: rgba(255, 255, 255, 0.7) !important;
+        }
+        
+        .small, small {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+        
+        .badge {
+            color: white !important;
+        }
+        
+        /* Select dropdown specific styling */
+        select.form-control {
+            background: rgba(255, 255, 255, 0.15) !important;
+            color: white !important;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        select.form-control option {
+            background: var(--charcoal) !important;
+            color: white !important;
         }
         
         .fade-in {
