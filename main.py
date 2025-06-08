@@ -1,10 +1,6 @@
 import logging
 import os
-from dotenv import load_dotenv
 from app import create_app, socketio
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)

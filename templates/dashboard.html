@@ -150,24 +150,6 @@
     </div>
 </div>
 
-<!-- Fitness Analysis Section -->
-<div class="row mt-4" id="fitnessSection" style="display: none;">
-    <div class="col-12">
-        <div class="card-glassmorphism p-4">
-            <h4 class="text-white mb-3">
-                <i class="fas fa-chart-line me-2"></i>
-                Current Fitness Analysis
-            </h4>
-            <div id="fitnessAnalysis">
-                <div class="text-center text-white-50 p-4">
-                    <i class="fas fa-heartbeat fa-2x mb-2"></i>
-                    <p>Loading fitness analysis...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Team Overview (if multiple athletes) -->
 <div class="row mt-4" id="teamSection" style="display: none;">
     <div class="col-12">
@@ -192,13 +174,6 @@
 
 {% block extra_js %}
 <script>
-// Global Chart.js defaults to ensure visible text colors
-Chart.defaults.color = '#343a40';
-Chart.defaults.scale.ticks.color = '#343a40';
-Chart.defaults.plugins.legend.labels.color = '#343a40';
-Chart.defaults.plugins.tooltip.titleColor = '#ffffff';
-Chart.defaults.plugins.tooltip.bodyColor = '#ffffff';
-
 // Dashboard-specific initialization
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -409,18 +384,15 @@ function loadAthleteData(athleteId) {
                 updateCharts(data);
                 loadRecentActivities(athleteId);
                 loadRacePredictions(athleteId);
-                loadFitnessAnalysis(athleteId);
                 
                 // Show dashboard sections
                 const metricsSection = document.getElementById('metricsSection');
                 const chartsSection = document.getElementById('chartsSection');
                 const activitiesSection = document.getElementById('activitiesSection');
-                const fitnessSection = document.getElementById('fitnessSection');
                 
                 if (metricsSection) metricsSection.style.display = 'flex';
                 if (chartsSection) chartsSection.style.display = 'flex';
                 if (activitiesSection) activitiesSection.style.display = 'flex';
-                if (fitnessSection) fitnessSection.style.display = 'block';
             }
             
             const loadingSpinner = document.getElementById('loadingSpinner');
@@ -535,7 +507,7 @@ function createWeeklyProgressChartFromActivities(activities, athleteData) {
             plugins: {
                 legend: {
                     labels: {
-                        color: '#343a40'
+                        color: 'white'
                     }
                 },
                 tooltip: {
@@ -553,26 +525,7 @@ function createWeeklyProgressChartFromActivities(activities, athleteData) {
                             const heartRate = avgHeartRates[dataIndex];
                             
                             if (distance > 0 && heartRate > 0) {
-                                // Store context for async AI call
-                                window.currentTooltipContext = { distance, heartRate, dataIndex };
-                                
-                                // Trigger AI recommendations loading
-                                setTimeout(() => loadAIRecommendationsForTooltip(), 100);
-                                
-                                // Check if we already have cached AI recommendations
-                                if (window.aiRecommendations && window.aiRecommendations.length > 0) {
-                                    return [
-                                        '',
-                                        '🤖 AI Race Recommendations:',
-                                        ...window.aiRecommendations
-                                    ];
-                                } else {
-                                    return [
-                                        '',
-                                        '🤖 AI Race Recommendations:',
-                                        'Loading AI insights...'
-                                    ];
-                                }
+                                return generateRaceRecommendation(distance, heartRate, athleteData);
                             }
                             return '';
                         }
@@ -582,10 +535,10 @@ function createWeeklyProgressChartFromActivities(activities, athleteData) {
             scales: {
                 x: {
                     ticks: {
-                        color: '#343a40'
+                        color: 'white'
                     },
                     grid: {
-                        color: 'rgba(52, 58, 64, 0.2)'
+                        color: 'rgba(255, 255, 255, 0.1)'
                     }
                 },
                 y: {
@@ -593,10 +546,10 @@ function createWeeklyProgressChartFromActivities(activities, athleteData) {
                     display: true,
                     position: 'left',
                     ticks: {
-                        color: '#343a40'
+                        color: 'white'
                     },
                     grid: {
-                        color: 'rgba(52, 58, 64, 0.2)'
+                        color: 'rgba(255, 255, 255, 0.1)'
                     }
                 },
                 y1: {
@@ -604,7 +557,7 @@ function createWeeklyProgressChartFromActivities(activities, athleteData) {
                     display: true,
                     position: 'right',
                     ticks: {
-                        color: '#343a40'
+                        color: 'white'
                     },
                     grid: {
                         drawOnChartArea: false,
@@ -681,7 +634,7 @@ function createStatusChartFromMetrics(metrics) {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        color: '#343a40',
+                        color: 'white',
                         padding: 15,
                         font: {
                             size: 11
@@ -702,113 +655,78 @@ function createStatusChartFromMetrics(metrics) {
     });
 }
 
-// AI-powered race recommendation function
+// ML-powered race recommendation function
 function generateRaceRecommendation(distance, heartRate, athleteData) {
-    return new Promise((resolve, reject) => {
-        // Prepare current activity data
-        const currentActivity = {
-            distance: distance,
-            heart_rate: heartRate,
-            pace: athleteData.metrics?.avg_pace || 7.0
-        };
-        
-        // Get athlete ID from current athlete
-        const selectedAthleteId = currentAthlete;
-        
-        if (!selectedAthleteId) {
-            // Fallback to rule-based recommendations
-            resolve(generateFallbackRecommendations(distance, heartRate, athleteData));
-            return;
-        }
-        
-        // Call AI recommendations API
-        fetch(`/api/athletes/${selectedAthleteId}/ai-race-recommendations`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(currentActivity)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.recommendations && data.recommendations.length > 0) {
-                resolve(data.recommendations);
-            } else {
-                resolve(generateFallbackRecommendations(distance, heartRate, athleteData));
-            }
-        })
-        .catch(error => {
-            console.warn('AI recommendations failed, using fallback:', error);
-            resolve(generateFallbackRecommendations(distance, heartRate, athleteData));
-        });
-    });
-}
-
-// Fallback rule-based recommendations
-function generateFallbackRecommendations(distance, heartRate, athleteData) {
     const metrics = athleteData.metrics || {};
     const avgPace = metrics.avg_pace || 7.0;
     const totalDistance = metrics.total_distance || 0;
+    const totalActivities = metrics.total_activities || 0;
     
+    // Calculate training readiness score (0-100)
+    let readinessScore = 0;
+    
+    // Distance factor (30% weight)
+    const weeklyAvg = totalDistance / 4; // Approximate weekly average
+    if (weeklyAvg >= 40) readinessScore += 30;
+    else if (weeklyAvg >= 25) readinessScore += 20;
+    else if (weeklyAvg >= 15) readinessScore += 10;
+    
+    // Heart rate efficiency factor (40% weight)
+    const maxHR = 185; // Assumed max HR
+    const hrEfficiency = (maxHR - heartRate) / maxHR;
+    if (hrEfficiency > 0.3) readinessScore += 40;
+    else if (hrEfficiency > 0.2) readinessScore += 30;
+    else if (hrEfficiency > 0.1) readinessScore += 20;
+    else readinessScore += 10;
+    
+    // Pace factor (30% weight)
+    if (avgPace <= 5.0) readinessScore += 30;
+    else if (avgPace <= 6.0) readinessScore += 25;
+    else if (avgPace <= 7.0) readinessScore += 20;
+    else if (avgPace <= 8.0) readinessScore += 15;
+    else readinessScore += 10;
+    
+    // Generate recommendations based on ML analysis
     let recommendations = [];
     
-    // Basic race distance recommendations
-    const weeklyAvg = totalDistance / 4;
-    if (weeklyAvg >= 40 && avgPace <= 6.0) {
-        recommendations.push('🏆 Marathon ready - excellent fitness base');
-    } else if (weeklyAvg >= 25 && avgPace <= 7.0) {
-        recommendations.push('🏃‍♂️ Half Marathon optimal distance');
-    } else if (weeklyAvg >= 15) {
+    // Race distance recommendations
+    if (distance >= 15 && readinessScore >= 70) {
+        recommendations.push('🏃‍♂️ Ready for Half Marathon (21.1km)');
+        if (readinessScore >= 85) {
+            recommendations.push('🏆 Marathon potential detected!');
+        }
+    } else if (distance >= 8 && readinessScore >= 60) {
         recommendations.push('🎯 10K race ready');
+        recommendations.push('📈 Build to Half Marathon');
+    } else if (distance >= 4 && readinessScore >= 50) {
+        recommendations.push('⚡ 5K race optimal');
+        recommendations.push('🔄 Focus on 10K training');
     } else {
-        recommendations.push('⚡ 5K focus recommended');
+        recommendations.push('🌟 Building base fitness');
+        recommendations.push('📊 Target 5K in 4-6 weeks');
     }
     
-    // Heart rate analysis
-    const maxHR = 185; // Estimated
+    // Training intensity recommendations
     if (heartRate < maxHR * 0.7) {
-        recommendations.push('💚 Excellent aerobic efficiency');
-    } else if (heartRate < maxHR * 0.85) {
-        recommendations.push('🟡 Good training intensity');
+        recommendations.push('💚 Great aerobic base');
+    } else if (heartRate < maxHR * 0.8) {
+        recommendations.push('🟡 Moderate intensity zone');
     } else {
-        recommendations.push('🔴 High intensity - ensure recovery');
+        recommendations.push('🔴 High intensity - monitor recovery');
     }
     
-    // Simple time predictions
-    const predicted5K = Math.floor(avgPace * 5);
-    const predicted10K = Math.floor(avgPace * 10 * 1.05);
-    recommendations.push(`🎯 Est. 5K: ${Math.floor(predicted5K / 60)}:${String(predicted5K % 60).padStart(2, '0')}`);
-    recommendations.push(`🎯 Est. 10K: ${Math.floor(predicted10K / 60)}:${String(predicted10K % 60).padStart(2, '0')}`);
+    // Performance prediction
+    const predicted5K = (avgPace * 5).toFixed(1);
+    const predicted10K = (avgPace * 10 * 1.05).toFixed(1);
+    const predictedHalf = (avgPace * 21.1 * 1.1).toFixed(1);
+    
+    recommendations.push('');
+    recommendations.push('🎯 Predicted Times:');
+    recommendations.push(`5K: ${Math.floor(predicted5K)}:${String(Math.round((predicted5K % 1) * 60)).padStart(2, '0')}`);
+    recommendations.push(`10K: ${Math.floor(predicted10K)}:${String(Math.round((predicted10K % 1) * 60)).padStart(2, '0')}`);
+    recommendations.push(`Half: ${Math.floor(predictedHalf / 60)}:${String(Math.floor(predictedHalf % 60)).padStart(2, '0')}:00`);
     
     return recommendations;
-}
-
-// Function to load AI recommendations asynchronously after tooltip display
-async function loadAIRecommendationsForTooltip() {
-    if (!window.currentTooltipContext || !currentDashboardData) return;
-    
-    const { distance, heartRate } = window.currentTooltipContext;
-    
-    try {
-        const recommendations = await generateRaceRecommendation(distance, heartRate, currentDashboardData);
-        
-        // Store recommendations globally for use in tooltips
-        window.aiRecommendations = recommendations;
-        
-        // Force chart tooltip refresh if active
-        if (window.performanceChart && window.performanceChart.tooltip && window.performanceChart.tooltip._active && window.performanceChart.tooltip._active.length > 0) {
-            const activePoints = window.performanceChart.tooltip._active;
-            window.performanceChart.tooltip.setActiveElements(activePoints, {x: 0, y: 0});
-            window.performanceChart.update('none');
-        }
-    } catch (error) {
-        console.warn('Failed to load AI recommendations:', error);
-    }
 }
 
 // Create weekly progress chart (legacy function)
@@ -845,17 +763,17 @@ function createWeeklyProgressChart(weeklyData) {
             plugins: {
                 legend: {
                     labels: {
-                        color: '#343a40'
+                        color: 'white'
                     }
                 }
             },
             scales: {
                 x: {
                     ticks: {
-                        color: '#343a40'
+                        color: 'white'
                     },
                     grid: {
-                        color: 'rgba(52, 58, 64, 0.2)'
+                        color: 'rgba(255, 255, 255, 0.1)'
                     }
                 },
                 y: {
@@ -863,10 +781,10 @@ function createWeeklyProgressChart(weeklyData) {
                     display: true,
                     position: 'left',
                     ticks: {
-                        color: '#343a40'
+                        color: 'white'
                     },
                     grid: {
-                        color: 'rgba(52, 58, 64, 0.2)'
+                        color: 'rgba(255, 255, 255, 0.1)'
                     }
                 },
                 y1: {
@@ -874,7 +792,7 @@ function createWeeklyProgressChart(weeklyData) {
                     display: true,
                     position: 'right',
                     ticks: {
-                        color: '#343a40'
+                        color: 'white'
                     },
                     grid: {
                         drawOnChartArea: false,
@@ -915,7 +833,7 @@ function createStatusChart(statusData) {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        color: '#343a40',
+                        color: 'white',
                         padding: 20
                     }
                 }
@@ -924,85 +842,34 @@ function createStatusChart(statusData) {
     });
 }
 
-// Load recent activities with table format
+// Load recent activities
 function loadRecentActivities(athleteId) {
     fetch(`/api/athletes/${athleteId}/dashboard-data`)
         .then(response => response.json())
         .then(data => {
             const activitiesContainer = document.getElementById('recentActivities');
             if (data.recent_activities && data.recent_activities.length > 0) {
-                let tableHtml = `
-                    <div class="table-responsive">
-                        <table class="activities-table" style="background-color: rgba(33, 37, 41, 0.95); border-radius: 8px; border: 2px solid rgba(255, 255, 255, 0.3); width: 100%;">
-                            <thead style="background-color: rgba(0, 123, 255, 0.9);">
-                                <tr>
-                                    <th style="color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.4); font-weight: 700; padding: 12px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">Date</th>
-                                    <th style="color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.4); font-weight: 700; padding: 12px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">Type</th>
-                                    <th style="color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.4); font-weight: 700; padding: 12px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">Distance</th>
-                                    <th style="color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.4); font-weight: 700; padding: 12px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">Duration</th>
-                                    <th style="color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.4); font-weight: 700; padding: 12px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">Pace</th>
-                                    <th style="color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.4); font-weight: 700; padding: 12px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">Avg HR</th>
-                                    <th style="color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.4); font-weight: 700; padding: 12px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">Training Load</th>
-                                </tr>
-                            </thead>
-                            <tbody style="background-color: rgba(33, 37, 41, 0.8);">
-                `;
-                
+                let activitiesHtml = '';
                 data.recent_activities.slice(0, 10).forEach(activity => {
                     const date = new Date(activity.start_date).toLocaleDateString();
-                    const distance = activity.distance ? (activity.distance / 1000).toFixed(2) : '0.00';
+                    const distance = activity.distance ? activity.distance.toFixed(2) : '0.00';
                     const time = activity.moving_time ? Math.floor(activity.moving_time / 60) : 0;
-                    const hr = activity.average_heartrate ? Math.round(activity.average_heartrate) : '';
-                    const pace = activity.moving_time && activity.distance ? 
-                        ((activity.moving_time / 60) / (activity.distance / 1000)).toFixed(2) : '';
+                    const hr = activity.average_heartrate ? Math.round(activity.average_heartrate) : 'N/A';
                     
-                    // Calculate training load using TRIMP method
-                    let trainingLoad = '';
-                    if (activity.moving_time && activity.average_heartrate) {
-                        const duration = activity.moving_time / 60; // minutes
-                        const hrReserveFactor = Math.max(0, (activity.average_heartrate - 60) / 140); // Simplified HR reserve
-                        trainingLoad = (duration * hrReserveFactor * 1.92).toFixed(1);
-                    }
-                    
-                    tableHtml += `
-                        <tr style="background-color: rgba(52, 58, 64, 0.6); border: 1px solid rgba(255, 255, 255, 0.2);">
-                            <td style="color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.3); font-weight: 600; padding: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">${date}</td>
-                            <td style="color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.3); font-weight: 600; padding: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">${activity.sport_type || 'Run'}</td>
-                            <td style="color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.3); font-weight: 600; padding: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">${distance} km</td>
-                            <td style="color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.3); font-weight: 600; padding: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">${time}m</td>
-                            <td style="color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.3); font-weight: 600; padding: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">${pace ? pace + ' min/km' : ''}</td>
-                            <td style="color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.3); font-weight: 600; padding: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">${hr}</td>
-                            <td style="color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.3); font-weight: 600; padding: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">${trainingLoad}</td>
-                        </tr>
+                    activitiesHtml += `
+                        <div class="activity-item d-flex justify-content-between align-items-center p-3 mb-2" style="background: rgba(255, 255, 255, 0.1); border-radius: 8px;">
+                            <div>
+                                <h6 class="text-white mb-1">${activity.name || 'Running Activity'}</h6>
+                                <small class="text-white-50">${date} • ${activity.sport_type || 'Run'}</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="text-white">${distance} km</div>
+                                <small class="text-white-50">${time} min • HR: ${hr}</small>
+                            </div>
+                        </div>
                     `;
                 });
-                
-                tableHtml += `
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-                activitiesContainer.innerHTML = tableHtml;
-                
-                // Force table styling with JavaScript
-                const table = activitiesContainer.querySelector('table');
-                if (table) {
-                    table.classList.add('js-table-fixed');
-                    // Apply inline styles as backup
-                    table.style.cssText = 'background-color: rgba(33, 37, 41, 0.95) !important; border-radius: 8px !important; border: 2px solid rgba(0, 123, 255, 0.6) !important; overflow: hidden !important;';
-                    
-                    // Style headers
-                    const headers = table.querySelectorAll('th');
-                    headers.forEach(th => {
-                        th.style.cssText = 'background: linear-gradient(135deg, rgba(0, 123, 255, 0.9) 0%, rgba(0, 86, 179, 0.9) 100%) !important; color: #ffffff !important; font-weight: 700 !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.8) !important; border: 1px solid rgba(255, 255, 255, 0.4) !important; padding: 12px 15px !important; font-size: 14px !important;';
-                    });
-                    
-                    // Style cells
-                    const cells = table.querySelectorAll('td');
-                    cells.forEach(td => {
-                        td.style.cssText = 'background-color: rgba(52, 58, 64, 0.9) !important; color: #ffffff !important; font-weight: 600 !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.7) !important; border: 1px solid rgba(255, 255, 255, 0.3) !important; padding: 10px 15px !important; font-size: 14px !important;';
-                    });
-                }
+                activitiesContainer.innerHTML = activitiesHtml;
             } else {
                 activitiesContainer.innerHTML = `
                     <div class="text-center text-white-50 p-4">
@@ -1019,86 +886,6 @@ function loadRecentActivities(athleteId) {
                 <div class="text-center text-white-50 p-4">
                     <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
                     <p>Error loading activities</p>
-                </div>
-            `;
-        });
-}
-
-// Load fitness analysis data
-function loadFitnessAnalysis(athleteId) {
-    console.log('Loading fitness analysis for athlete:', athleteId);
-    const fitnessContainer = document.getElementById('fitnessAnalysis');
-    
-    if (!fitnessContainer) {
-        console.error('Fitness container not found!');
-        return;
-    }
-    
-    fetch(`/api/athletes/${athleteId}/fitness-analysis?days=90`)
-        .then(response => {
-            console.log('Fitness API response status:', response.status);
-            return response.json();
-        })
-        .then(data => {
-            console.log('Fitness data received:', data);
-            if (data.fitness_metrics) {
-                const metrics = data.fitness_metrics;
-                const summary = data.summary || {};
-                
-                fitnessContainer.innerHTML = `
-                    <div class="fitness-metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                        <div class="fitness-metric-card" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">${metrics.current_fitness || 0}</div>
-                            <div style="font-size: 12px; opacity: 0.9;">Current Fitness</div>
-                        </div>
-                        <div class="fitness-metric-card" style="background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">${metrics.aerobic_capacity || 0}</div>
-                            <div style="font-size: 12px; opacity: 0.9;">VO2 Max (ml/kg/min)</div>
-                        </div>
-                        <div class="fitness-metric-card" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">${metrics.lactate_threshold_pace || 'N/A'}</div>
-                            <div style="font-size: 12px; opacity: 0.9;">LT Pace (min/km)</div>
-                        </div>
-                        <div class="fitness-metric-card" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">${metrics.training_load || 0}</div>
-                            <div style="font-size: 12px; opacity: 0.9;">Training Load</div>
-                        </div>
-                        <div class="fitness-metric-card" style="background: linear-gradient(135deg, #6f42c1 0%, #59359a 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">${metrics.consistency_score || 0}%</div>
-                            <div style="font-size: 12px; opacity: 0.9;">Consistency</div>
-                        </div>
-                        <div class="fitness-metric-card" style="background: linear-gradient(135deg, #fd7e14 0%, #dc6502 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">${metrics.injury_risk || 0}%</div>
-                            <div style="font-size: 12px; opacity: 0.9;">Injury Risk</div>
-                        </div>
-                    </div>
-                    <div class="fitness-summary" style="background: rgba(248, 249, 250, 0.95); padding: 15px; border-radius: 8px; color: #212529;">
-                        <h6 style="color: #007bff; margin-bottom: 10px;">Analysis Summary</h6>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 14px;">
-                            <div><strong>Activities Analyzed:</strong> ${summary.total_activities || 0}</div>
-                            <div><strong>Total Distance:</strong> ${summary.total_distance_km || 0} km</div>
-                            <div><strong>Analysis Period:</strong> ${summary.analysis_period_days || 90} days</div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                fitnessContainer.innerHTML = `
-                    <div class="text-center" style="color: #6c757d; padding: 40px;">
-                        <i class="fas fa-chart-line fa-3x mb-3" style="opacity: 0.5;"></i>
-                        <p style="margin: 0; font-size: 16px;">No fitness data available</p>
-                        <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.8;">Connect to Strava to see your fitness analysis</p>
-                    </div>
-                `;
-            }
-        })
-        .catch(error => {
-            console.error('Error loading fitness analysis:', error);
-            const fitnessContainer = document.getElementById('fitnessAnalysis');
-            fitnessContainer.innerHTML = `
-                <div class="text-center" style="color: #dc3545; padding: 40px;">
-                    <i class="fas fa-exclamation-triangle fa-3x mb-3" style="opacity: 0.5;"></i>
-                    <p style="margin: 0; font-size: 16px;">Error loading fitness analysis</p>
-                    <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.8;">Please try refreshing the page</p>
                 </div>
             `;
         });
