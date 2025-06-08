@@ -226,20 +226,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Check for existing athletes on page load
 function checkForExistingAthletes() {
+    console.log('Checking for existing athletes...');
     fetch('/api/athletes')
-        .then(response => response.json())
+        .then(response => {
+            console.log('Athletes API response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            if (data && data.length > 0) {
+            console.log('Athletes data received:', data);
+            if (data && Array.isArray(data) && data.length > 0) {
                 // Athletes exist, hide connect button and show dashboard
-                document.getElementById('connectStrava').style.display = 'none';
+                const connectBtn = document.getElementById('connectStrava');
+                if (connectBtn) {
+                    connectBtn.style.display = 'none';
+                }
+                
                 populateAthleteSelector(data);
-                document.getElementById('athleteSelection').style.display = 'block';
+                
+                const athleteSelection = document.getElementById('athleteSelection');
+                if (athleteSelection) {
+                    athleteSelection.style.display = 'block';
+                }
                 
                 // Auto-select first athlete if only one
                 if (data.length === 1) {
-                    document.getElementById('athleteSelect').value = data[0].id;
-                    currentAthlete = data[0].id;
-                    loadAthleteData(data[0].id);
+                    const athleteSelect = document.getElementById('athleteSelect');
+                    if (athleteSelect) {
+                        athleteSelect.value = data[0].id;
+                        currentAthlete = data[0].id;
+                        loadAthleteData(data[0].id);
+                    }
                 }
                 
                 // Update welcome message
@@ -248,14 +267,21 @@ function checkForExistingAthletes() {
                     welcomeText.textContent = `Welcome back! You have ${data.length} connected athlete${data.length > 1 ? 's' : ''}.`;
                 }
             } else {
+                console.log('No athletes found, showing connect button');
                 // No athletes, show connect button
-                document.getElementById('connectStrava').style.display = 'inline-block';
+                const connectBtn = document.getElementById('connectStrava');
+                if (connectBtn) {
+                    connectBtn.style.display = 'inline-block';
+                }
             }
         })
         .catch(error => {
             console.error('Error checking athletes:', error);
             // On error, show connect button
-            document.getElementById('connectStrava').style.display = 'inline-block';
+            const connectBtn = document.getElementById('connectStrava');
+            if (connectBtn) {
+                connectBtn.style.display = 'inline-block';
+            }
         });
 }
 
@@ -300,23 +326,38 @@ function loadDashboard() {
 
 // Populate athlete selector
 function populateAthleteSelector(athletes) {
+    console.log('Populating athlete selector with:', athletes);
     const select = document.getElementById('athleteSelect');
+    
+    if (!select) {
+        console.error('Athlete select element not found');
+        return;
+    }
+    
     select.innerHTML = '<option value="">Select an athlete...</option>';
     
-    if (athletes && athletes.length > 0) {
+    if (athletes && Array.isArray(athletes) && athletes.length > 0) {
         athletes.forEach(athlete => {
+            console.log('Adding athlete:', athlete);
             const option = document.createElement('option');
             option.value = athlete.id;
-            option.textContent = athlete.name;
+            option.textContent = athlete.name || `Athlete ${athlete.id}`;
             select.appendChild(option);
         });
         
-        document.getElementById('athleteCount').textContent = athletes.length;
+        const athleteCountElement = document.getElementById('athleteCount');
+        if (athleteCountElement) {
+            athleteCountElement.textContent = athletes.length;
+        }
         
         // Show team section if multiple athletes
         if (athletes.length > 1) {
             loadTeamOverview();
         }
+        
+        console.log('Athlete selector populated successfully');
+    } else {
+        console.log('No valid athletes data to populate');
     }
 }
 
