@@ -1,0 +1,779 @@
+{% extends "base.html" %}
+
+{% block title %}Community Home - Marathon Training{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --primary-teal: #14B8A6;
+        --secondary-teal: #0F766E;
+        --light-teal: #5EEAD4;
+        --accent-yellow: #FBBF24;
+        --text-dark: #1F2937;
+        --text-light: #6B7280;
+        --glass-bg: rgba(255, 255, 255, 0.1);
+        --glass-border: rgba(255, 255, 255, 0.2);
+    }
+
+    .community-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .hero-section {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        padding: 3rem 2rem;
+        margin-bottom: 2rem;
+        text-align: center;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+    }
+
+    .hero-title {
+        font-size: 3rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .hero-subtitle {
+        font-size: 1.25rem;
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 2rem;
+    }
+
+    /* Performance Leaderboard */
+    .leaderboard-section {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: white;
+        margin-bottom: 1.5rem;
+    }
+
+    .athlete-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .athlete-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+    }
+
+    .athlete-rank {
+        background: var(--accent-yellow);
+        color: var(--text-dark);
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.25rem;
+        position: absolute;
+        left: 1.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+    }
+
+    .athlete-content {
+        margin-left: 70px;
+    }
+
+    .athlete-name {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .athlete-stats {
+        font-size: 0.95rem;
+        color: var(--text-light);
+        margin-bottom: 1.25rem;
+        line-height: 1.4;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        padding: 0.6rem 1.25rem;
+        border-radius: 25px;
+        border: none;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-dashboard {
+        background: linear-gradient(135deg, #3B82F6, #1E40AF);
+        color: white;
+    }
+
+    .btn-race-predictor {
+        background: linear-gradient(135deg, var(--primary-teal), var(--secondary-teal));
+        color: white;
+    }
+
+    .btn-risk-analyzer {
+        background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+        color: white;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .kpi-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+
+    .kpi-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, var(--light-teal), var(--primary-teal));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .kpi-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .kpi-label {
+        color: rgba(255, 255, 255, 0.8);
+        font-weight: 500;
+        font-size: 1rem;
+    }
+
+    /* Charts Grid */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .chart-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .chart-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: white;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    /* Activity Stream */
+    .activity-stream {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .activity-item {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid var(--primary-teal);
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .activity-item:hover {
+        transform: translateX(4px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .activity-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .activity-name {
+        font-weight: 600;
+        color: var(--text-dark);
+        font-size: 1.1rem;
+    }
+
+    .activity-time {
+        color: var(--text-light);
+        font-size: 0.9rem;
+    }
+
+    .activity-stats {
+        color: var(--text-light);
+        font-size: 0.95rem;
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    /* Milestones Section */
+    .milestones-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .milestone-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .milestone-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+
+    .milestone-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: var(--accent-yellow);
+    }
+
+    .milestone-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: white;
+        margin-bottom: 0.5rem;
+    }
+
+    .milestone-description {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.95rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+        .charts-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .community-container {
+            padding: 1rem;
+        }
+        
+        .hero-title {
+            font-size: 2rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .athlete-content {
+            margin-left: 0;
+            margin-top: 3rem;
+        }
+        
+        .athlete-rank {
+            position: static;
+            transform: none;
+            margin-bottom: 1rem;
+        }
+        
+        .action-buttons {
+            justify-content: center;
+        }
+        
+        .kpi-grid {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+    }
+</style>
+
+<div class="community-container">
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <h1 class="hero-title">🏃‍♂️ Marathon Training Community</h1>
+        <p class="hero-subtitle">Connect, compete, and achieve your running goals together</p>
+        <div class="d-flex justify-content-center gap-3">
+            <button class="btn btn-light btn-lg px-4">Join Challenge</button>
+            <button class="btn btn-outline-light btn-lg px-4">View Goals</button>
+        </div>
+    </div>
+
+    <!-- Performance Leaderboard -->
+    <div class="leaderboard-section">
+        <div class="section-title">
+            <i class="fas fa-trophy"></i>
+            Performance Leaderboard
+        </div>
+        
+        <div id="leaderboardContent">
+            <div class="d-flex justify-content-center py-4">
+                <div class="spinner-border text-light" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Community KPIs -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-icon">👥</div>
+            <div class="kpi-value" id="totalAthletes">0</div>
+            <div class="kpi-label">Active Athletes</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon">🏃‍♂️</div>
+            <div class="kpi-value" id="totalDistance">0 km</div>
+            <div class="kpi-label">Total Distance</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon">⚡</div>
+            <div class="kpi-value" id="totalActivities">0</div>
+            <div class="kpi-label">Total Activities</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon">⏱️</div>
+            <div class="kpi-value" id="avgPace">0:00</div>
+            <div class="kpi-label">Avg Community Pace</div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-grid">
+        <div class="chart-card">
+            <div class="chart-title">
+                <i class="fas fa-chart-line"></i>
+                Community Training Trends
+            </div>
+            <canvas id="trainingTrendsChart" height="300"></canvas>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title">
+                <i class="fas fa-dumbbell"></i>
+                Training Load Distribution
+            </div>
+            <canvas id="trainingLoadChart" height="300"></canvas>
+        </div>
+    </div>
+
+    <!-- Recent Milestones -->
+    <div class="section-title">
+        <i class="fas fa-medal"></i>
+        Recent Community Milestones
+    </div>
+    <div class="milestones-grid">
+        <div class="milestone-card">
+            <div class="milestone-icon">🏆</div>
+            <div class="milestone-title">First Marathon Complete!</div>
+            <div class="milestone-description">Sarah completed her first marathon in 4:23:15</div>
+        </div>
+        <div class="milestone-card">
+            <div class="milestone-icon">🎯</div>
+            <div class="milestone-title">Weekly Goal Achieved</div>
+            <div class="milestone-description">Community reached 500km this week</div>
+        </div>
+        <div class="milestone-card">
+            <div class="milestone-icon">🔥</div>
+            <div class="milestone-title">Training Streak</div>
+            <div class="milestone-description">Mike hit 30 consecutive training days</div>
+        </div>
+    </div>
+
+    <!-- Activity Stream -->
+    <div class="activity-stream">
+        <div class="section-title">
+            <i class="fas fa-stream"></i>
+            Live Activity Stream
+        </div>
+        <div id="activityStream">
+            <div class="d-flex justify-content-center py-4">
+                <div class="spinner-border text-light" role="status">
+                    <span class="visually-hidden">Loading activities...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Community Home loading...');
+    loadCommunityData();
+});
+
+async function loadCommunityData() {
+    try {
+        console.log('Loading community overview...');
+        const response = await fetch('/api/community/overview');
+        const data = await response.json();
+        
+        console.log('Community data loaded:', data);
+        
+        // Update KPIs
+        if (data.kpis) {
+            updateKPIs(data.kpis);
+        }
+        
+        // Render leaderboard
+        if (data.leaderboard && data.leaderboard.length > 0) {
+            renderLeaderboard(data.leaderboard);
+        } else {
+            showNoAthletes();
+        }
+        
+        // Render charts
+        if (data.communityTrends) {
+            renderTrainingTrendsChart(data.communityTrends);
+        }
+        
+        if (data.trainingLoadDistribution) {
+            renderTrainingLoadChart(data.trainingLoadDistribution);
+        }
+        
+        // Load activity stream
+        loadActivityStream();
+        
+    } catch (error) {
+        console.error('Error loading community data:', error);
+        showErrorState();
+    }
+}
+
+function updateKPIs(kpis) {
+    document.getElementById('totalAthletes').textContent = kpis.totalAthletes || 0;
+    document.getElementById('totalDistance').textContent = `${(kpis.totalDistance || 0).toFixed(1)} km`;
+    document.getElementById('totalActivities').textContent = kpis.totalActivities || 0;
+    document.getElementById('avgPace').textContent = formatPace(kpis.avgPace || 0);
+}
+
+function renderLeaderboard(athletes) {
+    console.log('Rendering leaderboard:', athletes);
+    
+    const content = document.getElementById('leaderboardContent');
+    
+    const leaderboardHTML = athletes.map((athlete, index) => {
+        const rank = index + 1;
+        const distance = (athlete.distance || 0).toFixed(1);
+        const activities = athlete.activities || 0;
+        const avgPace = formatPace(athlete.avg_pace || 0);
+        const avgHR = Math.round(athlete.avg_hr || 0);
+        
+        return `
+            <div class="athlete-card">
+                <div class="athlete-rank">${rank}</div>
+                <div class="athlete-content">
+                    <div class="athlete-name">${athlete.name || 'Unknown Athlete'}</div>
+                    <div class="athlete-stats">
+                        <div class="stat-item">📍 ${distance}km</div>
+                        <div class="stat-item">🏃 ${activities} activities</div>
+                        <div class="stat-item">⏱️ ${avgPace} min/km</div>
+                        <div class="stat-item">❤️ ${avgHR} bpm avg</div>
+                    </div>
+                    <div class="action-buttons">
+                        <a href="#" class="action-btn btn-dashboard">
+                            <i class="fas fa-chart-line"></i>
+                            Dashboard
+                        </a>
+                        <a href="#" class="action-btn btn-race-predictor">
+                            <i class="fas fa-stopwatch"></i>
+                            Race Predictor
+                        </a>
+                        <a href="#" class="action-btn btn-risk-analyzer">
+                            <i class="fas fa-shield-alt"></i>
+                            Risk Analyzer
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    content.innerHTML = leaderboardHTML;
+}
+
+function renderTrainingTrendsChart(data) {
+    const ctx = document.getElementById('trainingTrendsChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.labels,
+            datasets: data.datasets.map(dataset => ({
+                ...dataset,
+                borderColor: '#14B8A6',
+                backgroundColor: 'rgba(20, 184, 166, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                pointBackgroundColor: '#14B8A6',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 6
+            }))
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: 'white',
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: 'white'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: 'white'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderTrainingLoadChart(data) {
+    const ctx = document.getElementById('trainingLoadChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: data.labels,
+            datasets: [{
+                data: data.data,
+                backgroundColor: [
+                    '#14B8A6',
+                    '#0F766E',
+                    '#5EEAD4',
+                    '#FBBF24',
+                    '#3B82F6',
+                    '#8B5CF6'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: 'white',
+                        usePointStyle: true,
+                        padding: 15
+                    }
+                }
+            }
+        }
+    });
+}
+
+async function loadActivityStream() {
+    try {
+        const response = await fetch('/api/community/activities');
+        const activities = await response.json();
+        
+        const streamContainer = document.getElementById('activityStream');
+        
+        if (activities && activities.length > 0) {
+            const activitiesHTML = activities.slice(0, 8).map(activity => `
+                <div class="activity-item">
+                    <div class="activity-header">
+                        <div class="activity-name">
+                            <i class="fas fa-running me-2"></i>
+                            ${activity.name || 'Running Activity'}
+                        </div>
+                        <div class="activity-time">${formatActivityTime(activity.start_date)}</div>
+                    </div>
+                    <div class="activity-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-route"></i>
+                            ${(activity.distance / 1000).toFixed(1)}km
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-clock"></i>
+                            ${formatDuration(activity.moving_time)}
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-user"></i>
+                            ${activity.athlete_name}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            streamContainer.innerHTML = activitiesHTML;
+        } else {
+            streamContainer.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-running fa-3x mb-3" style="color: rgba(255,255,255,0.3);"></i>
+                    <p style="color: rgba(255,255,255,0.7);">No recent activities</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading activity stream:', error);
+        document.getElementById('activityStream').innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2" style="color: rgba(255,255,255,0.5);"></i>
+                <p style="color: rgba(255,255,255,0.7);">Failed to load activities</p>
+            </div>
+        `;
+    }
+}
+
+function showNoAthletes() {
+    const content = document.getElementById('leaderboardContent');
+    content.innerHTML = `
+        <div class="text-center py-5">
+            <i class="fas fa-users fa-4x mb-3" style="color: rgba(255,255,255,0.3);"></i>
+            <h4 style="color: white;">No Athletes Found</h4>
+            <p style="color: rgba(255,255,255,0.7);">Connect your Strava account to start tracking performance</p>
+            <button class="btn btn-light btn-lg mt-3">Connect Strava</button>
+        </div>
+    `;
+}
+
+function showErrorState() {
+    const content = document.getElementById('leaderboardContent');
+    content.innerHTML = `
+        <div class="text-center py-5">
+            <i class="fas fa-exclamation-triangle fa-4x mb-3" style="color: rgba(255,255,255,0.3);"></i>
+            <h4 style="color: white;">Unable to Load Data</h4>
+            <p style="color: rgba(255,255,255,0.7);">Please try refreshing the page</p>
+            <button class="btn btn-outline-light mt-3" onclick="location.reload()">Refresh Page</button>
+        </div>
+    `;
+}
+
+function formatPace(paceSeconds) {
+    if (!paceSeconds || paceSeconds === 0) return '0:00';
+    const minutes = Math.floor(paceSeconds / 60);
+    const seconds = Math.floor(paceSeconds % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function formatDuration(seconds) {
+    if (!seconds) return '0:00';
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hrs > 0) {
+        return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function formatActivityTime(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffHours < 1) return 'Just now';
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return date.toLocaleDateString();
+}
+</script>
+{% endblock %}

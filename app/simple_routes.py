@@ -1573,7 +1573,13 @@ def get_fitness_analysis(athlete_id):
 # Home page route
 @main_bp.route('/')
 def home():
-    """Community dashboard home page"""
+    """Community home page"""
+    from flask import render_template
+    return render_template('community_home.html')
+
+@main_bp.route('/community')
+def community_dashboard():
+    """Legacy community dashboard"""
     from flask import render_template
     return render_template('community_dashboard.html')
 
