@@ -562,9 +562,8 @@
             // Show results
             results.style.display = 'block';
             
-            // Fetch AI recommendations for the current athlete
-            const athleteId = document.getElementById('athleteSelect').value;
-            fetchAIRecommendations(athleteId);
+            // Fetch AI recommendations for the current athlete (hardcoded to 1 for this page)
+            fetchAIRecommendations(1);
             
             // Scroll to results
             results.scrollIntoView({ behavior: 'smooth' });
@@ -995,9 +994,8 @@
         // Auto-predict on page load
         document.addEventListener('DOMContentLoaded', function() {
             predictRaceTime();
-            // Also fetch AI recommendations
-            const athleteId = document.getElementById('athleteSelect').value;
-            fetchAIRecommendations(athleteId);
+            // Also fetch AI recommendations - use hardcoded athlete ID since this page is for athlete 1
+            fetchAIRecommendations(1);
         });
     </script>
 </body>
