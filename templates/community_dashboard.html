@@ -41,6 +41,19 @@
             --info: var(--primary-accent);
         }
 
+        /* Navigation Styles */
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: white !important;
+        }
+
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.2) !important;
+            color: white !important;
+            border-radius: 8px;
+        }
+
         body {
             background: linear-gradient(135deg, var(--primary-accent) 0%, var(--secondary-accent) 50%, var(--primary-dark) 100%);
             min-height: 100vh;
@@ -303,9 +316,9 @@
             </a>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" href="/analytics">Individual Analytics</a>
-                <a class="nav-link" href="/dashboard">Athlete Dashboard</a>
-                <a class="nav-link" href="/race-optimizer">Race Optimizer</a>
+                <a class="nav-link active" href="/">Athlete Dashboard</a>
                 <a class="nav-link" href="/injury-risk">Injury Risk</a>
+                <a class="nav-link" href="/race-optimizer">Race Optimizer</a>
             </div>
         </div>
     </nav>
