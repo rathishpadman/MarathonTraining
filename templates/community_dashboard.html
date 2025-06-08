@@ -10,49 +10,42 @@
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <style>
         :root {
-            /* Modern Color Palette */
-            --primary-blue: #2563eb;
-            --primary-blue-light: #3b82f6;
-            --primary-blue-dark: #1d4ed8;
+            /* Energetic & Focused Color Palette */
+            --primary-accent: #007bff;        /* Vibrant Blue - CTAs, active elements */
+            --secondary-accent: #28a745;      /* Energetic Green - success, positive metrics */
+            --text-dark: #343a40;             /* Charcoal - main text, strong headers */
+            --background-light: #f8f9fa;      /* Light Grey - card backgrounds, subtle sections */
+            --highlight-warning: #ffc107;     /* Amber - important alerts, attention areas */
             
-            --secondary-purple: #7c3aed;
-            --secondary-purple-light: #8b5cf6;
-            --secondary-purple-dark: #6d28d9;
+            /* Extended palette for variations */
+            --primary-light: #66b3ff;         /* Lighter blue variant */
+            --primary-dark: #0056b3;          /* Darker blue variant */
+            --secondary-light: #5cb85c;       /* Lighter green variant */
+            --secondary-dark: #1e7e34;        /* Darker green variant */
             
-            --accent-emerald: #10b981;
-            --accent-emerald-light: #34d399;
-            --accent-emerald-dark: #059669;
+            /* Neutral grays for depth */
+            --neutral-100: #f8f9fa;
+            --neutral-200: #e9ecef;
+            --neutral-300: #dee2e6;
+            --neutral-400: #ced4da;
+            --neutral-500: #adb5bd;
+            --neutral-600: #6c757d;
+            --neutral-700: #495057;
+            --neutral-800: #343a40;
+            --neutral-900: #212529;
             
-            --accent-orange: #f59e0b;
-            --accent-orange-light: #fbbf24;
-            --accent-orange-dark: #d97706;
-            
-            --accent-rose: #e11d48;
-            --accent-rose-light: #f43f5e;
-            --accent-rose-dark: #be123c;
-            
-            --neutral-50: #f8fafc;
-            --neutral-100: #f1f5f9;
-            --neutral-200: #e2e8f0;
-            --neutral-300: #cbd5e1;
-            --neutral-400: #94a3b8;
-            --neutral-500: #64748b;
-            --neutral-600: #475569;
-            --neutral-700: #334155;
-            --neutral-800: #1e293b;
-            --neutral-900: #0f172a;
-            
-            --success: var(--accent-emerald);
-            --warning: var(--accent-orange);
-            --danger: var(--accent-rose);
-            --info: var(--primary-blue);
+            /* Semantic colors */
+            --success: var(--secondary-accent);
+            --warning: var(--highlight-warning);
+            --danger: #dc3545;
+            --info: var(--primary-accent);
         }
 
         body {
-            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-purple) 50%, var(--primary-blue-dark) 100%);
+            background: linear-gradient(135deg, var(--primary-accent) 0%, var(--secondary-accent) 50%, var(--primary-dark) 100%);
             min-height: 100vh;
             font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-            color: var(--neutral-100);
+            color: var(--background-light);
         }
         
         .glass-container {
@@ -89,7 +82,7 @@
             left: 0;
             right: 0;
             height: 2px;
-            background: linear-gradient(90deg, var(--accent-emerald), var(--primary-blue-light), var(--secondary-purple-light));
+            background: linear-gradient(90deg, var(--secondary-accent), var(--primary-accent), var(--highlight-warning));
             opacity: 0;
             transition: opacity 0.3s ease;
         }
@@ -109,7 +102,7 @@
             font-size: 2.5rem;
             font-weight: 800;
             margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, var(--accent-emerald-light), var(--primary-blue-light));
+            background: linear-gradient(135deg, var(--secondary-accent), var(--primary-accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -215,7 +208,7 @@
             font-size: 3rem;
             font-weight: 800;
             margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, var(--neutral-50), var(--accent-emerald-light), var(--primary-blue-light));
+            background: linear-gradient(135deg, var(--background-light), var(--secondary-accent), var(--primary-accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
