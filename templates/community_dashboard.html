@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}Community Dashboard - Marathon Training{% endblock %}
+
+{% block content %}
+<!-- Welcome Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card-glassmorphism p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="text-dark mb-2">
+                        <i class="fas fa-users me-2"></i>
+                        Marathon Training Community
+                    </h1>
+                    <p class="text-muted mb-0">Connect with fellow runners and track community progress</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-primary" id="connectStrava" style="display: none;">
+                        <i class="fab fa-strava me-2"></i>Connect Strava
+                    </button>
+                    <div class="strava-branding d-flex align-items-center gap-2">
+                        <div class="bg-warning px-2 py-1 rounded" style="font-size: 10px; font-weight: bold;">
+                            POWERED BY STRAVA
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Community KPIs -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card-glassmorphism p-3 text-center">
+            <h3 class="metric-value" id="totalAthletes">0</h3>
+            <p class="metric-label">Active Athletes</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card-glassmorphism p-3 text-center">
+            <h3 class="metric-value" id="totalDistance">0 km</h3>
+            <p class="metric-label">Total Distance</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card-glassmorphism p-3 text-center">
+            <h3 class="metric-value" id="totalActivities">0</h3>
+            <p class="metric-label">Total Activities</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card-glassmorphism p-3 text-center">
+            <h3 class="metric-value" id="avgPace">0:00</h3>
+            <p class="metric-label">Avg Pace</p>
+        </div>
+    </div>
+</div>
+
+<!-- Community Charts -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card-glassmorphism p-4">
+            <h4 class="text-dark mb-3">
+                <i class="fas fa-chart-area me-2"></i>
+                Community Training Zones
+            </h4>
+            <canvas id="trainingZonesChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card-glassmorphism p-4">
+            <h4 class="text-dark mb-3">
+                <i class="fas fa-trophy me-2"></i>
+                Top Performers
+            </h4>
+            <div id="leaderboard">
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Activity Stream -->
+<div class="row">
+    <div class="col-12">
+        <div class="card-glassmorphism p-4">
+            <h4 class="text-dark mb-3">
+                <i class="fas fa-stream me-2"></i>
+                Community Activity Stream
+            </h4>
+            <div id="activityStream">
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading activities...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Community dashboard loading...');
+    
+    let trainingZonesChart = null;
+    
+    // Load community overview data
+    loadCommunityOverview();
+    
+    // Load training zones chart
+    loadTrainingZones();
+    
+    // Load activity stream
+    loadActivityStream();
+    
+    function loadCommunityOverview() {
+        console.log('Loading community overview...');
+        fetch('/api/community/overview')
+            .then(response => response.json())
+            .then(data => {
+                console.log('KPI data:', data);
+                updateKPIs(data);
+                updateLeaderboard(data.leaderboard || []);
+            })
+            .catch(error => {
+                console.error('Error loading community overview:', error);
+                showError('Failed to load community data');
+            });
+    }
+    
+    function updateKPIs(data) {
+        document.getElementById('totalAthletes').textContent = data.totalAthletes || 0;
+        document.getElementById('totalDistance').textContent = (data.totalDistance || 0).toFixed(1) + ' km';
+        document.getElementById('totalActivities').textContent = data.totalActivities || 0;
+        
+        const avgPace = data.avgPace || 0;
+        const minutes = Math.floor(avgPace);
+        const seconds = Math.round((avgPace - minutes) * 60);
+        document.getElementById('avgPace').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    function updateLeaderboard(leaderboard) {
+        console.log('Leaderboard data:', leaderboard);
+        const container = document.getElementById('leaderboard');
+        
+        if (!leaderboard || leaderboard.length === 0) {
+            container.innerHTML = '<p class="text-muted text-center">No data available</p>';
+            return;
+        }
+        
+        const html = leaderboard.slice(0, 5).map((athlete, index) => `
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 ${index === 0 ? 'bg-warning bg-opacity-25' : 'bg-light bg-opacity-50'} rounded">
+                <div>
+                    <strong class="text-dark">${index + 1}. ${athlete.name}</strong>
+                    <br>
+                    <small class="text-muted">${athlete.distance.toFixed(1)} km • ${athlete.activities} runs</small>
+                </div>
+                <div class="text-end">
+                    <div class="text-dark fw-bold">${Math.floor(athlete.avg_pace)}:${Math.round((athlete.avg_pace - Math.floor(athlete.avg_pace)) * 60).toString().padStart(2, '0')}</div>
+                    <small class="text-muted">avg pace</small>
+                </div>
+            </div>
+        `).join('');
+        
+        container.innerHTML = html;
+    }
+    
+    function loadTrainingZones() {
+        fetch('/api/community/training-zones')
+            .then(response => response.json())
+            .then(data => {
+                createTrainingZonesChart(data);
+            })
+            .catch(error => {
+                console.error('Error loading training zones:', error);
+                showChartError('trainingZonesChart', 'Failed to load training zones data');
+            });
+    }
+    
+    function createTrainingZonesChart(data) {
+        const ctx = document.getElementById('trainingZonesChart').getContext('2d');
+        
+        if (trainingZonesChart) {
+            trainingZonesChart.destroy();
+        }
+        
+        trainingZonesChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Low Intensity', 'Moderate', 'High Intensity', 'Overreaching'],
+                datasets: [{
+                    data: [
+                        data.Low || 0,
+                        data.Moderate || 0,
+                        data.High || 0,
+                        data.Overreaching || 0
+                    ],
+                    backgroundColor: [
+                        '#10B981', // emerald-500
+                        '#3B82F6', // blue-500
+                        '#8B5CF6', // purple-500
+                        '#F59E0B'  // orange-500
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#374151',
+                            font: {
+                                size: 12,
+                                weight: '500'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed.toFixed(1) + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function loadActivityStream() {
+        fetch('/api/community/activity-stream')
+            .then(response => response.json())
+            .then(data => {
+                updateActivityStream(data.activities || []);
+            })
+            .catch(error => {
+                console.error('Error loading activity stream:', error);
+                showError('Failed to load activity stream');
+            });
+    }
+    
+    function updateActivityStream(activities) {
+        const container = document.getElementById('activityStream');
+        
+        if (!activities || activities.length === 0) {
+            container.innerHTML = '<p class="text-muted text-center">No recent activities</p>';
+            return;
+        }
+        
+        const html = activities.map(activity => `
+            <div class="activity-item p-3 mb-2 bg-light bg-opacity-50 rounded">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="activity-name text-dark mb-1">${activity.athlete_name}</h6>
+                        <p class="activity-details text-muted mb-1">${activity.name}</p>
+                        <small class="text-muted">
+                            ${activity.distance.toFixed(1)} km • ${Math.floor(activity.moving_time / 60)} min
+                            ${activity.average_heartrate ? ` • ${Math.round(activity.average_heartrate)} bpm` : ''}
+                        </small>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted">${new Date(activity.start_date).toLocaleDateString()}</small>
+                        <br>
+                        <span class="badge bg-primary">${activity.sport_type}</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        container.innerHTML = html;
+    }
+    
+    function showError(message) {
+        console.error(message);
+        // Could add toast notification here
+    }
+    
+    function showChartError(canvasId, message) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#6B7280';
+        ctx.textAlign = 'center';
+        ctx.fillText(message, canvas.width / 2, canvas.height / 2);
+    }
+});
+</script>
+{% endblock %}
