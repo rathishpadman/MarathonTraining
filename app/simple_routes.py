@@ -893,17 +893,33 @@ def get_community_overview():
         # Sort leaderboard by distance
         leaderboard = sorted(athlete_stats.values(), key=lambda x: x['distance'], reverse=True)
         
-        # Training load distribution by sport type
-        sport_breakdown = {}
-        for activity in all_activities:
-            sport = activity.sport_type or 'Other'
-            distance_km = (activity.distance or 0) / 1000
-            if sport not in sport_breakdown:
-                sport_breakdown[sport] = 0
-            sport_breakdown[sport] += distance_km
+        # Training load distribution by zones (Low, Moderate, High, Overreaching)
+        training_zones = {
+            'Low': 0,
+            'Moderate': 0,
+            'High': 0,
+            'Overreaching': 0
+        }
         
-        training_load_labels = list(sport_breakdown.keys())
-        training_load_data = [round(distance, 1) for distance in sport_breakdown.values()]
+        # Calculate weekly training load for each athlete to determine zones
+        for athlete in athletes:
+            athlete_activities = [a for a in all_activities if a.athlete_id == athlete.id]
+            
+            # Calculate weekly average distance
+            weekly_distance = sum((a.distance or 0) for a in athlete_activities) / 1000 / 52  # Average per week
+            
+            # Classify into training zones based on weekly distance
+            if weekly_distance < 20:
+                training_zones['Low'] += 1
+            elif weekly_distance < 40:
+                training_zones['Moderate'] += 1
+            elif weekly_distance < 60:
+                training_zones['High'] += 1
+            else:
+                training_zones['Overreaching'] += 1
+        
+        training_load_labels = list(training_zones.keys())
+        training_load_data = list(training_zones.values())
         
         # Community trends (last 7 days)
         trend_labels = []
