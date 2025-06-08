@@ -298,6 +298,35 @@
             color: var(--charcoal) !important;
         }
         
+        /* Table specific overrides for Recent Activities */
+        .table-dark, 
+        .table-dark th, 
+        .table-dark td {
+            color: #ffffff !important;
+            background-color: rgba(52, 58, 64, 0.8) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+        }
+        
+        .table-dark thead th {
+            background-color: rgba(0, 123, 255, 0.3) !important;
+            color: #ffffff !important;
+            font-weight: 600 !important;
+        }
+        
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(255, 255, 255, 0.05) !important;
+        }
+        
+        /* Force white text in Recent Activities section */
+        #recentActivities table,
+        #recentActivities table th,
+        #recentActivities table td,
+        #recentActivities .table th,
+        #recentActivities .table td {
+            color: #ffffff !important;
+            background-color: transparent !important;
+        }
+        
         .table {
             color: var(--charcoal) !important;
         }

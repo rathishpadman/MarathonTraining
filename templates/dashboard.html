@@ -912,19 +912,19 @@ function loadRecentActivities(athleteId) {
             if (data.recent_activities && data.recent_activities.length > 0) {
                 let tableHtml = `
                     <div class="table-responsive">
-                        <table class="table table-dark table-striped">
-                            <thead>
+                        <table class="table table-striped" style="background-color: rgba(255, 255, 255, 0.1); border-radius: 8px;">
+                            <thead style="background-color: rgba(0, 123, 255, 0.2);">
                                 <tr>
-                                    <th style="color: #ffffff;">Date</th>
-                                    <th style="color: #ffffff;">Type</th>
-                                    <th style="color: #ffffff;">Distance</th>
-                                    <th style="color: #ffffff;">Duration</th>
-                                    <th style="color: #ffffff;">Pace</th>
-                                    <th style="color: #ffffff;">Avg HR</th>
-                                    <th style="color: #ffffff;">Training Load</th>
+                                    <th style="color: #ffffff; border-color: rgba(255, 255, 255, 0.2); font-weight: 600;">Date</th>
+                                    <th style="color: #ffffff; border-color: rgba(255, 255, 255, 0.2); font-weight: 600;">Type</th>
+                                    <th style="color: #ffffff; border-color: rgba(255, 255, 255, 0.2); font-weight: 600;">Distance</th>
+                                    <th style="color: #ffffff; border-color: rgba(255, 255, 255, 0.2); font-weight: 600;">Duration</th>
+                                    <th style="color: #ffffff; border-color: rgba(255, 255, 255, 0.2); font-weight: 600;">Pace</th>
+                                    <th style="color: #ffffff; border-color: rgba(255, 255, 255, 0.2); font-weight: 600;">Avg HR</th>
+                                    <th style="color: #ffffff; border-color: rgba(255, 255, 255, 0.2); font-weight: 600;">Training Load</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody style="background-color: rgba(255, 255, 255, 0.05);">
                 `;
                 
                 data.recent_activities.slice(0, 10).forEach(activity => {
@@ -944,14 +944,14 @@ function loadRecentActivities(athleteId) {
                     }
                     
                     tableHtml += `
-                        <tr>
-                            <td style="color: #ffffff;">${date}</td>
-                            <td style="color: #ffffff;">${activity.sport_type || 'Run'}</td>
-                            <td style="color: #ffffff;">${distance} km</td>
-                            <td style="color: #ffffff;">${time}m</td>
-                            <td style="color: #ffffff;">${pace ? pace + ' min/km' : ''}</td>
-                            <td style="color: #ffffff;">${hr}</td>
-                            <td style="color: #ffffff;">${trainingLoad}</td>
+                        <tr style="background-color: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.1);">
+                            <td style="color: #ffffff; border-color: rgba(255, 255, 255, 0.1); font-weight: 500;">${date}</td>
+                            <td style="color: #ffffff; border-color: rgba(255, 255, 255, 0.1); font-weight: 500;">${activity.sport_type || 'Run'}</td>
+                            <td style="color: #ffffff; border-color: rgba(255, 255, 255, 0.1); font-weight: 500;">${distance} km</td>
+                            <td style="color: #ffffff; border-color: rgba(255, 255, 255, 0.1); font-weight: 500;">${time}m</td>
+                            <td style="color: #ffffff; border-color: rgba(255, 255, 255, 0.1); font-weight: 500;">${pace ? pace + ' min/km' : ''}</td>
+                            <td style="color: #ffffff; border-color: rgba(255, 255, 255, 0.1); font-weight: 500;">${hr}</td>
+                            <td style="color: #ffffff; border-color: rgba(255, 255, 255, 0.1); font-weight: 500;">${trainingLoad}</td>
                         </tr>
                     `;
                 });
