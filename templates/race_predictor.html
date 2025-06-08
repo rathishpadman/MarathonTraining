@@ -497,9 +497,11 @@
             for (const [key, value] of Object.entries(strategy)) {
                 if (key.startsWith('km_')) {
                     const km = key.replace('km_', '');
-                    const minutes = Math.floor(value / 60);
-                    const seconds = Math.floor(value % 60);
-                    const pace = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    // Convert seconds to minutes:seconds pace format
+                    const totalSeconds = Math.round(value);
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = totalSeconds % 60;
+                    const pace = `${minutes}:${seconds.toString().padStart(2, '0')}/km`;
                     splits.push({ km: `KM ${km}`, pace: pace });
                 }
             }
@@ -536,12 +538,13 @@
                 
                 if (response.ok) {
                     const optimizationData = await response.json();
+                    console.log('Optimization API Response:', optimizationData);
                     displayOptimizationInsights(optimizationData);
                 } else {
-                    console.warn('Could not fetch optimization insights');
+                    console.warn('Could not fetch optimization insights - Status:', response.status);
                 }
             } catch (error) {
-                console.warn('Error fetching optimization insights:', error);
+                console.error('Error fetching optimization insights:', error);
             }
         }
 
