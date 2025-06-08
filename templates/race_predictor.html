@@ -423,10 +423,16 @@
                 }
                 
                 const predictionData = await response.json();
+                console.log('Prediction API Response:', predictionData);
                 
                 // Check if response contains error
                 if (predictionData.error) {
                     throw new Error(predictionData.error);
+                }
+                
+                // Validate required fields
+                if (!predictionData.predicted_time_formatted) {
+                    throw new Error('Invalid prediction response: missing predicted_time_formatted');
                 }
                 
                 // Display results
@@ -437,11 +443,14 @@
                 
             } catch (error) {
                 console.error('Error predicting race time:', error);
+                console.error('Error details:', error.message, error.stack);
                 errorMessage.style.display = 'block';
                 
                 // Show specific error details if available
-                if (error.message.includes('HTTP error')) {
+                if (error.message && error.message.includes('HTTP error')) {
                     errorMessage.textContent = 'Connection error. Please check your internet connection and try again.';
+                } else if (error.message) {
+                    errorMessage.textContent = `Error: ${error.message}`;
                 } else {
                     errorMessage.textContent = 'Failed to generate prediction. Please ensure you have sufficient training data.';
                 }
@@ -478,14 +487,31 @@
         function displayPacingStrategy(strategy) {
             const container = document.getElementById('pacingSplits');
             
-            if (!strategy || strategy.length === 0) {
+            if (!strategy || typeof strategy !== 'object') {
                 container.innerHTML = '<div class="pace-split">No pacing strategy available</div>';
                 return;
             }
             
-            container.innerHTML = strategy.map(split => `
+            // Handle object-based pacing strategy from API
+            const splits = [];
+            for (const [key, value] of Object.entries(strategy)) {
+                if (key.startsWith('km_')) {
+                    const km = key.replace('km_', '');
+                    const minutes = Math.floor(value / 60);
+                    const seconds = Math.floor(value % 60);
+                    const pace = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    splits.push({ km: `KM ${km}`, pace: pace });
+                }
+            }
+            
+            if (splits.length === 0) {
+                container.innerHTML = '<div class="pace-split">No pacing strategy available</div>';
+                return;
+            }
+            
+            container.innerHTML = splits.slice(0, 10).map(split => `
                 <div class="pace-split">
-                    <div class="split-distance">${split.distance || 'Split'}</div>
+                    <div class="split-distance">${split.km || 'Split'}</div>
                     <div class="split-pace">${split.pace || 'N/A'}</div>
                 </div>
             `).join('');
