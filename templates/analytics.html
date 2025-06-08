@@ -137,7 +137,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <canvas id="volumeChart" height="300"></canvas>
+                        <canvas id="trainingVolumeChart" height="300"></canvas>
                     </div>
                 </div>
             </div>
@@ -822,57 +822,67 @@ function exportData() {
 
 // Create simple volume chart using basic data
 function createSimpleVolumeChart(athleteId, timePeriod) {
-    const ctx = document.getElementById('trainingVolumeChart').getContext('2d');
-    
-    // Create a basic chart with current metrics
-    const chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: ['Week 4', 'Week 3', 'Week 2', 'Week 1', 'Current'],
-            datasets: [{
-                label: 'Training Load',
-                data: [80, 85, 90, 88, 92],
-                borderColor: '#ff6b35',
-                backgroundColor: 'rgba(255, 107, 53, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Training Volume Trend',
-                    color: 'white'
-                },
-                legend: {
-                    labels: {
-                        color: 'white'
-                    }
-                }
+    try {
+        const canvas = document.getElementById('trainingVolumeChart');
+        if (!canvas) {
+            console.warn('Training volume chart canvas not found');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Create a basic chart with current metrics
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Week 4', 'Week 3', 'Week 2', 'Week 1', 'Current'],
+                datasets: [{
+                    label: 'Training Load',
+                    data: [80, 85, 90, 88, 92],
+                    borderColor: '#ff6b35',
+                    backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Training Volume Trend',
                         color: 'white'
                     },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                    legend: {
+                        labels: {
+                            color: 'white'
+                        }
                     }
                 },
-                x: {
-                    ticks: {
-                        color: 'white'
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: 'white'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
                     },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                    x: {
+                        ticks: {
+                            color: 'white'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    } catch (error) {
+        console.error('Error creating training volume chart:', error);
+    }
 }
 </script>
 {% endblock %}
