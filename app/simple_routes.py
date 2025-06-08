@@ -1573,9 +1573,9 @@ def get_fitness_analysis(athlete_id):
 # Home page route
 @main_bp.route('/')
 def home():
-    """Community dashboard home page"""
+    """Marathon training dashboard home page"""
     from flask import render_template
-    return render_template('community_dashboard.html')
+    return render_template('dashboard.html')
 
 @api_bp.route('/api/athletes/<int:athlete_id>/training-plan', methods=['POST'])
 def get_training_plan(athlete_id):

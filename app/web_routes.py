@@ -17,34 +17,33 @@ def athlete_dashboard():
 
 @web_bp.route('/athletes')
 def athletes():
-    """Athletes management page"""
-    return render_template('athletes.html')
+    """Redirect to home page"""
+    return redirect(url_for('simple_routes.home'))
 
 @web_bp.route('/analytics')
 def analytics():
-    """Analytics page"""
-    return render_template('analytics.html')
+    """Redirect to home page"""
+    return redirect(url_for('simple_routes.home'))
 
 @web_bp.route('/race-optimizer')
 def race_optimizer():
-    """Race Performance Optimizer page"""
-    return render_template('race_optimizer.html')
+    """Redirect to home page"""
+    return redirect(url_for('simple_routes.home'))
 
 @web_bp.route('/race-predictor')
 def race_predictor():
-    """Race Predictor page"""
-    athlete_id = request.args.get('athlete_id', 1)
-    return render_template('race_optimizer.html', athlete_id=athlete_id)
+    """Redirect to home page"""
+    return redirect(url_for('simple_routes.home'))
 
 @web_bp.route('/injury-risk')
 def injury_risk():
-    """Injury Risk Assessment page"""
-    return render_template('injury_risk.html')
+    """Redirect to home page"""
+    return redirect(url_for('simple_routes.home'))
 
 @web_bp.route('/settings')
 def settings():
-    """Settings page"""
-    return render_template('settings.html')
+    """Redirect to home page"""
+    return redirect(url_for('simple_routes.home'))
 
 @web_bp.route('/auth/strava')
 def strava_auth():
