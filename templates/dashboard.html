@@ -489,7 +489,11 @@ function updateCharts(data) {
 
 // Create weekly progress chart from actual activities
 function createWeeklyProgressChartFromActivities(activities, athleteData) {
-    const ctx = document.getElementById('weeklyProgressChart').getContext('2d');
+    const ctx = document.getElementById('weeklyProgressChart');
+    if (!ctx) {
+        console.error('Weekly progress chart canvas not found');
+        return;
+    }
     
     if (charts.weeklyProgress) {
         charts.weeklyProgress.destroy();
@@ -502,23 +506,23 @@ function createWeeklyProgressChartFromActivities(activities, athleteData) {
         if (!dailyData[date]) {
             dailyData[date] = { distance: 0, heartRates: [], activities: 0 };
         }
-        dailyData[date].distance += activity.distance || 0;
+        dailyData[date].distance += (activity.distance || 0) / 1000; // Convert to km
         dailyData[date].activities += 1;
         if (activity.average_heartrate) {
             dailyData[date].heartRates.push(activity.average_heartrate);
         }
     });
     
-    // Create arrays for chart
-    const dates = Object.keys(dailyData).sort().slice(-7); // Last 7 days
+    // Create arrays for chart - last 7 days
+    const dates = Object.keys(dailyData).sort().slice(-7);
     const distances = dates.map(date => parseFloat((dailyData[date]?.distance || 0).toFixed(1)));
     const avgHeartRates = dates.map(date => {
         const hrs = dailyData[date]?.heartRates || [];
         return hrs.length > 0 ? Math.round(hrs.reduce((a, b) => a + b, 0) / hrs.length) : 0;
     });
-    const labels = dates.map(date => new Date(date).toLocaleDateString('en-US', { weekday: 'short' }));
+    const labels = dates.map(date => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
     
-    charts.weeklyProgress = new Chart(ctx, {
+    charts.weeklyProgress = new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
             labels: labels,
@@ -1233,21 +1237,23 @@ function loadRacePredictions(athleteId) {
         
         // Create prediction cards
         container.innerHTML = `
-            <div class="prediction-grid">
+            <div class="prediction-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                 ${validPredictions.map(prediction => `
-                    <div class="prediction-card">
-                        <div class="prediction-header">
-                            <h5 class="prediction-title">${prediction.race_distance}</h5>
-                            <span class="confidence-badge">${prediction.confidence_score}% confidence</span>
+                    <div class="prediction-card" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
+                        <div class="prediction-header" style="margin-bottom: 10px;">
+                            <h6 style="margin: 0; font-weight: bold;">${prediction.distance}</h6>
+                            <span style="font-size: 11px; opacity: 0.8;">${prediction.confidence || 85}% confidence</span>
                         </div>
-                        <div class="prediction-time">${prediction.predicted_time_formatted}</div>
-                        <div class="prediction-pace">
-                            ${formatPaceFromSeconds(prediction.predicted_time_seconds, getRaceDistanceKm(prediction.race_distance))}
+                        <div style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">${prediction.predicted_time || 'N/A'}</div>
+                        <div style="font-size: 12px; opacity: 0.9;">
+                            ${prediction.pace || 'Calculating...'}
                         </div>
                     </div>
                 `).join('')}
             </div>
-            <div class="text-center mt-3">
+            <div class="text-center mt-3" style="color: #6c757d; font-size: 12px;">
+                <small>Predictions based on recent training data and performance trends</small>
+            </div>
                 <a href="/race-optimizer" class="btn btn-outline-light btn-sm">
                     <i class="fas fa-chart-line me-2"></i>
                     View Detailed Analysis
