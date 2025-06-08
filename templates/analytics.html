@@ -143,7 +143,7 @@
 </div>
 
 <script>
-let charts = {};
+let analyticsCharts = {};
 let currentAthleteId = null;
 
 // Load athletes on page load
@@ -214,8 +214,8 @@ function updateSummaryStats(data) {
 
 function loadCharts(athleteId, timePeriod) {
     // Destroy existing charts
-    Object.values(charts).forEach(chart => chart.destroy());
-    charts = {};
+    Object.values(analyticsCharts).forEach(chart => chart.destroy());
+    analyticsCharts = {};
 
     // Load volume chart
     fetch(`/api/athletes/${athleteId}/volume-trend?days=${timePeriod}`)
@@ -260,15 +260,15 @@ function loadCharts(athleteId, timePeriod) {
 
 function createVolumeChart(data) {
     const ctx = document.getElementById('volumeChart').getContext('2d');
-    charts.volume = new Chart(ctx, {
+    analyticsCharts.volume = new Chart(ctx, {
         type: 'line',
         data: {
             labels: data.dates,
             datasets: [{
                 label: 'Distance (km)',
                 data: data.distances,
-                borderColor: '#007bff',
-                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 tension: 0.1,
                 fill: true
             }]
@@ -276,9 +276,42 @@ function createVolumeChart(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#374151',
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Training Volume',
+                    color: '#374151',
+                    font: {
+                        size: 14,
+                        weight: 'bold'
+                    }
+                }
+            },
             scales: {
+                x: {
+                    ticks: {
+                        color: '#6b7280'
+                    },
+                    grid: {
+                        color: 'rgba(107, 114, 128, 0.1)'
+                    }
+                },
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#6b7280'
+                    },
+                    grid: {
+                        color: 'rgba(107, 114, 128, 0.1)'
+                    }
                 }
             }
         }
@@ -287,24 +320,57 @@ function createVolumeChart(data) {
 
 function createPaceChart(data) {
     const ctx = document.getElementById('paceChart').getContext('2d');
-    charts.pace = new Chart(ctx, {
+    analyticsCharts.pace = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: data.dates,
             datasets: [{
                 label: 'Average Pace (min/km)',
                 data: data.average_paces,
-                backgroundColor: '#28a745',
-                borderColor: '#1e7e34',
+                backgroundColor: '#3b82f6',
+                borderColor: '#2563eb',
                 borderWidth: 1
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#374151',
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Pace Analysis',
+                    color: '#374151',
+                    font: {
+                        size: 14,
+                        weight: 'bold'
+                    }
+                }
+            },
             scales: {
+                x: {
+                    ticks: {
+                        color: '#6b7280'
+                    },
+                    grid: {
+                        color: 'rgba(107, 114, 128, 0.1)'
+                    }
+                },
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#6b7280'
+                    },
+                    grid: {
+                        color: 'rgba(107, 114, 128, 0.1)'
+                    }
                 }
             }
         }
@@ -313,38 +379,57 @@ function createPaceChart(data) {
 
 function createHeartRateChart(data) {
     const ctx = document.getElementById('heartRateChart').getContext('2d');
-    charts.heartRate = new Chart(ctx, {
+    analyticsCharts.heartRate = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: data.zones,
             datasets: [{
                 data: data.percentages,
                 backgroundColor: [
-                    '#28a745',
-                    '#ffc107',
-                    '#fd7e14',
-                    '#dc3545'
+                    '#10b981',
+                    '#f59e0b',
+                    '#ef4444',
+                    '#8b5cf6'
                 ]
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#374151',
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Heart Rate Zones',
+                    color: '#374151',
+                    font: {
+                        size: 14,
+                        weight: 'bold'
+                    }
+                }
+            }
         }
     });
 }
 
 function createTrainingLoadChart(data) {
     const ctx = document.getElementById('trainingLoadChart').getContext('2d');
-    charts.trainingLoad = new Chart(ctx, {
+    analyticsCharts.trainingLoad = new Chart(ctx, {
         type: 'line',
         data: {
             labels: data.dates,
             datasets: [{
                 label: 'Training Load',
                 data: data.training_loads,
-                borderColor: '#dc3545',
-                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
                 tension: 0.1,
                 fill: true
             }]
@@ -352,9 +437,42 @@ function createTrainingLoadChart(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#374151',
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Training Load',
+                    color: '#374151',
+                    font: {
+                        size: 14,
+                        weight: 'bold'
+                    }
+                }
+            },
             scales: {
+                x: {
+                    ticks: {
+                        color: '#6b7280'
+                    },
+                    grid: {
+                        color: 'rgba(107, 114, 128, 0.1)'
+                    }
+                },
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#6b7280'
+                    },
+                    grid: {
+                        color: 'rgba(107, 114, 128, 0.1)'
+                    }
                 }
             }
         }
