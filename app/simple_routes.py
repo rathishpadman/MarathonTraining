@@ -1590,6 +1590,42 @@ def home():
 
 
 
+@api_bp.route('/api/community/sport-analytics')
+def get_sport_analytics():
+    """Get detailed sport-specific analytics"""
+    try:
+        current_app.logger.info("Fetching sport analytics")
+        
+        # Get sport breakdown from all activities
+        sport_stats = db.session.query(
+            Activity.sport_type,
+            func.count(Activity.id).label('count'),
+            func.avg(Activity.distance / 1000).label('avg_distance'),
+            func.sum(Activity.distance / 1000).label('total_distance'),
+            func.avg(Activity.moving_time / 60).label('avg_duration'),
+            func.avg(Activity.average_heartrate).label('avg_hr')
+        ).join(ReplitAthlete).filter(
+            ReplitAthlete.is_active == True,
+            Activity.distance > 0
+        ).group_by(Activity.sport_type).all()
+        
+        analytics = []
+        for stat in sport_stats:
+            analytics.append({
+                'sport': stat.sport_type,
+                'count': stat.count,
+                'avg_distance': round(float(stat.avg_distance or 0), 1),
+                'total_distance': round(float(stat.total_distance or 0), 1),
+                'avg_duration': round(float(stat.avg_duration or 0), 0),
+                'avg_hr': round(float(stat.avg_hr or 0), 0) if stat.avg_hr else None
+            })
+        
+        return jsonify({'sport_analytics': analytics})
+        
+    except Exception as e:
+        current_app.logger.error(f"Error in sport analytics: {str(e)}")
+        return jsonify({'error': 'Failed to load sport analytics'}), 500
+
 @api_bp.route('/api/athletes/<int:athlete_id>/training-plan', methods=['POST'])
 def get_training_plan(athlete_id):
     """Generate optimized training plan"""
