@@ -60,7 +60,7 @@
 </div>
 
 <!-- Key Metrics Row -->
-<div class="row mb-4" id="metricsSection" style="display: none;">
+<div class="row mb-4" id="metricsSection">
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="card-glassmorphism p-3 h-100 text-center">
             <div class="h2 fw-bold text-primary mb-2" id="metric-total_distance">0.0</div>
@@ -88,7 +88,7 @@
 </div>
 
 <!-- Charts and Analysis Row -->
-<div class="row mb-4" id="chartsSection" style="display: none;">
+<div class="row mb-4" id="chartsSection">
     <!-- Weekly Progress Chart -->
     <div class="col-lg-8 mb-3">
         <div class="card-glassmorphism p-4 h-100">
@@ -117,7 +117,7 @@
 </div>
 
 <!-- Recent Activities and Insights -->
-<div class="row mb-4" id="activitiesSection" style="display: none;">
+<div class="row mb-4" id="activitiesSection">
     <!-- Recent Activities -->
     <div class="col-lg-6 mb-3">
         <div class="card-glassmorphism p-4 h-100">
@@ -152,7 +152,7 @@
 </div>
 
 <!-- Fitness Analysis Section -->
-<div class="row mb-4" id="fitnessSection" style="display: none;">
+<div class="row mb-4" id="fitnessSection">
     <div class="col-12">
         <div class="card-glassmorphism p-4">
             <h4 class="mb-3">
@@ -418,10 +418,22 @@ function loadAthleteData(athleteId) {
                 const activitiesSection = document.getElementById('activitiesSection');
                 const fitnessSection = document.getElementById('fitnessSection');
                 
-                if (metricsSection) metricsSection.style.display = 'flex';
-                if (chartsSection) chartsSection.style.display = 'flex';
-                if (activitiesSection) activitiesSection.style.display = 'flex';
-                if (fitnessSection) fitnessSection.style.display = 'block';
+                if (metricsSection) {
+                    metricsSection.style.display = 'block';
+                    console.log('Showing metrics section');
+                }
+                if (chartsSection) {
+                    chartsSection.style.display = 'block';
+                    console.log('Showing charts section');
+                }
+                if (activitiesSection) {
+                    activitiesSection.style.display = 'block';
+                    console.log('Showing activities section');
+                }
+                if (fitnessSection) {
+                    fitnessSection.style.display = 'block';
+                    console.log('Showing fitness section');
+                }
             }
             
             const loadingSpinner = document.getElementById('loadingSpinner');
