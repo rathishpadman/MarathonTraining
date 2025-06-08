@@ -163,6 +163,11 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
+    .btn-strava {
+        background: linear-gradient(135deg, #FC4C02, #E84118);
+        color: white;
+    }
+
     .btn-dashboard {
         background: linear-gradient(135deg, #3B82F6, #1E40AF);
         color: white;
@@ -415,9 +420,15 @@
     <div class="hero-section">
         <h1 class="hero-title">🏃‍♂️ Marathon Training Community</h1>
         <p class="hero-subtitle">Connect, compete, and achieve your running goals together</p>
-        <div class="d-flex justify-content-center gap-3">
-            <button class="btn btn-light btn-lg px-4">Join Challenge</button>
-            <button class="btn btn-outline-light btn-lg px-4">View Goals</button>
+        <div class="action-buttons">
+            <a href="/connect-strava" class="action-btn btn-strava">
+                <i class="fab fa-strava"></i>
+                Connect with Strava
+            </a>
+            <a href="/dashboard" class="action-btn btn-dashboard">
+                <i class="fas fa-tachometer-alt"></i>
+                View Dashboard
+            </a>
         </div>
     </div>
 
@@ -576,9 +587,21 @@ function renderLeaderboard(athletes) {
     
     const content = document.getElementById('leaderboardContent');
     
+    if (!athletes || athletes.length === 0) {
+        content.innerHTML = `
+            <div class="text-center py-4">
+                <div class="text-muted">
+                    <i class="fas fa-users fa-3x mb-3"></i>
+                    <p>No athletes found. Connect your Strava account to join the community!</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
     const leaderboardHTML = athletes.map((athlete, index) => {
         const rank = index + 1;
-        const distance = (athlete.distance || 0).toFixed(1);
+        const distance = (athlete.distance / 1000 || 0).toFixed(1); // Convert meters to km
         const activities = athlete.activities || 0;
         const avgPace = formatPace(athlete.avg_pace || 0);
         const avgHR = Math.round(athlete.avg_hr || 0);
@@ -589,24 +612,10 @@ function renderLeaderboard(athletes) {
                 <div class="athlete-content">
                     <div class="athlete-name">${athlete.name || 'Unknown Athlete'}</div>
                     <div class="athlete-stats">
-                        <div class="stat-item">📍 ${distance}km</div>
-                        <div class="stat-item">🏃 ${activities} activities</div>
-                        <div class="stat-item">⏱️ ${avgPace} min/km</div>
-                        <div class="stat-item">❤️ ${avgHR} bpm avg</div>
-                    </div>
-                    <div class="action-buttons">
-                        <a href="#" class="action-btn btn-dashboard">
-                            <i class="fas fa-chart-line"></i>
-                            Dashboard
-                        </a>
-                        <a href="#" class="action-btn btn-race-predictor">
-                            <i class="fas fa-stopwatch"></i>
-                            Race Predictor
-                        </a>
-                        <a href="#" class="action-btn btn-risk-analyzer">
-                            <i class="fas fa-shield-alt"></i>
-                            Risk Analyzer
-                        </a>
+                        <span class="stat-item"><i class="fas fa-route"></i> ${distance} km</span>
+                        <span class="stat-item"><i class="fas fa-running"></i> ${activities} activities</span>
+                        <span class="stat-item"><i class="fas fa-clock"></i> ${avgPace} min/km</span>
+                        ${avgHR > 0 ? `<span class="stat-item"><i class="fas fa-heartbeat"></i> ${avgHR} bpm</span>` : ''}
                     </div>
                 </div>
             </div>
@@ -618,20 +627,31 @@ function renderLeaderboard(athletes) {
 
 function renderTrainingTrendsChart(data) {
     const ctx = document.getElementById('trainingTrendsChart').getContext('2d');
+    
+    if (!data || !data.labels || data.labels.length === 0) {
+        ctx.fillStyle = '#rgba(255, 255, 255, 0.8)';
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.fillStyle = '#6B7280';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('No training data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
+        return;
+    }
+    
     new Chart(ctx, {
         type: 'line',
         data: {
             labels: data.labels,
-            datasets: data.datasets.map(dataset => ({
+            datasets: data.datasets.map((dataset, index) => ({
                 ...dataset,
-                borderColor: '#14B8A6',
-                backgroundColor: 'rgba(20, 184, 166, 0.1)',
+                borderColor: index === 0 ? '#14B8A6' : '#F59E0B',
+                backgroundColor: index === 0 ? 'rgba(20, 184, 166, 0.1)' : 'rgba(245, 158, 11, 0.1)',
                 borderWidth: 3,
                 tension: 0.4,
-                pointBackgroundColor: '#14B8A6',
+                pointBackgroundColor: index === 0 ? '#14B8A6' : '#F59E0B',
                 pointBorderColor: '#ffffff',
                 pointBorderWidth: 2,
-                pointRadius: 6
+                pointRadius: 4
             }))
         },
         options: {
@@ -708,8 +728,9 @@ function renderTrainingLoadChart(data) {
 
 async function loadActivityStream() {
     try {
-        const response = await fetch('/api/community/activities');
-        const activities = await response.json();
+        const response = await fetch('/api/community/activity_stream');
+        const data = await response.json();
+        const activities = data.stream || [];
         
         const streamContainer = document.getElementById('activityStream');
         
