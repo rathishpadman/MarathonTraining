@@ -1051,6 +1051,182 @@ def get_community_overview():
         logger.error(f"Error fetching community overview: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+# Community Training Zones API
+@api_bp.route('/community/training_zones', methods=['GET'])
+def get_community_training_zones():
+    """Get community training zone distribution"""
+    try:
+        logger.info("Fetching community training zone distribution")
+        
+        # Get all active athletes with recent activities
+        thirty_days_ago = datetime.now() - timedelta(days=30)
+        
+        # Calculate training load zones for each athlete
+        zones = {
+            'Low': 0,
+            'Moderate': 0, 
+            'High': 0,
+            'Overreaching': 0
+        }
+        
+        athletes = db.session.query(ReplitAthlete).filter_by(is_active=True).all()
+        
+        for athlete in athletes:
+            # Calculate recent training load
+            recent_activities = db.session.query(Activity).filter(
+                Activity.athlete_id == athlete.id,
+                Activity.start_date >= thirty_days_ago
+            ).all()
+            
+            if not recent_activities:
+                zones['Low'] += 1
+                continue
+                
+            # Calculate weekly training load
+            total_distance = sum(float(a.distance or 0) / 1000 for a in recent_activities)  # Convert to km
+            total_time = sum(int(a.moving_time or 0) for a in recent_activities)  # seconds
+            
+            # Weekly averages
+            weekly_distance = total_distance / 4.3  # ~30 days / 7 days
+            weekly_hours = (total_time / 3600) / 4.3
+            
+            # Zone classification based on training volume
+            if weekly_distance < 20 or weekly_hours < 2:
+                zones['Low'] += 1
+            elif weekly_distance < 40 or weekly_hours < 4:
+                zones['Moderate'] += 1
+            elif weekly_distance < 70 or weekly_hours < 7:
+                zones['High'] += 1
+            else:
+                zones['Overreaching'] += 1
+        
+        # Calculate percentages
+        total_athletes = sum(zones.values())
+        if total_athletes > 0:
+            zone_percentages = {
+                zone: round((count / total_athletes) * 100, 1)
+                for zone, count in zones.items()
+            }
+        else:
+            zone_percentages = {zone: 0 for zone in zones.keys()}
+        
+        logger.info(f"Training zone distribution: {zone_percentages}")
+        
+        return jsonify({
+            'zones': zones,
+            'percentages': zone_percentages,
+            'total_athletes': total_athletes
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching community training zones: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+# Community Activity Stream API
+@api_bp.route('/community/activity_stream', methods=['GET'])
+def get_community_activity_stream():
+    """Get recent community activities and milestones"""
+    try:
+        logger.info("Fetching community activity stream")
+        
+        # Get recent activities from all athletes
+        seven_days_ago = datetime.now() - timedelta(days=7)
+        
+        recent_activities = db.session.query(Activity, ReplitAthlete).join(
+            ReplitAthlete, Activity.athlete_id == ReplitAthlete.id
+        ).filter(
+            Activity.start_date >= seven_days_ago,
+            ReplitAthlete.is_active == True
+        ).order_by(Activity.start_date.desc()).limit(20).all()
+        
+        activity_stream = []
+        milestones = []
+        
+        for activity, athlete in recent_activities:
+            distance_km = float(activity.distance or 0) / 1000
+            pace_min_km = 0
+            
+            if activity.moving_time and distance_km > 0:
+                pace_seconds = (activity.moving_time / distance_km)
+                pace_min_km = pace_seconds / 60
+            
+            # Format activity entry
+            activity_entry = {
+                'type': 'activity',
+                'athlete_name': athlete.name,
+                'activity_name': activity.name,
+                'sport_type': activity.sport_type,
+                'distance_km': round(distance_km, 2),
+                'pace': f"{int(pace_min_km)}:{int((pace_min_km % 1) * 60):02d}" if pace_min_km > 0 else "N/A",
+                'start_date': activity.start_date.isoformat(),
+                'relative_time': _get_relative_time(activity.start_date)
+            }
+            activity_stream.append(activity_entry)
+            
+            # Check for milestones
+            if distance_km >= 21.0975 and distance_km <= 21.5:  # Half marathon
+                milestones.append({
+                    'type': 'milestone',
+                    'athlete_name': athlete.name,
+                    'achievement': 'Half Marathon Distance',
+                    'details': f'{distance_km:.2f}km',
+                    'date': activity.start_date.isoformat(),
+                    'relative_time': _get_relative_time(activity.start_date)
+                })
+            elif distance_km >= 42.0 and distance_km <= 43.0:  # Marathon
+                milestones.append({
+                    'type': 'milestone',
+                    'athlete_name': athlete.name,
+                    'achievement': 'Marathon Distance',
+                    'details': f'{distance_km:.2f}km',
+                    'date': activity.start_date.isoformat(),
+                    'relative_time': _get_relative_time(activity.start_date)
+                })
+            elif distance_km >= 10.0 and distance_km <= 10.5:  # 10K
+                milestones.append({
+                    'type': 'milestone',
+                    'athlete_name': athlete.name,
+                    'achievement': '10K Distance',
+                    'details': f'{distance_km:.2f}km',
+                    'date': activity.start_date.isoformat(),
+                    'relative_time': _get_relative_time(activity.start_date)
+                })
+        
+        # Sort combined stream by date
+        combined_stream = sorted(
+            activity_stream + milestones,
+            key=lambda x: x.get('date', x.get('start_date', '')),
+            reverse=True
+        )[:15]  # Limit to 15 most recent items
+        
+        logger.info(f"Generated activity stream with {len(combined_stream)} items")
+        
+        return jsonify({
+            'stream': combined_stream,
+            'total_activities': len(activity_stream),
+            'total_milestones': len(milestones)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching community activity stream: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+def _get_relative_time(date):
+    """Get human-readable relative time"""
+    now = datetime.now()
+    diff = now - date
+    
+    if diff.days > 0:
+        return f"{diff.days} day{'s' if diff.days != 1 else ''} ago"
+    elif diff.seconds > 3600:
+        hours = diff.seconds // 3600
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    elif diff.seconds > 60:
+        minutes = diff.seconds // 60
+        return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+    else:
+        return "Just now"
+
 @api_bp.route('/analytics/data')
 def get_analytics_data():
     """Get analytics data for charts and metrics"""
