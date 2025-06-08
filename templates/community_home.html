@@ -649,6 +649,7 @@ function renderTrainingTrendsChart(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            backgroundColor: 'transparent',
             plugins: {
                 legend: {
                     position: 'bottom',
@@ -686,9 +687,8 @@ function renderTrainingLoadChart(data) {
     const ctx = document.getElementById('trainingLoadChart').getContext('2d');
     
     if (!data || !data.labels || data.labels.length === 0) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        ctx.fillStyle = '#6B7280';
         ctx.font = '16px Arial';
         ctx.textAlign = 'center';
         ctx.fillText('No training load data', ctx.canvas.width / 2, ctx.canvas.height / 2 - 10);
@@ -738,6 +738,7 @@ function renderTrainingLoadChart(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            backgroundColor: 'transparent',
             plugins: {
                 legend: {
                     position: 'bottom',
