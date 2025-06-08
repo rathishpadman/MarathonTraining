@@ -197,6 +197,58 @@
             border-radius: 8px;
             margin-bottom: 10px;
         }
+
+        .optimization-insights {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .insight-section {
+            margin-bottom: 2rem;
+        }
+
+        .insight-section h3 {
+            color: #FFD700;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 0.5rem;
+        }
+
+        .analysis-content {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .metric-label {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .metric-value {
+            color: #FFD700;
+            font-weight: 600;
+        }
+
+        .trend-indicator {
+            display: inline-block;
+            margin-left: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .trend-up { color: #4CAF50; }
+        .trend-down { color: #F44336; }
+        .trend-stable { color: #FFC107; }
         
         .back-btn {
             position: fixed;
@@ -300,9 +352,39 @@
             </div>
             
             <div class="recommendations">
-                <div class="recommendations-title">💡 Training Recommendations</div>
+                <div class="recommendations-title">💡 Training Optimization</div>
                 <div id="recommendationsList">
                     <!-- Recommendations will be populated here -->
+                </div>
+            </div>
+            
+            <div class="optimization-insights" style="display: none;" id="optimizationInsights">
+                <div class="insight-section">
+                    <h3>📊 Training Analysis</h3>
+                    <div id="trainingAnalysis" class="analysis-content">
+                        <!-- Training analysis will be populated here -->
+                    </div>
+                </div>
+                
+                <div class="insight-section">
+                    <h3>📈 Performance Trends</h3>
+                    <div id="performanceTrends" class="analysis-content">
+                        <!-- Performance trends will be populated here -->
+                    </div>
+                </div>
+                
+                <div class="insight-section">
+                    <h3>💪 Strengths & Areas for Improvement</h3>
+                    <div id="strengthsWeaknesses" class="analysis-content">
+                        <!-- Strengths and weaknesses will be populated here -->
+                    </div>
+                </div>
+                
+                <div class="insight-section">
+                    <h3>🎯 Race Day Strategy</h3>
+                    <div id="raceDayStrategy" class="analysis-content">
+                        <!-- Race day strategy will be populated here -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -342,8 +424,16 @@
                 
                 const predictionData = await response.json();
                 
+                // Check if response contains error
+                if (predictionData.error) {
+                    throw new Error(predictionData.error);
+                }
+                
                 // Display results
                 displayPredictionResults(predictionData);
+                
+                // Fetch and display optimization insights
+                await fetchOptimizationInsights(athleteId, raceDistance);
                 
             } catch (error) {
                 console.error('Error predicting race time:', error);
@@ -412,6 +502,208 @@
             container.innerHTML = recommendations.map(rec => `
                 <div class="recommendation-item">${rec}</div>
             `).join('');
+        }
+
+        async function fetchOptimizationInsights(athleteId, raceDistance) {
+            try {
+                const response = await fetch(`/api/athletes/${athleteId}/race-optimization?distance=${encodeURIComponent(raceDistance)}`);
+                
+                if (response.ok) {
+                    const optimizationData = await response.json();
+                    displayOptimizationInsights(optimizationData);
+                } else {
+                    console.warn('Could not fetch optimization insights');
+                }
+            } catch (error) {
+                console.warn('Error fetching optimization insights:', error);
+            }
+        }
+
+        function displayOptimizationInsights(data) {
+            const insightsContainer = document.getElementById('optimizationInsights');
+            
+            if (!data || data.error) {
+                return; // Don't show insights if data is unavailable
+            }
+
+            // Display training analysis
+            displayTrainingAnalysis(data.training_analysis || {});
+            
+            // Display performance trends
+            displayPerformanceTrends(data.performance_trends || {});
+            
+            // Display strengths and weaknesses
+            displayStrengthsWeaknesses(data.strengths_weaknesses || {});
+            
+            // Display race day strategy
+            displayRaceDayStrategy(data.race_day_strategy || {});
+            
+            // Show the insights container
+            insightsContainer.style.display = 'block';
+        }
+
+        function displayTrainingAnalysis(analysis) {
+            const container = document.getElementById('trainingAnalysis');
+            container.innerHTML = '';
+
+            if (analysis.weekly_distance_avg) {
+                container.innerHTML += `
+                    <div class="metric-item">
+                        <span class="metric-label">Weekly Distance Average</span>
+                        <span class="metric-value">${analysis.weekly_distance_avg.toFixed(1)} km</span>
+                    </div>
+                `;
+            }
+
+            if (analysis.consistency_score) {
+                container.innerHTML += `
+                    <div class="metric-item">
+                        <span class="metric-label">Training Consistency</span>
+                        <span class="metric-value">${analysis.consistency_score.toFixed(0)}%</span>
+                    </div>
+                `;
+            }
+
+            if (analysis.avg_pace_min_km) {
+                container.innerHTML += `
+                    <div class="metric-item">
+                        <span class="metric-label">Average Training Pace</span>
+                        <span class="metric-value">${formatPaceFromSeconds(analysis.avg_pace_min_km * 60)}</span>
+                    </div>
+                `;
+            }
+
+            if (analysis.intensity_distribution) {
+                const intensity = analysis.intensity_distribution;
+                container.innerHTML += `
+                    <div class="metric-item">
+                        <span class="metric-label">Easy Runs</span>
+                        <span class="metric-value">${intensity.easy_percentage || 0}%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Moderate Runs</span>
+                        <span class="metric-value">${intensity.moderate_percentage || 0}%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Hard Runs</span>
+                        <span class="metric-value">${intensity.hard_percentage || 0}%</span>
+                    </div>
+                `;
+            }
+        }
+
+        function displayPerformanceTrends(trends) {
+            const container = document.getElementById('performanceTrends');
+            container.innerHTML = '';
+
+            if (trends.pace_trend) {
+                const trend = trends.pace_trend;
+                const trendClass = trend.direction === 'improving' ? 'trend-up' : 
+                                  trend.direction === 'declining' ? 'trend-down' : 'trend-stable';
+                const trendIcon = trend.direction === 'improving' ? '↗' : 
+                                 trend.direction === 'declining' ? '↘' : '→';
+                
+                container.innerHTML += `
+                    <div class="metric-item">
+                        <span class="metric-label">Pace Trend</span>
+                        <span class="metric-value">
+                            ${trend.direction} 
+                            <span class="trend-indicator ${trendClass}">${trendIcon}</span>
+                        </span>
+                    </div>
+                `;
+            }
+
+            if (trends.distance_trend) {
+                const trend = trends.distance_trend;
+                const trendClass = trend.direction === 'increasing' ? 'trend-up' : 
+                                  trend.direction === 'decreasing' ? 'trend-down' : 'trend-stable';
+                const trendIcon = trend.direction === 'increasing' ? '↗' : 
+                                 trend.direction === 'decreasing' ? '↘' : '→';
+                
+                container.innerHTML += `
+                    <div class="metric-item">
+                        <span class="metric-label">Distance Trend</span>
+                        <span class="metric-value">
+                            ${trend.direction} 
+                            <span class="trend-indicator ${trendClass}">${trendIcon}</span>
+                        </span>
+                    </div>
+                `;
+            }
+
+            if (trends.fitness_progression) {
+                container.innerHTML += `
+                    <div class="metric-item">
+                        <span class="metric-label">Fitness Score</span>
+                        <span class="metric-value">${trends.fitness_progression.current_score || 0}/100</span>
+                    </div>
+                `;
+            }
+        }
+
+        function displayStrengthsWeaknesses(analysis) {
+            const container = document.getElementById('strengthsWeaknesses');
+            container.innerHTML = '';
+
+            if (analysis.strengths && analysis.strengths.length > 0) {
+                container.innerHTML += '<h4 style="color: #4CAF50; margin-bottom: 0.5rem;">Strengths:</h4>';
+                analysis.strengths.forEach(strength => {
+                    container.innerHTML += `<div style="margin-bottom: 0.5rem;">• ${strength}</div>`;
+                });
+            }
+
+            if (analysis.weaknesses && analysis.weaknesses.length > 0) {
+                container.innerHTML += '<h4 style="color: #FFC107; margin-top: 1rem; margin-bottom: 0.5rem;">Areas for Improvement:</h4>';
+                analysis.weaknesses.forEach(weakness => {
+                    container.innerHTML += `<div style="margin-bottom: 0.5rem;">• ${weakness}</div>`;
+                });
+            }
+
+            if (analysis.overall_assessment) {
+                container.innerHTML += `
+                    <div style="margin-top: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
+                        <strong>Overall Assessment:</strong> ${analysis.overall_assessment}
+                    </div>
+                `;
+            }
+        }
+
+        function displayRaceDayStrategy(strategy) {
+            const container = document.getElementById('raceDayStrategy');
+            container.innerHTML = '';
+
+            if (strategy.pacing_advice && strategy.pacing_advice.length > 0) {
+                container.innerHTML += '<h4 style="color: #FFD700; margin-bottom: 0.5rem;">Pacing Strategy:</h4>';
+                strategy.pacing_advice.forEach(advice => {
+                    container.innerHTML += `<div style="margin-bottom: 0.5rem;">• ${advice}</div>`;
+                });
+            }
+
+            if (strategy.nutrition_strategy && strategy.nutrition_strategy.length > 0) {
+                container.innerHTML += '<h4 style="color: #FFD700; margin-top: 1rem; margin-bottom: 0.5rem;">Nutrition Strategy:</h4>';
+                strategy.nutrition_strategy.forEach(nutrition => {
+                    container.innerHTML += `<div style="margin-bottom: 0.5rem;">• ${nutrition}</div>`;
+                });
+            }
+
+            if (strategy.target_splits && strategy.target_splits.length > 0) {
+                container.innerHTML += '<h4 style="color: #FFD700; margin-top: 1rem; margin-bottom: 0.5rem;">Target Splits:</h4>';
+                strategy.target_splits.slice(0, 5).forEach(split => {
+                    container.innerHTML += `
+                        <div class="metric-item">
+                            <span class="metric-label">${split.segment}</span>
+                            <span class="metric-value">${split.target_time}</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function formatPaceFromSeconds(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs.toString().padStart(2, '0')}/km`;
         }
 
         // Auto-predict on page load
