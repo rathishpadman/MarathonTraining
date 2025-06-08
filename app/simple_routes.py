@@ -114,7 +114,162 @@ def get_athlete_summary(athlete_id):
         logger.error(f"Error getting athlete summary: {str(e)}")
         return jsonify({'error': 'Failed to get athlete summary'}), 500
 
-# Original endpoint definitions removed - using enhanced versions below
+# Volume trend endpoint
+@api_bp.route('/athletes/<int:athlete_id>/volume-trend', methods=['GET'])
+def get_volume_trend(athlete_id):
+    """Get training volume trend data"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.now() - timedelta(days=days)
+        
+        activities = db.session.query(Activity).filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= start_date
+        ).order_by(Activity.start_date).all()
+        
+        # Group by date
+        daily_volumes = {}
+        for activity in activities:
+            date_str = activity.start_date.strftime('%Y-%m-%d')
+            if date_str not in daily_volumes:
+                daily_volumes[date_str] = 0
+            daily_volumes[date_str] += (activity.distance or 0) / 1000  # Convert to km
+        
+        # Fill missing dates with 0
+        dates = []
+        distances = []
+        current_date = start_date
+        while current_date <= datetime.now():
+            date_str = current_date.strftime('%Y-%m-%d')
+            dates.append(date_str)
+            distances.append(daily_volumes.get(date_str, 0))
+            current_date += timedelta(days=1)
+        
+        return jsonify({
+            'dates': dates,
+            'distances': distances
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting volume trend: {str(e)}")
+        return jsonify({'error': 'Failed to get volume trend'}), 500
+
+# Pace analysis endpoint
+@api_bp.route('/athletes/<int:athlete_id>/pace-analysis', methods=['GET'])
+def get_pace_analysis(athlete_id):
+    """Get pace analysis data"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.now() - timedelta(days=days)
+        
+        activities = db.session.query(Activity).filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= start_date,
+            Activity.sport_type == 'Run'
+        ).order_by(Activity.start_date).all()
+        
+        dates = []
+        paces = []
+        
+        for activity in activities:
+            if activity.distance and activity.moving_time and activity.distance > 0:
+                pace = (activity.moving_time / 60) / (activity.distance / 1000)  # min/km
+                dates.append(activity.start_date.strftime('%Y-%m-%d'))
+                paces.append(round(pace, 2))
+        
+        return jsonify({
+            'dates': dates,
+            'paces': paces
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting pace analysis: {str(e)}")
+        return jsonify({'error': 'Failed to get pace analysis'}), 500
+
+# Heart rate zones endpoint
+@api_bp.route('/athletes/<int:athlete_id>/heart-rate-zones', methods=['GET'])
+def get_heart_rate_zones(athlete_id):
+    """Get heart rate zones distribution"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.now() - timedelta(days=days)
+        
+        activities = db.session.query(Activity).filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= start_date,
+            Activity.average_heartrate.isnot(None)
+        ).all()
+        
+        # Simplified heart rate zones (assuming max HR of 190)
+        zones = [0, 0, 0, 0, 0]  # Zone 1-5
+        
+        for activity in activities:
+            hr = activity.average_heartrate
+            if hr < 114:  # Zone 1: <60% max HR
+                zones[0] += 1
+            elif hr < 133:  # Zone 2: 60-70% max HR
+                zones[1] += 1
+            elif hr < 152:  # Zone 3: 70-80% max HR
+                zones[2] += 1
+            elif hr < 171:  # Zone 4: 80-90% max HR
+                zones[3] += 1
+            else:  # Zone 5: >90% max HR
+                zones[4] += 1
+        
+        return jsonify({
+            'zones': zones
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting heart rate zones: {str(e)}")
+        return jsonify({'error': 'Failed to get heart rate zones'}), 500
+
+# Training load endpoint
+@api_bp.route('/athletes/<int:athlete_id>/training-load', methods=['GET'])
+def get_training_load(athlete_id):
+    """Get training load trend"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.now() - timedelta(days=days)
+        
+        activities = db.session.query(Activity).filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= start_date
+        ).order_by(Activity.start_date).all()
+        
+        # Group by date and calculate training load
+        daily_loads = {}
+        for activity in activities:
+            date_str = activity.start_date.strftime('%Y-%m-%d')
+            if date_str not in daily_loads:
+                daily_loads[date_str] = 0
+            
+            # TRIMP-based training load calculation
+            if activity.moving_time and activity.average_heartrate:
+                duration_min = activity.moving_time / 60
+                avg_hr = activity.average_heartrate
+                hr_reserve_factor = max(0, (avg_hr - 60) / (190 - 60))
+                load = duration_min * hr_reserve_factor * 1.92
+                daily_loads[date_str] += load
+        
+        # Fill missing dates with 0
+        dates = []
+        loads = []
+        current_date = start_date
+        while current_date <= datetime.now():
+            date_str = current_date.strftime('%Y-%m-%d')
+            dates.append(date_str)
+            loads.append(round(daily_loads.get(date_str, 0), 1))
+            current_date += timedelta(days=1)
+        
+        return jsonify({
+            'dates': dates,
+            'loads': loads
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting training load: {str(e)}")
+        return jsonify({'error': 'Failed to get training load'}), 500
 
 # Recent activities endpoint
 @api_bp.route('/athletes/<int:athlete_id>/recent-activities', methods=['GET'])
@@ -205,50 +360,6 @@ def get_performance_insights(athlete_id):
     except Exception as e:
         logger.error(f"Error getting performance insights: {str(e)}")
         return jsonify({'error': 'Failed to get performance insights'}), 500
-
-@main_bp.route('/api/athletes/<int:athlete_id>/recent-activities')
-def get_athlete_recent_activities(athlete_id):
-    """Get recent activities for athlete"""
-    try:
-        limit = request.args.get('limit', 10, type=int)
-        
-        # Get athlete
-        athlete = db.session.query(ReplitAthlete).filter_by(id=athlete_id).first()
-        if not athlete:
-            return jsonify({'error': 'Athlete not found'}), 404
-        
-        # Get recent activities
-        activities = db.session.query(Activity).filter(
-            Activity.athlete_id == athlete_id
-        ).order_by(Activity.start_date.desc()).limit(limit).all()
-        
-        # Format activities for response
-        activities_data = []
-        for activity in activities:
-            activities_data.append({
-                'id': activity.id,
-                'name': activity.name,
-                'sport_type': activity.sport_type,
-                'start_date': activity.start_date.isoformat() if activity.start_date else None,
-                'distance': activity.distance,
-                'moving_time': activity.moving_time,
-                'elapsed_time': activity.elapsed_time,
-                'average_speed': activity.average_speed,
-                'average_heartrate': activity.average_heartrate,
-                'max_heartrate': activity.max_heartrate,
-                'calories': activity.calories,
-                'total_elevation_gain': activity.total_elevation_gain
-            })
-        
-        return jsonify({
-            'activities': activities_data,
-            'athlete_name': athlete.name,
-            'total_count': len(activities_data)
-        })
-        
-    except Exception as e:
-        logger.error(f"Error fetching recent activities for athlete {athlete_id}: {str(e)}")
-        return jsonify({'error': 'Failed to fetch recent activities'}), 500
 
 # AI Race Recommendations endpoint
 @api_bp.route('/athletes/<int:athlete_id>/ai-race-recommendations', methods=['POST'])
@@ -1367,173 +1478,6 @@ def prepare_pace_analytics(activities):
         logger.error(f"Error in pace analytics: {str(e)}")
         return {'labels': [], 'pace': [], 'targetPace': []}
 
-@api_bp.route('/athletes/<int:athlete_id>/volume-trend')
-def get_volume_trend(athlete_id):
-    """Get training volume trend data for charts"""
-    try:
-        days = int(request.args.get('days', 30))
-        logger.info(f"Fetching volume trend for athlete {athlete_id} over {days} days")
-        
-        # Get recent activities
-        cutoff_date = datetime.now() - timedelta(days=days)
-        activities = Activity.query.filter(
-            Activity.athlete_id == athlete_id,
-            Activity.start_date >= cutoff_date
-        ).order_by(Activity.start_date).all()
-        
-        # Group by week for volume analysis
-        weekly_data = {}
-        for activity in activities:
-            week_key = activity.start_date.strftime('%Y-W%U')
-            if week_key not in weekly_data:
-                weekly_data[week_key] = {
-                    'distance': 0,
-                    'start_date': activity.start_date
-                }
-            weekly_data[week_key]['distance'] += (activity.distance or 0) / 1000  # Convert to km
-        
-        # Sort by date and prepare chart data
-        sorted_weeks = sorted(weekly_data.items(), key=lambda x: x[1]['start_date'])
-        
-        dates = [f"Week {item[0].split('-W')[1]}" for item in sorted_weeks]
-        distances = [round(item[1]['distance'], 1) for item in sorted_weeks]
-        
-        return jsonify({
-            'dates': dates,
-            'distances': distances
-        })
-        
-    except Exception as e:
-        logger.error(f"Error fetching volume trend: {str(e)}")
-        return jsonify({'dates': [], 'distances': []}), 500
-
-@api_bp.route('/athletes/<int:athlete_id>/pace-analysis')
-def get_pace_analysis(athlete_id):
-    """Get pace analysis data for charts"""
-    try:
-        days = int(request.args.get('days', 30))
-        logger.info(f"Fetching pace analysis for athlete {athlete_id} over {days} days")
-        
-        # Get recent running activities
-        cutoff_date = datetime.now() - timedelta(days=days)
-        activities = Activity.query.filter(
-            Activity.athlete_id == athlete_id,
-            Activity.start_date >= cutoff_date,
-            Activity.sport_type == 'Run',
-            Activity.average_speed.isnot(None),
-            Activity.average_speed > 0
-        ).order_by(Activity.start_date).all()
-        
-        dates = []
-        paces = []
-        
-        for activity in activities:
-            dates.append(activity.start_date.strftime('%m/%d'))
-            # Convert speed (m/s) to pace (min/km)
-            pace_min_km = 1000 / (activity.average_speed * 60)
-            paces.append(round(pace_min_km, 2))
-        
-        return jsonify({
-            'dates': dates,
-            'paces': paces
-        })
-        
-    except Exception as e:
-        logger.error(f"Error fetching pace analysis: {str(e)}")
-        return jsonify({'dates': [], 'paces': []}), 500
-
-@api_bp.route('/athletes/<int:athlete_id>/heart-rate-zones')
-def get_heart_rate_zones(athlete_id):
-    """Get heart rate zone distribution for charts"""
-    try:
-        days = int(request.args.get('days', 30))
-        logger.info(f"Fetching heart rate zones for athlete {athlete_id} over {days} days")
-        
-        # Get recent activities with heart rate data
-        cutoff_date = datetime.now() - timedelta(days=days)
-        activities = Activity.query.filter(
-            Activity.athlete_id == athlete_id,
-            Activity.start_date >= cutoff_date,
-            Activity.average_heartrate.isnot(None)
-        ).all()
-        
-        # Calculate zone distribution
-        zones = {'Zone 1': 0, 'Zone 2': 0, 'Zone 3': 0, 'Zone 4': 0, 'Zone 5': 0}
-        total_time = 0
-        
-        for activity in activities:
-            hr = activity.average_heartrate
-            time = activity.moving_time or 0
-            total_time += time
-            
-            # Simple zone calculation (can be improved with athlete-specific zones)
-            if hr < 120:
-                zones['Zone 1'] += time
-            elif hr < 140:
-                zones['Zone 2'] += time
-            elif hr < 160:
-                zones['Zone 3'] += time
-            elif hr < 180:
-                zones['Zone 4'] += time
-            else:
-                zones['Zone 5'] += time
-        
-        # Convert to percentages
-        if total_time > 0:
-            for zone in zones:
-                zones[zone] = round((zones[zone] / total_time) * 100, 1)
-        
-        return jsonify({'zones': zones})
-        
-    except Exception as e:
-        logger.error(f"Error fetching heart rate zones: {str(e)}")
-        return jsonify({'zones': {}}), 500
-
-@api_bp.route('/athletes/<int:athlete_id>/training-load')
-def get_training_load(athlete_id):
-    """Get training load trend data for charts"""
-    try:
-        days = int(request.args.get('days', 30))
-        logger.info(f"Fetching training load for athlete {athlete_id} over {days} days")
-        
-        # Get recent activities
-        cutoff_date = datetime.now() - timedelta(days=days)
-        activities = Activity.query.filter(
-            Activity.athlete_id == athlete_id,
-            Activity.start_date >= cutoff_date
-        ).order_by(Activity.start_date).all()
-        
-        # Group by day and calculate training load
-        daily_data = {}
-        for activity in activities:
-            day_key = activity.start_date.strftime('%Y-%m-%d')
-            if day_key not in daily_data:
-                daily_data[day_key] = {
-                    'load': 0,
-                    'date': activity.start_date
-                }
-            
-            # Simple training load calculation
-            load = 0
-            if activity.moving_time and activity.distance:
-                load = (activity.moving_time / 3600) * (activity.distance / 1000) * 10
-            daily_data[day_key]['load'] += load
-        
-        # Sort by date and prepare chart data
-        sorted_days = sorted(daily_data.items(), key=lambda x: x[1]['date'])
-        
-        dates = [item[1]['date'].strftime('%m/%d') for item in sorted_days]
-        loads = [round(item[1]['load'], 1) for item in sorted_days]
-        
-        return jsonify({
-            'dates': dates,
-            'loads': loads
-        })
-        
-    except Exception as e:
-        logger.error(f"Error fetching training load: {str(e)}")
-        return jsonify({'dates': [], 'loads': []}), 500
-
 # Race Performance Optimization Endpoints
 @api_bp.route('/athletes/<int:athlete_id>/race-prediction', methods=['GET'])
 def get_race_prediction(athlete_id):
@@ -1573,13 +1517,7 @@ def get_fitness_analysis(athlete_id):
 # Home page route
 @main_bp.route('/')
 def home():
-    """Community home page"""
-    from flask import render_template
-    return render_template('community_home.html')
-
-@main_bp.route('/community')
-def community_dashboard():
-    """Legacy community dashboard"""
+    """Community dashboard home page"""
     from flask import render_template
     return render_template('community_dashboard.html')
 
