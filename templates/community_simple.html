@@ -759,6 +759,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+// Set Chart.js defaults to prevent white backgrounds
+Chart.defaults.backgroundColor = 'transparent';
+Chart.defaults.color = 'white';
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Community Dashboard loading...');
     loadCommunityData();
@@ -1045,16 +1048,11 @@ function renderTrainingTrendsChart(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            backgroundColor: 'transparent',
-            animation: {
-                onComplete: function() {
-                    context.canvas.style.backgroundColor = 'transparent';
-                    context.canvas.style.background = 'none';
+            backgroundColor: 'rgba(0,0,0,0)',
+            elements: {
+                point: {
+                    backgroundColor: 'transparent'
                 }
-            },
-            onResize: function() {
-                context.canvas.style.backgroundColor = 'transparent';
-                context.canvas.style.background = 'none';
             },
             plugins: {
                 legend: {
@@ -1066,24 +1064,25 @@ function renderTrainingTrendsChart(data) {
             },
             scales: {
                 x: {
-                    ticks: { color: 'rgba(255, 255, 255, 0.8)' },
+                    ticks: { 
+                        color: 'rgba(255, 255, 255, 0.8)',
+                        backdropColor: 'transparent'
+                    },
                     grid: { 
                         color: 'rgba(255, 255, 255, 0.1)',
                         backgroundColor: 'transparent'
-                    },
-                    backgroundColor: 'transparent'
+                    }
                 },
                 y: {
-                    ticks: { color: 'rgba(255, 255, 255, 0.8)' },
+                    ticks: { 
+                        color: 'rgba(255, 255, 255, 0.8)',
+                        backdropColor: 'transparent'
+                    },
                     grid: { 
                         color: 'rgba(255, 255, 255, 0.1)',
                         backgroundColor: 'transparent'
-                    },
-                    backgroundColor: 'transparent'
+                    }
                 }
-            },
-            layout: {
-                backgroundColor: 'transparent'
             }
         }
     });
@@ -1129,17 +1128,7 @@ function renderTrainingLoadChart(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            backgroundColor: 'transparent',
-            animation: {
-                onComplete: function() {
-                    context.canvas.style.backgroundColor = 'transparent';
-                    context.canvas.style.background = 'none';
-                }
-            },
-            onResize: function() {
-                context.canvas.style.backgroundColor = 'transparent';
-                context.canvas.style.background = 'none';
-            },
+            backgroundColor: 'rgba(0,0,0,0)',
             plugins: {
                 legend: {
                     position: 'bottom',
@@ -1149,9 +1138,6 @@ function renderTrainingLoadChart(data) {
                         padding: 20
                     }
                 }
-            },
-            layout: {
-                backgroundColor: 'transparent'
             }
         }
     });
