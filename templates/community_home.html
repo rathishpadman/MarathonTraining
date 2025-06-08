@@ -268,6 +268,10 @@
         max-height: 350px;
     }
 
+    .chart-card canvas {
+        background: transparent !important;
+    }
+
     .chart-title {
         font-size: 1.25rem;
         font-weight: 600;
@@ -630,6 +634,9 @@ function renderTrainingTrendsChart(data) {
     
     console.log('Rendering chart with data:', data);
     
+    // Clear canvas to ensure transparent background
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    
     new Chart(ctx, {
         type: 'line',
         data: {
@@ -649,7 +656,6 @@ function renderTrainingTrendsChart(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            backgroundColor: 'transparent',
             plugins: {
                 legend: {
                     position: 'bottom',
@@ -718,6 +724,9 @@ function renderTrainingLoadChart(data) {
         data: processedData.data.filter(val => val > 0)
     };
     
+    // Clear canvas to ensure transparent background
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    
     new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -738,7 +747,6 @@ function renderTrainingLoadChart(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            backgroundColor: 'transparent',
             plugins: {
                 legend: {
                     position: 'bottom',
