@@ -231,7 +231,9 @@ function loadCharts(athleteId, timePeriod) {
     fetch(`/api/athletes/${athleteId}/pace-analysis?days=${timePeriod}`)
         .then(response => response.json())
         .then(data => {
-            if (data.dates && data.average_paces) {
+            if (data.dates && data.paces) {
+                // Convert to expected format
+                data.average_paces = data.paces;
                 createPaceChart(data);
             }
         })
@@ -241,7 +243,12 @@ function loadCharts(athleteId, timePeriod) {
     fetch(`/api/athletes/${athleteId}/heart-rate-zones?days=${timePeriod}`)
         .then(response => response.json())
         .then(data => {
-            if (data.zones && data.percentages) {
+            if (data.zones) {
+                // Convert zones object to arrays for chart
+                const zones = Object.keys(data.zones);
+                const percentages = Object.values(data.zones);
+                data.zones = zones;
+                data.percentages = percentages;
                 createHeartRateChart(data);
             }
         })
@@ -251,7 +258,9 @@ function loadCharts(athleteId, timePeriod) {
     fetch(`/api/athletes/${athleteId}/training-load?days=${timePeriod}`)
         .then(response => response.json())
         .then(data => {
-            if (data.dates && data.training_loads) {
+            if (data.dates && data.loads) {
+                // Convert to expected format
+                data.training_loads = data.loads;
                 createTrainingLoadChart(data);
             }
         })
