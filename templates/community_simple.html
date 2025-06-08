@@ -508,8 +508,57 @@
         background-color: transparent !important;
     }
 
+    /* Chart.js specific overrides */
+    .chart-container canvas {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+
+    /* Override Chart.js default white background */
+    .chartjs-size-monitor,
+    .chartjs-size-monitor-expand,
+    .chartjs-size-monitor-shrink {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+
+    /* Force chart background area to be transparent */
+    .chart-container {
+        background: rgba(255, 255, 255, 0.08) !important;
+        position: relative;
+    }
+
+    .chart-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: transparent !important;
+        z-index: -1;
+    }
+
     /* Force all white backgrounds to be transparent */
     * {
+        background-color: transparent !important;
+    }
+
+    /* Target Chart.js specific elements */
+    .chartjs-render-monitor {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+
+    /* Target any divs or containers that might have white backgrounds */
+    div, section, article, main, aside, header, footer, nav {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+
+    /* Ensure canvas elements are always transparent */
+    canvas, canvas * {
+        background: transparent !important;
         background-color: transparent !important;
     }
 
@@ -715,9 +764,47 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCommunityData();
     setupEventListeners();
     
+    // Force transparency continuously
+    setInterval(forceTransparency, 500);
+    
     // Auto-refresh every 30 seconds
     setInterval(loadCommunityData, 30000);
 });
+
+function forceTransparency() {
+    // Force all canvas elements to be transparent
+    document.querySelectorAll('canvas').forEach(canvas => {
+        canvas.style.backgroundColor = 'transparent';
+        canvas.style.background = 'none';
+        
+        // Also check parent containers
+        let parent = canvas.parentElement;
+        while (parent && parent !== document.body) {
+            if (parent.style.backgroundColor === 'white' || 
+                parent.style.backgroundColor === '#ffffff' ||
+                parent.style.backgroundColor === 'rgb(255, 255, 255)') {
+                parent.style.backgroundColor = 'transparent';
+            }
+            parent = parent.parentElement;
+        }
+    });
+    
+    // Target Chart.js specific classes
+    document.querySelectorAll('.chartjs-render-monitor').forEach(el => {
+        el.style.backgroundColor = 'transparent';
+        el.style.background = 'none';
+    });
+    
+    // Force any white backgrounds to transparent
+    document.querySelectorAll('*').forEach(el => {
+        const computedStyle = window.getComputedStyle(el);
+        if (computedStyle.backgroundColor === 'rgb(255, 255, 255)' || 
+            computedStyle.backgroundColor === 'white' ||
+            computedStyle.backgroundColor === '#ffffff') {
+            el.style.backgroundColor = 'transparent';
+        }
+    });
+}
 
 function setupEventListeners() {
     // Filter buttons
@@ -959,6 +1046,16 @@ function renderTrainingTrendsChart(data) {
             responsive: true,
             maintainAspectRatio: false,
             backgroundColor: 'transparent',
+            animation: {
+                onComplete: function() {
+                    context.canvas.style.backgroundColor = 'transparent';
+                    context.canvas.style.background = 'none';
+                }
+            },
+            onResize: function() {
+                context.canvas.style.backgroundColor = 'transparent';
+                context.canvas.style.background = 'none';
+            },
             plugins: {
                 legend: {
                     labels: {
@@ -1033,6 +1130,16 @@ function renderTrainingLoadChart(data) {
             responsive: true,
             maintainAspectRatio: false,
             backgroundColor: 'transparent',
+            animation: {
+                onComplete: function() {
+                    context.canvas.style.backgroundColor = 'transparent';
+                    context.canvas.style.background = 'none';
+                }
+            },
+            onResize: function() {
+                context.canvas.style.backgroundColor = 'transparent';
+                context.canvas.style.background = 'none';
+            },
             plugins: {
                 legend: {
                     position: 'bottom',
