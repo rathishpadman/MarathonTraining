@@ -660,76 +660,88 @@ function createStatusChartFromMetrics(metrics) {
     });
 }
 
-// ML-powered race recommendation function
+// AI-powered race recommendation function
 function generateRaceRecommendation(distance, heartRate, athleteData) {
+    return new Promise((resolve, reject) => {
+        // Prepare current activity data
+        const currentActivity = {
+            distance: distance,
+            heart_rate: heartRate,
+            pace: athleteData.metrics?.avg_pace || 7.0
+        };
+        
+        // Get athlete ID from current athlete
+        const athleteId = currentAthlete;
+        
+        if (!athleteId) {
+            // Fallback to rule-based recommendations
+            resolve(generateFallbackRecommendations(distance, heartRate, athleteData));
+            return;
+        }
+        
+        // Call AI recommendations API
+        fetch(`/api/athletes/${athleteId}/ai-race-recommendations`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(currentActivity)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.recommendations && data.recommendations.length > 0) {
+                resolve(data.recommendations);
+            } else {
+                resolve(generateFallbackRecommendations(distance, heartRate, athleteData));
+            }
+        })
+        .catch(error => {
+            console.warn('AI recommendations failed, using fallback:', error);
+            resolve(generateFallbackRecommendations(distance, heartRate, athleteData));
+        });
+    });
+}
+
+// Fallback rule-based recommendations
+function generateFallbackRecommendations(distance, heartRate, athleteData) {
     const metrics = athleteData.metrics || {};
     const avgPace = metrics.avg_pace || 7.0;
     const totalDistance = metrics.total_distance || 0;
-    const totalActivities = metrics.total_activities || 0;
     
-    // Calculate training readiness score (0-100)
-    let readinessScore = 0;
-    
-    // Distance factor (30% weight)
-    const weeklyAvg = totalDistance / 4; // Approximate weekly average
-    if (weeklyAvg >= 40) readinessScore += 30;
-    else if (weeklyAvg >= 25) readinessScore += 20;
-    else if (weeklyAvg >= 15) readinessScore += 10;
-    
-    // Heart rate efficiency factor (40% weight)
-    const maxHR = 185; // Assumed max HR
-    const hrEfficiency = (maxHR - heartRate) / maxHR;
-    if (hrEfficiency > 0.3) readinessScore += 40;
-    else if (hrEfficiency > 0.2) readinessScore += 30;
-    else if (hrEfficiency > 0.1) readinessScore += 20;
-    else readinessScore += 10;
-    
-    // Pace factor (30% weight)
-    if (avgPace <= 5.0) readinessScore += 30;
-    else if (avgPace <= 6.0) readinessScore += 25;
-    else if (avgPace <= 7.0) readinessScore += 20;
-    else if (avgPace <= 8.0) readinessScore += 15;
-    else readinessScore += 10;
-    
-    // Generate recommendations based on ML analysis
     let recommendations = [];
     
-    // Race distance recommendations
-    if (distance >= 15 && readinessScore >= 70) {
-        recommendations.push('🏃‍♂️ Ready for Half Marathon (21.1km)');
-        if (readinessScore >= 85) {
-            recommendations.push('🏆 Marathon potential detected!');
-        }
-    } else if (distance >= 8 && readinessScore >= 60) {
+    // Basic race distance recommendations
+    const weeklyAvg = totalDistance / 4;
+    if (weeklyAvg >= 40 && avgPace <= 6.0) {
+        recommendations.push('🏆 Marathon ready - excellent fitness base');
+    } else if (weeklyAvg >= 25 && avgPace <= 7.0) {
+        recommendations.push('🏃‍♂️ Half Marathon optimal distance');
+    } else if (weeklyAvg >= 15) {
         recommendations.push('🎯 10K race ready');
-        recommendations.push('📈 Build to Half Marathon');
-    } else if (distance >= 4 && readinessScore >= 50) {
-        recommendations.push('⚡ 5K race optimal');
-        recommendations.push('🔄 Focus on 10K training');
     } else {
-        recommendations.push('🌟 Building base fitness');
-        recommendations.push('📊 Target 5K in 4-6 weeks');
+        recommendations.push('⚡ 5K focus recommended');
     }
     
-    // Training intensity recommendations
+    // Heart rate analysis
+    const maxHR = 185; // Estimated
     if (heartRate < maxHR * 0.7) {
-        recommendations.push('💚 Great aerobic base');
-    } else if (heartRate < maxHR * 0.8) {
-        recommendations.push('🟡 Moderate intensity zone');
+        recommendations.push('💚 Excellent aerobic efficiency');
+    } else if (heartRate < maxHR * 0.85) {
+        recommendations.push('🟡 Good training intensity');
     } else {
-        recommendations.push('🔴 High intensity - monitor recovery');
+        recommendations.push('🔴 High intensity - ensure recovery');
     }
     
-    // Performance prediction
-    const predicted5K = (avgPace * 5).toFixed(1);
-    const predicted10K = (avgPace * 10 * 1.05).toFixed(1);
-    const predictedHalf = (avgPace * 21.1 * 1.1).toFixed(1);
-    
-    recommendations.push('');
-    recommendations.push('🎯 Predicted Times:');
-    recommendations.push(`5K: ${Math.floor(predicted5K)}:${String(Math.round((predicted5K % 1) * 60)).padStart(2, '0')}`);
-    recommendations.push(`10K: ${Math.floor(predicted10K)}:${String(Math.round((predicted10K % 1) * 60)).padStart(2, '0')}`);
-    recommendations.push(`Half: ${Math.floor(predictedHalf / 60)}:${String(Math.floor(predictedHalf % 60)).padStart(2, '0')}:00`);
+    // Simple time predictions
+    const predicted5K = Math.floor(avgPace * 5);
+    const predicted10K = Math.floor(avgPace * 10 * 1.05);
+    recommendations.push(`🎯 Est. 5K: ${Math.floor(predicted5K / 60)}:${String(predicted5K % 60).padStart(2, '0')}`);
+    recommendations.push(`🎯 Est. 10K: ${Math.floor(predicted10K / 60)}:${String(predicted10K % 60).padStart(2, '0')}`);
     
     return recommendations;
 }

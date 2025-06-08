@@ -12,6 +12,7 @@ from app.race_optimizer import optimize_race_performance, get_pacing_strategy, g
 from app.security import ReplitSecurity
 from app.strava_client import ReplitStravaClient
 from app.config import Config
+from app.ai_race_advisor import get_race_recommendations
 
 # Create blueprint for API routes
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -359,6 +360,88 @@ def get_performance_insights(athlete_id):
     except Exception as e:
         logger.error(f"Error getting performance insights: {str(e)}")
         return jsonify({'error': 'Failed to get performance insights'}), 500
+
+# AI Race Recommendations endpoint
+@api_bp.route('/athletes/<int:athlete_id>/ai-race-recommendations', methods=['POST'])
+def get_ai_race_recommendations(athlete_id):
+    """Get AI-powered race recommendations for specific activity data"""
+    try:
+        # Get request data
+        request_data = request.get_json()
+        current_activity = {
+            'distance': request_data.get('distance', 0),
+            'heart_rate': request_data.get('heart_rate', 0),
+            'pace': request_data.get('pace', 0)
+        }
+        
+        # Get athlete dashboard data
+        athlete = ReplitAthlete.query.filter_by(id=athlete_id, is_active=True).first()
+        if not athlete:
+            return jsonify({'error': 'Athlete not found'}), 404
+        
+        # Get recent activities for context
+        recent_activities = Activity.query.filter_by(athlete_id=athlete_id).order_by(
+            Activity.start_date.desc()
+        ).limit(14).all()
+        
+        # Calculate metrics
+        total_distance_km = sum(a.distance or 0 for a in recent_activities) / 1000
+        total_activities = len(recent_activities)
+        total_time = sum(a.moving_time or 0 for a in recent_activities)
+        
+        avg_pace_min_km = 0
+        if total_distance_km > 0 and total_time > 0:
+            pace_seconds_per_km = total_time / total_distance_km
+            avg_pace_min_km = pace_seconds_per_km / 60
+        
+        hr_activities = [a for a in recent_activities if a.average_heartrate]
+        avg_heart_rate = sum(a.average_heartrate for a in hr_activities) / len(hr_activities) if hr_activities else 0
+        
+        # Calculate training load
+        training_load = 0
+        for activity in recent_activities:
+            if activity.moving_time and activity.average_heartrate:
+                duration_min = activity.moving_time / 60
+                avg_hr = activity.average_heartrate
+                hr_reserve_factor = max(0, (avg_hr - 60) / (190 - 60))
+                activity_load = duration_min * hr_reserve_factor * 1.92
+                training_load += activity_load
+        
+        # Prepare athlete data for AI
+        athlete_data = {
+            'athlete': {
+                'id': athlete.id,
+                'name': athlete.name
+            },
+            'metrics': {
+                'total_distance': round(total_distance_km, 2),
+                'total_activities': total_activities,
+                'avg_pace': round(avg_pace_min_km, 2),
+                'training_load': round(training_load, 1),
+                'avg_heart_rate': round(avg_heart_rate, 1) if avg_heart_rate > 0 else 0,
+                'total_time': total_time
+            },
+            'performance_summary': {
+                'activities': [{
+                    'distance': round((a.distance or 0) / 1000, 2),
+                    'moving_time': a.moving_time or 0,
+                    'average_heartrate': a.average_heartrate
+                } for a in recent_activities]
+            }
+        }
+        
+        # Get AI recommendations
+        recommendations = get_race_recommendations(athlete_data, current_activity)
+        
+        return jsonify({
+            'recommendations': recommendations,
+            'athlete_name': athlete.name,
+            'current_activity': current_activity
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting AI race recommendations: {str(e)}")
+        return jsonify({'error': 'Failed to get race recommendations'}), 500
 
 # Athlete dashboard data endpoint
 @api_bp.route('/athletes/<int:athlete_id>/dashboard-data', methods=['GET'])
