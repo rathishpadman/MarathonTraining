@@ -46,12 +46,13 @@
         }
         
         .card-glassmorphism {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(248, 249, 250, 0.95);
             backdrop-filter: blur(15px);
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.25);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.4);
             transition: all 0.3s ease;
+            color: var(--charcoal) !important;
         }
         
         .filter-button {
@@ -135,19 +136,22 @@
             text-align: center;
             padding: 2rem;
             margin: 1rem 0;
-            color: white;
+            color: var(--charcoal) !important;
+            background: rgba(248, 249, 250, 0.95);
         }
         
         .metric-value {
             font-size: 2.5rem;
             font-weight: bold;
             margin-bottom: 0.5rem;
+            color: var(--primary-blue) !important;
         }
         
         .metric-label {
             font-size: 0.9rem;
             opacity: 0.8;
             text-transform: uppercase;
+            color: var(--charcoal) !important;
             letter-spacing: 1px;
         }
         
@@ -251,8 +255,10 @@
             color: white !important;
         }
         
-        .card-body, .card-text, .card-title {
-            color: white !important;
+        .card-glassmorphism .card-body, 
+        .card-glassmorphism .card-text, 
+        .card-glassmorphism .card-title {
+            color: var(--charcoal) !important;
         }
         
         .table {
@@ -279,9 +285,20 @@
         }
         
         /* Specific contrast fixes for dashboard elements */
-        .metric-value, .metric-label {
-            color: white !important;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        .card-glassmorphism .metric-value, 
+        .card-glassmorphism .metric-label,
+        .card-glassmorphism h1,
+        .card-glassmorphism h2,
+        .card-glassmorphism h3,
+        .card-glassmorphism h4,
+        .card-glassmorphism h5,
+        .card-glassmorphism h6,
+        .card-glassmorphism p,
+        .card-glassmorphism span,
+        .card-glassmorphism div,
+        .card-glassmorphism label {
+            color: var(--charcoal) !important;
+            text-shadow: none;
         }
         
         .nav-link, .navbar-brand {
