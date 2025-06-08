@@ -372,6 +372,7 @@ class InjuryRiskPredictor:
             if not features:
                 return {
                     'overall_risk': 0.0,
+                    'risk_percentage': 0.0,  # Consistent 0% when no data
                     'risk_level': 'unknown',
                     'risk_factors': [],
                     'recommendations': ['Insufficient data for prediction'],
@@ -389,6 +390,7 @@ class InjuryRiskPredictor:
             logger.error(f"Error predicting injury risk for athlete {athlete_id}: {str(e)}")
             return {
                 'overall_risk': 0.0,
+                'risk_percentage': 0.0,  # Consistent 0% on error
                 'risk_level': 'error',
                 'risk_factors': ['Prediction error'],
                 'recommendations': ['Unable to assess risk'],
@@ -467,6 +469,7 @@ class InjuryRiskPredictor:
         
         return {
             'overall_risk': min(risk_score, 1.0),
+            'risk_percentage': min(risk_score * 100, 100.0),  # Convert to percentage for consistency
             'risk_level': risk_level,
             'risk_factors': risk_factors,
             'recommendations': recommendations,
