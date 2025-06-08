@@ -270,6 +270,12 @@
 
     .chart-card canvas {
         background: transparent !important;
+        background-color: transparent !important;
+    }
+
+    canvas {
+        background: transparent !important;
+        background-color: transparent !important;
     }
 
     .chart-title {
@@ -534,6 +540,19 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Community Home loading...');
     loadCommunityData();
+    
+    // Force all canvas elements to be transparent
+    function forceCanvasTransparency() {
+        const canvases = document.querySelectorAll('canvas');
+        canvases.forEach(canvas => {
+            canvas.style.backgroundColor = 'transparent';
+            canvas.style.background = 'transparent';
+        });
+    }
+    
+    // Apply transparency immediately and periodically
+    forceCanvasTransparency();
+    setInterval(forceCanvasTransparency, 500);
 });
 
 async function loadCommunityData() {
@@ -634,10 +653,11 @@ function renderTrainingTrendsChart(data) {
     
     console.log('Rendering chart with data:', data);
     
-    // Clear canvas to ensure transparent background
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    // Force transparent background on canvas
+    ctx.canvas.style.backgroundColor = 'transparent';
+    ctx.globalCompositeOperation = 'source-over';
     
-    new Chart(ctx, {
+    const chart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: data.labels,
@@ -724,10 +744,11 @@ function renderTrainingLoadChart(data) {
         data: processedData.data.filter(val => val > 0)
     };
     
-    // Clear canvas to ensure transparent background
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    // Force transparent background on canvas
+    ctx.canvas.style.backgroundColor = 'transparent';
+    ctx.globalCompositeOperation = 'source-over';
     
-    new Chart(ctx, {
+    const chart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: finalData.labels,
