@@ -442,6 +442,13 @@ function displayAnalytics(data) {
 
 // Load basic charts with simplified functionality
 function loadBasicCharts(athleteId, timePeriod) {
+    // Wait for Chart.js to be available
+    if (typeof Chart === 'undefined') {
+        console.log('Chart.js not ready, retrying in 100ms');
+        setTimeout(() => loadBasicCharts(athleteId, timePeriod), 100);
+        return;
+    }
+    
     // Create a simple training volume chart using summary data
     createSimpleVolumeChart(athleteId, timePeriod);
 }
