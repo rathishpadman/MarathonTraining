@@ -1069,6 +1069,14 @@ def get_community_training_zones():
             'Overreaching': 0
         }
         
+        # Store athlete details for each zone
+        zone_athletes = {
+            'Low': [],
+            'Moderate': [],
+            'High': [],
+            'Overreaching': []
+        }
+        
         athletes = db.session.query(ReplitAthlete).filter_by(is_active=True).all()
         
         for athlete in athletes:
@@ -1080,6 +1088,11 @@ def get_community_training_zones():
             
             if not recent_activities:
                 zones['Low'] += 1
+                zone_athletes['Low'].append({
+                    'name': athlete.name,
+                    'weekly_distance': 0,
+                    'weekly_hours': 0
+                })
                 continue
                 
             # Calculate weekly training load
@@ -1090,15 +1103,25 @@ def get_community_training_zones():
             weekly_distance = total_distance / 4.3  # ~30 days / 7 days
             weekly_hours = (total_time / 3600) / 4.3
             
+            athlete_data = {
+                'name': athlete.name,
+                'weekly_distance': round(weekly_distance, 1),
+                'weekly_hours': round(weekly_hours, 1)
+            }
+            
             # Zone classification based on training volume
             if weekly_distance < 20 or weekly_hours < 2:
                 zones['Low'] += 1
+                zone_athletes['Low'].append(athlete_data)
             elif weekly_distance < 40 or weekly_hours < 4:
                 zones['Moderate'] += 1
+                zone_athletes['Moderate'].append(athlete_data)
             elif weekly_distance < 70 or weekly_hours < 7:
                 zones['High'] += 1
+                zone_athletes['High'].append(athlete_data)
             else:
                 zones['Overreaching'] += 1
+                zone_athletes['Overreaching'].append(athlete_data)
         
         # Calculate percentages
         total_athletes = sum(zones.values())
@@ -1115,7 +1138,8 @@ def get_community_training_zones():
         return jsonify({
             'zones': zones,
             'percentages': zone_percentages,
-            'total_athletes': total_athletes
+            'total_athletes': total_athletes,
+            'zone_athletes': zone_athletes
         })
         
     except Exception as e:

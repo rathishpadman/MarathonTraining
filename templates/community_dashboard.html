@@ -688,6 +688,7 @@
 
             const zones = data.zones || {};
             const percentages = data.percentages || {};
+            const zoneAthletes = data.zone_athletes || {};
             
             communityZonesChart = new Chart(ctx, {
                 type: 'doughnut',
@@ -742,7 +743,18 @@
                                     const label = context.label;
                                     const value = context.parsed;
                                     const percentage = percentages[label] || 0;
-                                    return `${label}: ${value} athletes (${percentage}%)`;
+                                    const athletes = zoneAthletes[label] || [];
+                                    
+                                    // Create tooltip with athlete names
+                                    let tooltip = `${label}: ${value} athletes (${percentage}%)`;
+                                    if (athletes.length > 0) {
+                                        tooltip += '\n\nAthletes:';
+                                        athletes.forEach(athlete => {
+                                            tooltip += `\n• ${athlete.name} (${athlete.weekly_distance}km/week, ${athlete.weekly_hours}h/week)`;
+                                        });
+                                    }
+                                    
+                                    return tooltip;
                                 }
                             }
                         }
