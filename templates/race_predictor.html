@@ -348,7 +348,13 @@
             } catch (error) {
                 console.error('Error predicting race time:', error);
                 errorMessage.style.display = 'block';
-                errorMessage.textContent = 'Failed to generate prediction. Please ensure you have sufficient training data.';
+                
+                // Show specific error details if available
+                if (error.message.includes('HTTP error')) {
+                    errorMessage.textContent = 'Connection error. Please check your internet connection and try again.';
+                } else {
+                    errorMessage.textContent = 'Failed to generate prediction. Please ensure you have sufficient training data.';
+                }
             } finally {
                 // Reset button state
                 predictBtn.disabled = false;

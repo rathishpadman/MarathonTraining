@@ -1609,8 +1609,15 @@ def get_race_prediction(athlete_id):
         return jsonify(prediction)
         
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
         logger.error(f"Error predicting race performance: {str(e)}")
-        return jsonify({'error': 'Failed to predict race performance'}), 500
+        logger.error(f"Full traceback: {error_details}")
+        return jsonify({
+            'error': 'Failed to predict race performance',
+            'details': str(e),
+            'type': type(e).__name__
+        }), 500
 
 @api_bp.route('/athletes/<int:athlete_id>/fitness-analysis', methods=['GET'])
 def get_fitness_analysis(athlete_id):

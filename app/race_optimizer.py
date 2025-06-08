@@ -1,669 +1,1069 @@
 """
-Advanced Race Performance Optimization System
-Provides intelligent pacing strategies, training optimization, and performance maximization algorithms
-for marathon athletes based on physiological data and training history.
+Advanced Race Optimization Engine
+Provides detailed training insights, pacing strategies, and performance optimization 
+recommendations based on authentic athlete data analysis.
 """
 
 import logging
-import math
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
-from sqlalchemy import func
-from app.models import ReplitAthlete, Activity, OptimalValues, DailySummary
+from app.models import Activity, ReplitAthlete
+from sqlalchemy.orm import Session
+from collections import defaultdict
+import statistics
 
-logger = logging.getLogger(__name__)
-
-class RacePerformanceOptimizer:
+class RaceOptimizer:
     """
-    Advanced race performance optimization system providing:
-    - Optimal pacing strategies
-    - Training load optimization
-    - Performance prediction models
-    - Race day recommendations
+    Advanced race optimization system providing comprehensive training insights
+    and performance enhancement recommendations based on authentic data
     """
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         
-    def optimize_race_strategy(self, athlete_id: int, race_distance: str, target_time: Optional[str] = None) -> Dict:
+        # Training zones based on heart rate percentage
+        self.hr_zones = {
+            'Zone 1 (Recovery)': (0.50, 0.60),
+            'Zone 2 (Aerobic Base)': (0.60, 0.70),
+            'Zone 3 (Aerobic)': (0.70, 0.80),
+            'Zone 4 (Lactate Threshold)': (0.80, 0.90),
+            'Zone 5 (VO2 Max)': (0.90, 1.00)
+        }
+        
+        # Pace zones relative to threshold pace
+        self.pace_zones = {
+            'Easy': 1.20,      # 20% slower than threshold
+            'Moderate': 1.10,   # 10% slower than threshold
+            'Threshold': 1.00,  # Threshold pace
+            'Tempo': 0.95,     # 5% faster than threshold
+            'VO2 Max': 0.90    # 10% faster than threshold
+        }
+    
+    def generate_race_optimization_plan(self, db_session: Session, athlete_id: int, race_distance: str, days_analysis: int = 90) -> Dict:
         """
-        Generate comprehensive race optimization strategy
+        Generate comprehensive race optimization plan with detailed insights
         """
+        self.logger.info(f"Generating race optimization plan for athlete {athlete_id}, distance: {race_distance}")
+        
         try:
-            from app import db
-            
-            athlete = ReplitAthlete.query.get(athlete_id)
+            # Get athlete and activities
+            athlete = db_session.query(ReplitAthlete).filter_by(id=athlete_id).first()
             if not athlete:
-                return {'error': 'Athlete not found'}
+                raise ValueError(f"Athlete {athlete_id} not found")
             
-            # Get recent training data (last 12 weeks)
-            recent_activities = Activity.query.filter(
+            # Get recent activities for analysis
+            cutoff_date = datetime.now() - timedelta(days=days_analysis)
+            activities = db_session.query(Activity).filter(
                 Activity.athlete_id == athlete_id,
-                Activity.start_date >= datetime.now() - timedelta(weeks=12),
-                Activity.sport_type.in_(['Run', 'Running'])
+                Activity.start_date >= cutoff_date,
+                Activity.sport_type.in_(['Run', 'VirtualRun']),
+                Activity.distance > 1000  # At least 1km
             ).order_by(Activity.start_date.desc()).all()
             
-            if not recent_activities:
-                return {'error': 'Insufficient training data for optimization'}
+            if not activities:
+                return self._empty_optimization_plan(race_distance)
             
-            # Calculate current fitness metrics
-            fitness_metrics = self._calculate_fitness_metrics(recent_activities, athlete)
+            # Analyze training patterns
+            training_analysis = self._analyze_training_patterns(activities)
             
-            # Generate optimal pacing strategy
-            pacing_strategy = self._generate_pacing_strategy(
-                race_distance, fitness_metrics, target_time
-            )
+            # Analyze performance trends
+            performance_trends = self._analyze_performance_trends(activities)
             
-            # Create training optimization plan
-            training_optimization = self._generate_training_optimization(
-                athlete_id, race_distance, fitness_metrics
-            )
+            # Generate pacing strategy
+            pacing_strategy = self._generate_detailed_pacing_strategy(activities, race_distance)
             
-            # Performance predictions with confidence intervals
-            performance_prediction = self._predict_race_performance(
-                fitness_metrics, race_distance, pacing_strategy
-            )
+            # Generate training recommendations
+            training_recommendations = self._generate_training_recommendations(activities, race_distance, training_analysis)
             
-            # Race day recommendations
-            race_day_recommendations = self._generate_race_day_recommendations(
-                athlete, race_distance, fitness_metrics, pacing_strategy
-            )
+            # Analyze strengths and weaknesses
+            strengths_weaknesses = self._analyze_strengths_weaknesses(activities, training_analysis)
             
-            # Nutrition and hydration strategy
-            nutrition_strategy = self._generate_nutrition_strategy(
-                race_distance, performance_prediction['predicted_time_seconds'], athlete
-            )
+            # Generate race day strategy
+            race_day_strategy = self._generate_race_day_strategy(race_distance, pacing_strategy)
+            
+            # Calculate optimization metrics
+            optimization_metrics = self._calculate_optimization_metrics(activities, training_analysis)
             
             return {
-                'athlete_id': athlete_id,
+                'athlete_name': athlete.name,
                 'race_distance': race_distance,
-                'optimization_date': datetime.now().isoformat(),
-                'fitness_metrics': fitness_metrics,
+                'analysis_period_days': days_analysis,
+                'total_activities_analyzed': len(activities),
+                'training_analysis': training_analysis,
+                'performance_trends': performance_trends,
                 'pacing_strategy': pacing_strategy,
-                'training_optimization': training_optimization,
-                'performance_prediction': performance_prediction,
-                'race_day_recommendations': race_day_recommendations,
-                'nutrition_strategy': nutrition_strategy,
-                'confidence_score': self._calculate_optimization_confidence(fitness_metrics, recent_activities)
+                'training_recommendations': training_recommendations,
+                'strengths_weaknesses': strengths_weaknesses,
+                'race_day_strategy': race_day_strategy,
+                'optimization_metrics': optimization_metrics,
+                'last_updated': datetime.now().isoformat()
             }
             
         except Exception as e:
-            self.logger.error(f"Error optimizing race strategy for athlete {athlete_id}: {str(e)}")
-            return {'error': f'Optimization failed: {str(e)}'}
+            self.logger.error(f"Error generating race optimization plan: {str(e)}")
+            raise
     
-    def _calculate_fitness_metrics(self, activities: List[Activity], athlete: ReplitAthlete) -> Dict:
-        """Calculate comprehensive fitness metrics from training data"""
+    def _analyze_training_patterns(self, activities: List[Activity]) -> Dict:
+        """Analyze training patterns from authentic activity data"""
         if not activities:
             return {}
         
-        # Training load analysis
-        total_distance = sum(getattr(a, 'distance', 0) or 0 for a in activities) / 1000  # km
-        total_time = sum(getattr(a, 'moving_time', 0) or 0 for a in activities) / 3600  # hours
+        # Weekly training volume analysis
+        weekly_volumes = defaultdict(float)
+        weekly_activities = defaultdict(int)
+        weekly_avg_pace = defaultdict(list)
         
-        # Pace analysis
-        running_activities = [a for a in activities if getattr(a, 'distance', 0) and getattr(a, 'moving_time', 0)]
-        if running_activities:
-            avg_pace_per_km = sum(
-                (getattr(a, 'moving_time', 0) / 60) / (getattr(a, 'distance', 0) / 1000)
-                for a in running_activities
-            ) / len(running_activities)
-        else:
-            avg_pace_per_km = 0
+        for activity in activities:
+            if not (activity.distance and activity.moving_time and activity.start_date):
+                continue
+            
+            week_start = activity.start_date - timedelta(days=activity.start_date.weekday())
+            week_key = week_start.strftime('%Y-%W')
+            
+            distance_km = activity.distance / 1000
+            pace_per_km = activity.moving_time / distance_km
+            
+            weekly_volumes[week_key] += distance_km
+            weekly_activities[week_key] += 1
+            
+            if 200 <= pace_per_km <= 800:  # Reasonable pace range
+                weekly_avg_pace[week_key].append(pace_per_km)
         
-        # Long run analysis
-        long_runs = [a for a in activities if getattr(a, 'distance', 0) and getattr(a, 'distance', 0) > 15000]  # 15km+
-        max_distance = max((getattr(a, 'distance', 0) or 0) / 1000 for a in activities) if activities else 0
+        # Calculate training consistency
+        volume_values = list(weekly_volumes.values())
+        volume_consistency = self._calculate_consistency(volume_values)
         
-        # Weekly volume analysis
-        weekly_volumes = self._calculate_weekly_volumes(activities)
-        avg_weekly_volume = sum(weekly_volumes) / len(weekly_volumes) if weekly_volumes else 0
-        peak_weekly_volume = max(weekly_volumes) if weekly_volumes else 0
+        # Calculate average weekly metrics
+        avg_weekly_volume = statistics.mean(volume_values) if volume_values else 0
+        avg_weekly_activities = statistics.mean(list(weekly_activities.values())) if weekly_activities else 0
         
-        # Speed work analysis
-        speed_activities = [a for a in activities if getattr(a, 'average_speed', 0) and getattr(a, 'average_speed', 0) > 4.0]  # >14.4 km/h
-        speed_percentage = (len(speed_activities) / len(activities)) * 100 if activities else 0
+        # Analyze intensity distribution
+        intensity_distribution = self._analyze_intensity_distribution(activities)
         
-        # Heart rate analysis
-        hr_activities = [a for a in activities if getattr(a, 'average_heartrate', 0)]
-        if hr_activities and athlete.max_hr:
-            avg_hr_intensity = sum(getattr(a, 'average_heartrate', 0) for a in hr_activities) / len(hr_activities)
-            hr_intensity_percentage = (avg_hr_intensity / athlete.max_hr) * 100
-        else:
-            hr_intensity_percentage = 0
-        
-        # Calculate VDOT (running fitness index)
-        vdot = self._calculate_vdot(avg_pace_per_km, hr_intensity_percentage)
-        
-        # Training consistency
-        training_days = len(set(a.start_date.date() for a in activities))
-        total_days = (max(a.start_date for a in activities) - min(a.start_date for a in activities)).days + 1
-        consistency_score = (training_days / total_days) * 100 if total_days > 0 else 0
+        # Analyze workout types
+        workout_types = self._analyze_workout_types(activities)
         
         return {
-            'total_distance_km': round(total_distance, 1),
-            'total_training_hours': round(total_time, 1),
-            'avg_pace_per_km_minutes': round(avg_pace_per_km, 2),
-            'max_distance_km': round(max_distance, 1),
-            'long_runs_count': len(long_runs),
             'avg_weekly_volume_km': round(avg_weekly_volume, 1),
-            'peak_weekly_volume_km': round(peak_weekly_volume, 1),
-            'speed_work_percentage': round(speed_percentage, 1),
-            'hr_intensity_percentage': round(hr_intensity_percentage, 1),
-            'vdot_score': round(vdot, 1),
-            'training_consistency': round(consistency_score, 1),
-            'activities_analyzed': len(activities),
-            'training_period_weeks': round(total_days / 7, 1) if total_days > 0 else 0
+            'avg_weekly_activities': round(avg_weekly_activities, 1),
+            'volume_consistency_score': round(volume_consistency, 1),
+            'total_weeks_analyzed': len(weekly_volumes),
+            'intensity_distribution': intensity_distribution,
+            'workout_types': workout_types,
+            'weekly_volume_trend': self._calculate_trend(volume_values)
         }
     
-    def _calculate_weekly_volumes(self, activities: List[Activity]) -> List[float]:
-        """Calculate weekly training volumes"""
+    def _analyze_performance_trends(self, activities: List[Activity]) -> Dict:
+        """Analyze performance trends over time"""
         if not activities:
-            return []
+            return {}
         
-        weekly_volumes = {}
-        for activity in activities:
-            week_key = activity.start_date.strftime('%Y-W%U')
-            distance_km = (getattr(activity, 'distance', 0) or 0) / 1000
-            weekly_volumes[week_key] = weekly_volumes.get(week_key, 0) + distance_km
+        # Sort activities by date
+        sorted_activities = sorted(activities, key=lambda x: x.start_date or datetime.min)
         
-        return list(weekly_volumes.values())
+        # Analyze pace trends
+        pace_trend = self._analyze_pace_trend(sorted_activities)
+        
+        # Analyze distance trends
+        distance_trend = self._analyze_distance_trend(sorted_activities)
+        
+        # Analyze heart rate trends (if available)
+        hr_trend = self._analyze_heart_rate_trend(sorted_activities)
+        
+        # Calculate fitness progression
+        fitness_progression = self._calculate_fitness_progression(sorted_activities)
+        
+        return {
+            'pace_trend': pace_trend,
+            'distance_trend': distance_trend,
+            'heart_rate_trend': hr_trend,
+            'fitness_progression': fitness_progression,
+            'improvement_rate': self._calculate_improvement_rate(sorted_activities)
+        }
     
-    def _calculate_vdot(self, avg_pace_minutes: float, hr_intensity: float) -> float:
-        """Calculate VDOT running fitness score"""
-        if avg_pace_minutes <= 0:
-            return 30.0  # Default baseline
+    def _generate_detailed_pacing_strategy(self, activities: List[Activity], race_distance: str) -> Dict:
+        """Generate detailed pacing strategy based on training data"""
+        if not activities:
+            return {}
         
-        # Simplified VDOT calculation based on pace and heart rate
-        # Real VDOT uses specific race times, this is an approximation
-        base_vdot = 15.0 + (480 / avg_pace_minutes)  # Base calculation
+        # Calculate threshold pace from training data
+        threshold_pace = self._estimate_threshold_pace(activities)
         
-        # Adjust for heart rate intensity
-        if hr_intensity > 0:
-            hr_adjustment = (85 - hr_intensity) * 0.2  # Optimal around 85% max HR
-            base_vdot += hr_adjustment
-        
-        return max(min(base_vdot, 85.0), 25.0)  # Clamp between 25-85
-    
-    def _generate_pacing_strategy(self, race_distance: str, fitness_metrics: Dict, target_time: Optional[str]) -> Dict:
-        """Generate optimal pacing strategy for the race"""
+        # Get race distance in km
         distance_km = self._get_race_distance_km(race_distance)
         
-        if target_time:
-            target_seconds = self._parse_time_to_seconds(target_time)
-            target_pace_per_km = target_seconds / distance_km
-        else:
-            # Predict optimal pace based on fitness
-            target_pace_per_km = self._predict_optimal_pace(fitness_metrics, distance_km)
-            target_seconds = target_pace_per_km * distance_km
+        # Calculate target race pace based on distance
+        target_pace = self._calculate_target_race_pace(threshold_pace, distance_km)
         
-        # Generate split strategy
-        splits = self._generate_race_splits(distance_km, target_pace_per_km, fitness_metrics)
+        # Generate split pacing strategy
+        splits = self._generate_split_strategy(target_pace, distance_km, race_distance)
         
-        # Pacing zones
-        easy_pace = target_pace_per_km * 1.15
-        tempo_pace = target_pace_per_km * 0.95
-        threshold_pace = target_pace_per_km * 0.90
+        # Generate heart rate targets
+        hr_targets = self._generate_hr_targets(activities, race_distance)
         
         return {
-            'race_distance_km': distance_km,
-            'target_time_formatted': self._format_seconds_to_time(target_seconds),
-            'target_time_seconds': int(target_seconds),
-            'target_pace_per_km': round(target_pace_per_km, 2),
-            'target_pace_formatted': self._format_pace(target_pace_per_km),
+            'target_pace_per_km': self._format_pace(target_pace),
+            'target_pace_seconds': round(target_pace),
+            'threshold_pace_per_km': self._format_pace(threshold_pace),
+            'estimated_finish_time': self._format_time(target_pace * distance_km),
             'splits': splits,
-            'pacing_zones': {
-                'easy_pace': self._format_pace(easy_pace),
-                'tempo_pace': self._format_pace(tempo_pace),
-                'threshold_pace': self._format_pace(threshold_pace),
-                'target_pace': self._format_pace(target_pace_per_km)
-            },
-            'negative_split_recommended': distance_km >= 21.0,  # For half marathon and longer
-            'strategy_type': self._determine_pacing_strategy(distance_km, fitness_metrics)
+            'heart_rate_targets': hr_targets,
+            'pacing_advice': self._generate_pacing_advice(race_distance)
         }
     
-    def _predict_optimal_pace(self, fitness_metrics: Dict, distance_km: float) -> float:
-        """Predict optimal race pace based on current fitness"""
-        base_pace = fitness_metrics.get('avg_pace_per_km_minutes', 6.0) * 60  # Convert to seconds
+    def _generate_training_recommendations(self, activities: List[Activity], race_distance: str, training_analysis: Dict) -> List[Dict]:
+        """Generate specific training recommendations"""
+        recommendations = []
         
-        # Adjust for race distance
-        if distance_km <= 5:
-            pace_factor = 0.85  # 5K pace
-        elif distance_km <= 10:
-            pace_factor = 0.90  # 10K pace
-        elif distance_km <= 21.1:
-            pace_factor = 0.95  # Half marathon pace
-        else:
-            pace_factor = 1.00  # Marathon pace
+        # Analyze current training gaps
+        volume = training_analysis.get('avg_weekly_volume_km', 0)
+        consistency = training_analysis.get('volume_consistency_score', 0)
+        intensity_dist = training_analysis.get('intensity_distribution', {})
         
-        # Adjust for fitness level (VDOT)
-        vdot = fitness_metrics.get('vdot_score', 40)
-        if vdot > 60:
-            fitness_factor = 0.90
-        elif vdot > 50:
-            fitness_factor = 0.95
-        elif vdot > 40:
-            fitness_factor = 1.00
-        else:
-            fitness_factor = 1.10
-        
-        optimal_pace = base_pace * pace_factor * fitness_factor
-        return max(optimal_pace, 180)  # Minimum 3:00/km pace
-    
-    def _generate_race_splits(self, distance_km: float, target_pace: float, fitness_metrics: Dict) -> List[Dict]:
-        """Generate detailed race splits with pacing strategy"""
-        splits = []
-        
-        if distance_km <= 10:
-            # Short distance - even splits
-            split_distance = 1.0
-            num_splits = int(distance_km)
-            split_pace = target_pace
-        elif distance_km <= 21.1:
-            # Half marathon - slight negative split
-            split_distance = 5.0
-            num_splits = int(distance_km / split_distance)
-            split_pace = target_pace
-        else:
-            # Marathon - conservative start, negative split
-            split_distance = 5.0
-            num_splits = int(distance_km / split_distance)
-            split_pace = target_pace
-        
-        cumulative_distance = 0
-        cumulative_time = 0
-        
-        for i in range(num_splits):
-            current_distance = min(split_distance, distance_km - cumulative_distance)
-            
-            # Adjust pace for different portions of the race
-            if distance_km >= 42.0:  # Marathon pacing strategy
-                if i == 0:  # First 5km - conservative
-                    pace_adjustment = 1.05
-                elif i < 6:  # Next 25km - target pace
-                    pace_adjustment = 1.00
-                elif i < 8:  # Last 10km - push if feeling good
-                    pace_adjustment = 0.98
-                else:  # Final stretch
-                    pace_adjustment = 0.95
-            else:
-                pace_adjustment = 1.00  # Even pacing for shorter distances
-            
-            adjusted_pace = split_pace * pace_adjustment
-            split_time = adjusted_pace * current_distance
-            cumulative_distance += current_distance
-            cumulative_time += split_time
-            
-            splits.append({
-                'split_number': i + 1,
-                'distance_km': round(current_distance, 1),
-                'cumulative_distance_km': round(cumulative_distance, 1),
-                'pace_per_km': round(adjusted_pace, 2),
-                'pace_formatted': self._format_pace(adjusted_pace),
-                'split_time_seconds': int(split_time),
-                'split_time_formatted': self._format_seconds_to_time(split_time),
-                'cumulative_time_seconds': int(cumulative_time),
-                'cumulative_time_formatted': self._format_seconds_to_time(cumulative_time)
+        # Volume recommendations
+        if volume < 30:
+            recommendations.append({
+                'category': 'Volume',
+                'priority': 'High',
+                'recommendation': 'Gradually increase weekly mileage to 30-40km for better endurance base',
+                'implementation': 'Add 10% more distance per week, focus on easy-paced runs',
+                'timeline': '4-6 weeks'
             })
         
-        return splits
+        # Consistency recommendations
+        if consistency < 70:
+            recommendations.append({
+                'category': 'Consistency',
+                'priority': 'High',
+                'recommendation': 'Improve training consistency with regular weekly schedule',
+                'implementation': 'Aim for 3-4 runs per week, maintain consistent weekly volume',
+                'timeline': '2-4 weeks'
+            })
+        
+        # Intensity recommendations
+        easy_percentage = intensity_dist.get('easy_percentage', 0)
+        if easy_percentage < 70:
+            recommendations.append({
+                'category': 'Intensity Balance',
+                'priority': 'Medium',
+                'recommendation': 'Increase easy-paced training to 70-80% of total volume',
+                'implementation': 'Run majority of miles at conversational pace, limit hard efforts to 2 per week',
+                'timeline': '2-3 weeks'
+            })
+        
+        # Race-specific recommendations
+        race_specific = self._generate_race_specific_recommendations(race_distance, training_analysis)
+        recommendations.extend(race_specific)
+        
+        return recommendations
     
-    def _generate_training_optimization(self, athlete_id: int, race_distance: str, fitness_metrics: Dict) -> Dict:
-        """Generate training optimization recommendations"""
-        distance_km = self._get_race_distance_km(race_distance)
+    def _analyze_strengths_weaknesses(self, activities: List[Activity], training_analysis: Dict) -> Dict:
+        """Analyze athlete's strengths and weaknesses"""
+        strengths = []
+        weaknesses = []
         
-        # Calculate current weekly volume
-        current_volume = fitness_metrics.get('avg_weekly_volume_km', 0)
+        # Analyze volume consistency
+        consistency = training_analysis.get('volume_consistency_score', 0)
+        if consistency > 80:
+            strengths.append('Excellent training consistency')
+        elif consistency < 60:
+            weaknesses.append('Inconsistent training pattern')
         
-        # Recommend optimal weekly volume based on race distance
-        if distance_km <= 10:
-            optimal_volume = max(current_volume * 1.1, 40)
-        elif distance_km <= 21.1:
-            optimal_volume = max(current_volume * 1.2, 60)
-        else:  # Marathon
-            optimal_volume = max(current_volume * 1.3, 80)
+        # Analyze weekly volume
+        volume = training_analysis.get('avg_weekly_volume_km', 0)
+        if volume > 40:
+            strengths.append('Strong weekly training volume')
+        elif volume < 25:
+            weaknesses.append('Low weekly training volume')
         
-        # Training distribution
-        easy_percentage = 80
-        tempo_percentage = 15
-        speed_percentage = 5
+        # Analyze pace distribution
+        pace_analysis = self._analyze_pace_distribution(activities)
+        if pace_analysis.get('pace_variety_score', 0) > 75:
+            strengths.append('Good pace variety in training')
+        elif pace_analysis.get('pace_variety_score', 0) < 50:
+            weaknesses.append('Limited pace variety')
+        
+        # Analyze recent performance trend
+        recent_activities = activities[:10]  # Last 10 activities
+        if self._is_improving_trend(recent_activities):
+            strengths.append('Positive performance trend')
+        elif self._is_declining_trend(recent_activities):
+            weaknesses.append('Recent performance decline')
         
         return {
-            'current_weekly_volume_km': fitness_metrics.get('avg_weekly_volume_km', 0),
-            'recommended_weekly_volume_km': round(optimal_volume, 1),
-            'volume_increase_needed': round(optimal_volume - current_volume, 1),
-            'training_distribution': {
-                'easy_runs_percentage': easy_percentage,
-                'tempo_runs_percentage': tempo_percentage,
-                'speed_work_percentage': speed_percentage,
-                'easy_volume_km': round(optimal_volume * easy_percentage / 100, 1),
-                'tempo_volume_km': round(optimal_volume * tempo_percentage / 100, 1),
-                'speed_volume_km': round(optimal_volume * speed_percentage / 100, 1)
-            },
-            'key_workouts': self._generate_key_workouts(race_distance, fitness_metrics),
-            'long_run_recommendations': self._generate_long_run_plan(race_distance, fitness_metrics),
-            'recovery_recommendations': self._generate_recovery_plan(optimal_volume, fitness_metrics)
+            'strengths': strengths,
+            'weaknesses': weaknesses,
+            'overall_assessment': self._generate_overall_assessment(strengths, weaknesses)
         }
     
-    def _generate_key_workouts(self, race_distance: str, fitness_metrics: Dict) -> List[Dict]:
-        """Generate race-specific key workout recommendations"""
-        distance_km = self._get_race_distance_km(race_distance)
-        target_pace = self._predict_optimal_pace(fitness_metrics, distance_km)
+    def _generate_race_day_strategy(self, race_distance: str, pacing_strategy: Dict) -> Dict:
+        """Generate race day execution strategy"""
+        target_pace = pacing_strategy.get('target_pace_seconds', 300)
         
-        workouts = []
+        strategy = {
+            'pre_race': [
+                'Warm up with 10-15 minutes easy jogging',
+                'Include 4-6 strides at race pace',
+                'Stay hydrated but avoid overdrinking',
+                'Start 15-20 seconds slower than target pace'
+            ],
+            'early_race': [
+                f'Maintain {self._format_pace(target_pace + 15)} for first 25% of race',
+                'Focus on relaxed breathing and form',
+                'Stay patient and avoid early surges'
+            ],
+            'mid_race': [
+                f'Settle into target pace of {self._format_pace(target_pace)}',
+                'Monitor effort level and adjust if needed',
+                'Stay mentally engaged and positive'
+            ],
+            'late_race': [
+                'Increase effort if feeling strong in final 25%',
+                'Focus on form and cadence maintenance',
+                'Use mental strategies to push through fatigue'
+            ],
+            'nutrition_hydration': self._generate_nutrition_strategy(race_distance)
+        }
         
-        if distance_km <= 10:
-            # 5K/10K workouts
-            workouts.extend([
-                {
-                    'name': 'VO2 Max Intervals',
-                    'description': '6 x 800m at 5K pace with 400m recovery',
-                    'pace_target': self._format_pace(target_pace * 0.85),
-                    'frequency': 'Weekly'
-                },
-                {
-                    'name': 'Tempo Run',
-                    'description': '20-25 minutes at comfortably hard pace',
-                    'pace_target': self._format_pace(target_pace * 0.92),
-                    'frequency': 'Weekly'
-                }
-            ])
-        elif distance_km <= 21.1:
-            # Half marathon workouts
-            workouts.extend([
-                {
-                    'name': 'Threshold Intervals',
-                    'description': '3 x 2km at half marathon pace with 90s recovery',
-                    'pace_target': self._format_pace(target_pace),
-                    'frequency': 'Bi-weekly'
-                },
-                {
-                    'name': 'Progressive Long Run',
-                    'description': '16-18km with last 6km at half marathon pace',
-                    'pace_target': self._format_pace(target_pace),
-                    'frequency': 'Every 3 weeks'
-                }
-            ])
-        else:
-            # Marathon workouts
-            workouts.extend([
-                {
-                    'name': 'Marathon Pace Run',
-                    'description': '16-20km at goal marathon pace',
-                    'pace_target': self._format_pace(target_pace),
-                    'frequency': 'Every 2 weeks'
-                },
-                {
-                    'name': 'Long Run with Surges',
-                    'description': '28-32km with 3 x 3km surges at marathon pace',
-                    'pace_target': self._format_pace(target_pace),
-                    'frequency': 'Every 3 weeks'
-                }
-            ])
-        
-        return workouts
+        return strategy
     
-    def _generate_long_run_plan(self, race_distance: str, fitness_metrics: Dict) -> Dict:
-        """Generate long run progression plan"""
-        distance_km = self._get_race_distance_km(race_distance)
-        current_max = fitness_metrics.get('max_distance_km', 0)
+    def _calculate_optimization_metrics(self, activities: List[Activity], training_analysis: Dict) -> Dict:
+        """Calculate key optimization metrics"""
+        if not activities:
+            return {}
         
-        if distance_km <= 10:
-            target_long_run = 15
-        elif distance_km <= 21.1:
-            target_long_run = 22
-        else:
-            target_long_run = 35
+        # Training load score
+        training_load = self._calculate_training_load_score(activities)
         
-        weekly_increase = 2.0  # km per week
-        weeks_needed = max(0, (target_long_run - current_max) / weekly_increase)
+        # Fitness trend score
+        fitness_trend = self._calculate_fitness_trend_score(activities)
+        
+        # Readiness score
+        readiness_score = self._calculate_readiness_score(activities, training_analysis)
+        
+        # Potential improvement estimate
+        improvement_potential = self._estimate_improvement_potential(activities, training_analysis)
         
         return {
-            'current_long_run_km': current_max,
-            'target_long_run_km': target_long_run,
-            'weekly_increase_km': weekly_increase,
-            'weeks_to_target': int(weeks_needed),
-            'long_run_pace': self._format_pace(self._predict_optimal_pace(fitness_metrics, distance_km) * 1.15),
-            'frequency': 'Weekly',
-            'cutback_week_frequency': 'Every 4th week'
+            'training_load_score': round(training_load, 1),
+            'fitness_trend_score': round(fitness_trend, 1),
+            'race_readiness_score': round(readiness_score, 1),
+            'improvement_potential_percent': round(improvement_potential, 1),
+            'overall_optimization_score': round((training_load + fitness_trend + readiness_score) / 3, 1)
         }
     
-    def _generate_recovery_plan(self, weekly_volume: float, fitness_metrics: Dict) -> Dict:
-        """Generate recovery and rest recommendations"""
-        training_days = int(weekly_volume / 8)  # Approximate 8km per training day
-        rest_days = 7 - training_days
+    # Helper methods
+    def _calculate_consistency(self, values: List[float]) -> float:
+        """Calculate consistency score from 0-100"""
+        if len(values) < 2:
+            return 0
         
-        return {
-            'recommended_training_days': min(training_days, 6),
-            'recommended_rest_days': max(rest_days, 1),
-            'easy_run_percentage': 80,
-            'sleep_hours_minimum': 8,
-            'cross_training_sessions': 1 if weekly_volume > 50 else 0,
-            'massage_frequency': 'Bi-weekly' if weekly_volume > 60 else 'Monthly',
-            'stretching_minutes_daily': 15
-        }
+        mean_val = statistics.mean(values)
+        if mean_val == 0:
+            return 0
+        
+        variance = statistics.variance(values)
+        cv = (variance ** 0.5) / mean_val
+        consistency = max(0, 100 - (cv * 50))
+        return min(100, consistency)
     
-    def _predict_race_performance(self, fitness_metrics: Dict, race_distance: str, pacing_strategy: Dict) -> Dict:
-        """Predict race performance with confidence intervals"""
-        distance_km = self._get_race_distance_km(race_distance)
-        base_time = pacing_strategy['target_time_seconds']
+    def _analyze_intensity_distribution(self, activities: List[Activity]) -> Dict:
+        """Analyze training intensity distribution"""
+        easy_count = moderate_count = hard_count = 0
         
-        # Confidence factors
-        volume_factor = min(fitness_metrics.get('avg_weekly_volume_km', 0) / (distance_km * 2), 1.0)
-        consistency_factor = fitness_metrics.get('training_consistency', 0) / 100
-        experience_factor = min(fitness_metrics.get('long_runs_count', 0) / 10, 1.0)
+        # Estimate threshold pace
+        threshold_pace = self._estimate_threshold_pace(activities)
         
-        confidence = (volume_factor + consistency_factor + experience_factor) / 3
-        
-        # Performance range
-        best_case = base_time * 0.97  # 3% faster
-        worst_case = base_time * 1.08  # 8% slower
-        
-        return {
-            'predicted_time_seconds': int(base_time),
-            'predicted_time_formatted': self._format_seconds_to_time(base_time),
-            'best_case_seconds': int(best_case),
-            'best_case_formatted': self._format_seconds_to_time(best_case),
-            'worst_case_seconds': int(worst_case),
-            'worst_case_formatted': self._format_seconds_to_time(worst_case),
-            'confidence_percentage': round(confidence * 100, 1),
-            'performance_factors': {
-                'training_volume': round(volume_factor * 100, 1),
-                'consistency': round(consistency_factor * 100, 1),
-                'experience': round(experience_factor * 100, 1)
-            }
-        }
-    
-    def _generate_race_day_recommendations(self, athlete: ReplitAthlete, race_distance: str, 
-                                         fitness_metrics: Dict, pacing_strategy: Dict) -> Dict:
-        """Generate comprehensive race day recommendations"""
-        distance_km = self._get_race_distance_km(race_distance)
-        
-        return {
-            'warm_up': {
-                'duration_minutes': 15 if distance_km >= 21 else 20,
-                'structure': 'Easy jog + dynamic stretches + 3 x 100m strides',
-                'timing': '30-45 minutes before race start'
-            },
-            'pacing_guidance': {
-                'start_strategy': 'Conservative' if distance_km >= 21 else 'Controlled aggressive',
-                'first_mile_target': pacing_strategy['target_pace_formatted'],
-                'middle_section': 'Maintain steady effort, monitor heart rate',
-                'final_section': 'Increase effort if feeling strong'
-            },
-            'mental_strategy': {
-                'focus_points': ['Relaxed breathing', 'Efficient form', 'Positive self-talk'],
-                'mile_markers': 'Break race into 3-4 segments',
-                'mantras': ['Stay strong', 'Trust your training', 'One step at a time']
-            },
-            'gear_recommendations': {
-                'shoes': 'Tested racing shoes with 50+ miles',
-                'clothing': 'Lightweight, moisture-wicking fabrics',
-                'accessories': 'GPS watch, tested nutrition items only'
-            },
-            'weather_adjustments': {
-                'hot_weather': 'Start 5-10s/km slower, increase hydration',
-                'cold_weather': 'Extended warm-up, layer appropriately',
-                'windy_conditions': 'Draft when possible, adjust effort on headwinds'
-            }
-        }
-    
-    def _generate_nutrition_strategy(self, race_distance: str, race_time_seconds: int, athlete: ReplitAthlete) -> Dict:
-        """Generate race nutrition and hydration strategy"""
-        distance_km = self._get_race_distance_km(race_distance)
-        race_hours = race_time_seconds / 3600
-        
-        if distance_km <= 10:
-            # Short races - minimal nutrition needed
-            return {
-                'pre_race': {
-                    'timing': '2-3 hours before',
-                    'foods': ['Banana', 'Toast with honey', 'Coffee if habitual'],
-                    'fluids': '400-500ml water'
-                },
-                'during_race': {
-                    'nutrition': 'Water only at aid stations',
-                    'strategy': 'No solid foods needed'
-                },
-                'post_race': {
-                    'timing': 'Within 30 minutes',
-                    'foods': ['Recovery drink', 'Protein + carbs'],
-                    'fluids': 'Replace 150% of fluid lost'
-                }
-            }
-        else:
-            # Long races - comprehensive nutrition strategy
-            carb_grams_per_hour = 60 if race_hours <= 2.5 else 90
-            fluid_ml_per_hour = 500 if race_hours <= 3 else 750
+        for activity in activities:
+            if not (activity.distance and activity.moving_time):
+                continue
             
-            return {
-                'pre_race': {
-                    'timing': '3-4 hours before',
-                    'foods': ['Oatmeal with banana', 'Toast with jam', 'Coffee if habitual'],
-                    'fluids': '500-750ml water + electrolytes',
-                    'avoid': ['High fiber', 'High fat', 'New foods']
-                },
-                'during_race': {
-                    'carb_grams_per_hour': carb_grams_per_hour,
-                    'fluid_ml_per_hour': fluid_ml_per_hour,
-                    'start_fueling': 'After 45-60 minutes',
-                    'frequency': 'Every 15-20 minutes',
-                    'options': ['Sports drink', 'Gels', 'Bananas at aid stations'],
-                    'electrolytes': 'Include sodium in longer races'
-                },
-                'aid_station_strategy': {
-                    'approach': 'Slow down slightly, don\'t stop',
-                    'practice': 'Train drinking while running',
-                    'backup_plan': 'Carry backup gel/nutrition'
-                },
-                'post_race': {
-                    'timing': 'Within 30-60 minutes',
-                    'carb_protein_ratio': '3:1 or 4:1',
-                    'fluids': 'Replace 150% of weight lost',
-                    'foods': ['Recovery shake', 'Chocolate milk', 'Sandwich']
-                }
-            }
+            pace = activity.moving_time / (activity.distance / 1000)
+            
+            if pace > threshold_pace * 1.15:  # Easy pace
+                easy_count += 1
+            elif pace > threshold_pace * 1.05:  # Moderate pace
+                moderate_count += 1
+            else:  # Hard pace
+                hard_count += 1
+        
+        total = easy_count + moderate_count + hard_count
+        if total == 0:
+            return {}
+        
+        return {
+            'easy_percentage': round((easy_count / total) * 100, 1),
+            'moderate_percentage': round((moderate_count / total) * 100, 1),
+            'hard_percentage': round((hard_count / total) * 100, 1)
+        }
     
-    def _calculate_optimization_confidence(self, fitness_metrics: Dict, activities: List[Activity]) -> float:
-        """Calculate confidence score for optimization recommendations"""
-        factors = []
+    def _analyze_workout_types(self, activities: List[Activity]) -> Dict:
+        """Analyze workout type distribution"""
+        # Simplified workout type analysis based on distance and pace
+        short_runs = medium_runs = long_runs = 0
         
-        # Data quantity factor
-        activity_count = len(activities)
-        if activity_count >= 50:
-            factors.append(1.0)
-        elif activity_count >= 20:
-            factors.append(0.8)
-        else:
-            factors.append(0.5)
+        for activity in activities:
+            if not activity.distance:
+                continue
+            
+            distance_km = activity.distance / 1000
+            
+            if distance_km < 5:
+                short_runs += 1
+            elif distance_km < 12:
+                medium_runs += 1
+            else:
+                long_runs += 1
         
-        # Training consistency factor
-        consistency = fitness_metrics.get('training_consistency', 0) / 100
-        factors.append(consistency)
+        total = short_runs + medium_runs + long_runs
+        if total == 0:
+            return {}
         
-        # Training volume factor
-        volume = fitness_metrics.get('avg_weekly_volume_km', 0)
-        if volume >= 60:
-            factors.append(1.0)
-        elif volume >= 30:
-            factors.append(0.8)
-        else:
-            factors.append(0.6)
-        
-        # Long run experience factor
-        long_runs = fitness_metrics.get('long_runs_count', 0)
-        if long_runs >= 10:
-            factors.append(1.0)
-        elif long_runs >= 5:
-            factors.append(0.8)
-        else:
-            factors.append(0.6)
-        
-        return sum(factors) / len(factors)
+        return {
+            'short_runs_percentage': round((short_runs / total) * 100, 1),
+            'medium_runs_percentage': round((medium_runs / total) * 100, 1),
+            'long_runs_percentage': round((long_runs / total) * 100, 1)
+        }
     
-    def _determine_pacing_strategy(self, distance_km: float, fitness_metrics: Dict) -> str:
-        """Determine optimal pacing strategy type"""
-        if distance_km <= 5:
-            return 'Even pacing with strong finish'
-        elif distance_km <= 10:
-            return 'Slightly negative split'
-        elif distance_km <= 21.1:
-            return 'Conservative start, negative split'
-        else:
-            return 'Conservative first half, controlled second half'
+    def _estimate_threshold_pace(self, activities: List[Activity]) -> float:
+        """Estimate lactate threshold pace from training data"""
+        valid_paces = []
+        
+        for activity in activities:
+            if not (activity.distance and activity.moving_time):
+                continue
+            
+            distance_km = activity.distance / 1000
+            if distance_km >= 5:  # Use longer runs for threshold estimation
+                pace = activity.moving_time / distance_km
+                if 200 <= pace <= 600:  # Reasonable pace range
+                    valid_paces.append(pace)
+        
+        if not valid_paces:
+            return 360  # Default 6:00/km
+        
+        # Use median of faster efforts as threshold estimate
+        valid_paces.sort()
+        threshold_index = int(len(valid_paces) * 0.3)  # 30th percentile (faster efforts)
+        return valid_paces[threshold_index]
     
     def _get_race_distance_km(self, race_distance: str) -> float:
-        """Convert race distance string to kilometers"""
+        """Get race distance in kilometers"""
         distances = {
             '5K': 5.0,
             '10K': 10.0,
             'Half Marathon': 21.0975,
             'Marathon': 42.195
         }
-        return distances.get(race_distance, 10.0)
+        return distances.get(race_distance, 21.0975)
     
-    def _parse_time_to_seconds(self, time_str: str) -> int:
-        """Parse time string (HH:MM:SS or MM:SS) to seconds"""
-        try:
-            parts = time_str.split(':')
-            if len(parts) == 2:  # MM:SS
-                return int(parts[0]) * 60 + int(parts[1])
-            elif len(parts) == 3:  # HH:MM:SS
-                return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
-        except ValueError:
-            pass
-        return 0
-    
-    def _format_seconds_to_time(self, seconds: float) -> str:
-        """Format seconds to HH:MM:SS or MM:SS"""
-        total_seconds = int(seconds)
-        hours = total_seconds // 3600
-        minutes = (total_seconds % 3600) // 60
-        secs = total_seconds % 60
-        
-        if hours > 0:
-            return f"{hours}:{minutes:02d}:{secs:02d}"
-        else:
-            return f"{minutes}:{secs:02d}"
+    def _calculate_target_race_pace(self, threshold_pace: float, distance_km: float) -> float:
+        """Calculate target race pace based on distance"""
+        if distance_km <= 5:
+            return threshold_pace * 0.95  # 5% faster than threshold
+        elif distance_km <= 10:
+            return threshold_pace * 0.98  # 2% faster than threshold
+        elif distance_km <= 21.1:
+            return threshold_pace * 1.02  # 2% slower than threshold
+        else:  # Marathon
+            return threshold_pace * 1.08  # 8% slower than threshold
     
     def _format_pace(self, pace_seconds: float) -> str:
-        """Format pace in seconds per km to MM:SS format"""
+        """Format pace to MM:SS format"""
         minutes = int(pace_seconds // 60)
         seconds = int(pace_seconds % 60)
         return f"{minutes}:{seconds:02d}"
+    
+    def _format_time(self, total_seconds: float) -> str:
+        """Format time to HH:MM:SS format"""
+        hours = int(total_seconds // 3600)
+        minutes = int((total_seconds % 3600) // 60)
+        seconds = int(total_seconds % 60)
+        return f"{hours}:{minutes:02d}:{seconds:02d}"
+    
+    def _empty_optimization_plan(self, race_distance: str) -> Dict:
+        """Return empty optimization plan when no data available"""
+        return {
+            'error': 'Insufficient training data',
+            'message': 'Need at least 2 weeks of running activities to generate optimization plan',
+            'race_distance': race_distance
+        }
+    
+    # Additional helper methods for comprehensive analysis
+    def _calculate_trend(self, values: List[float]) -> str:
+        """Calculate trend direction from values"""
+        if len(values) < 3:
+            return 'insufficient_data'
+        
+        recent_avg = statistics.mean(values[-3:])
+        earlier_avg = statistics.mean(values[:-3]) if len(values) > 3 else statistics.mean(values[:3])
+        
+        if recent_avg > earlier_avg * 1.05:
+            return 'increasing'
+        elif recent_avg < earlier_avg * 0.95:
+            return 'decreasing'
+        else:
+            return 'stable'
+    
+    def _analyze_pace_trend(self, activities: List[Activity]) -> Dict:
+        """Analyze pace improvement trend"""
+        paces = []
+        dates = []
+        
+        for activity in activities:
+            if not (activity.distance and activity.moving_time and activity.start_date):
+                continue
+            
+            distance_km = activity.distance / 1000
+            if distance_km >= 3:  # Use runs of 3km or longer
+                pace = activity.moving_time / distance_km
+                if 200 <= pace <= 600:
+                    paces.append(pace)
+                    dates.append(activity.start_date)
+        
+        if len(paces) < 5:
+            return {'trend': 'insufficient_data'}
+        
+        # Calculate correlation between date and pace (negative = improving)
+        # Simplified trend analysis
+        recent_paces = paces[:len(paces)//3]  # Recent third
+        earlier_paces = paces[len(paces)//3:]  # Earlier activities
+        
+        recent_avg = statistics.mean(recent_paces)
+        earlier_avg = statistics.mean(earlier_paces)
+        
+        improvement_seconds = earlier_avg - recent_avg
+        
+        return {
+            'trend': 'improving' if improvement_seconds > 5 else 'stable' if abs(improvement_seconds) <= 5 else 'declining',
+            'improvement_seconds_per_km': round(improvement_seconds, 1),
+            'recent_avg_pace': self._format_pace(recent_avg),
+            'earlier_avg_pace': self._format_pace(earlier_avg)
+        }
+    
+    def _analyze_distance_trend(self, activities: List[Activity]) -> Dict:
+        """Analyze distance/volume trends"""
+        weekly_volumes = []
+        current_week_volume = 0
+        current_week_start = None
+        
+        for activity in sorted(activities, key=lambda x: x.start_date or datetime.min):
+            if not (activity.distance and activity.start_date):
+                continue
+            
+            week_start = activity.start_date - timedelta(days=activity.start_date.weekday())
+            
+            if current_week_start != week_start:
+                if current_week_start is not None:
+                    weekly_volumes.append(current_week_volume)
+                current_week_volume = 0
+                current_week_start = week_start
+            
+            current_week_volume += activity.distance / 1000
+        
+        if current_week_volume > 0:
+            weekly_volumes.append(current_week_volume)
+        
+        if len(weekly_volumes) < 3:
+            return {'trend': 'insufficient_data'}
+        
+        trend = self._calculate_trend(weekly_volumes)
+        
+        return {
+            'trend': trend,
+            'avg_weekly_volume': round(statistics.mean(weekly_volumes), 1),
+            'recent_weekly_avg': round(statistics.mean(weekly_volumes[-3:]), 1),
+            'volume_consistency': round(self._calculate_consistency(weekly_volumes), 1)
+        }
+    
+    def _analyze_heart_rate_trend(self, activities: List[Activity]) -> Dict:
+        """Analyze heart rate trends if data available"""
+        hr_values = []
+        
+        for activity in activities:
+            if activity.average_heartrate and activity.average_heartrate > 100:
+                hr_values.append(activity.average_heartrate)
+        
+        if len(hr_values) < 5:
+            return {'trend': 'insufficient_data', 'message': 'Heart rate data not available'}
+        
+        trend = self._calculate_trend(hr_values)
+        
+        return {
+            'trend': trend,
+            'avg_heart_rate': round(statistics.mean(hr_values), 1),
+            'recent_avg_hr': round(statistics.mean(hr_values[:len(hr_values)//3]), 1),
+            'data_availability': 'good'
+        }
+    
+    def _calculate_fitness_progression(self, activities: List[Activity]) -> Dict:
+        """Calculate overall fitness progression score"""
+        if len(activities) < 10:
+            return {'score': 0, 'message': 'Insufficient data for progression analysis'}
+        
+        # Analyze multiple fitness indicators
+        pace_scores = []
+        volume_scores = []
+        
+        # Split activities into time periods
+        mid_point = len(activities) // 2
+        recent_activities = activities[:mid_point]
+        earlier_activities = activities[mid_point:]
+        
+        # Compare pace improvements
+        recent_paces = []
+        earlier_paces = []
+        
+        for activity in recent_activities:
+            if activity.distance and activity.moving_time and activity.distance > 3000:
+                pace = activity.moving_time / (activity.distance / 1000)
+                if 200 <= pace <= 600:
+                    recent_paces.append(pace)
+        
+        for activity in earlier_activities:
+            if activity.distance and activity.moving_time and activity.distance > 3000:
+                pace = activity.moving_time / (activity.distance / 1000)
+                if 200 <= pace <= 600:
+                    earlier_paces.append(pace)
+        
+        if recent_paces and earlier_paces:
+            recent_avg_pace = statistics.mean(recent_paces)
+            earlier_avg_pace = statistics.mean(earlier_paces)
+            pace_improvement = (earlier_avg_pace - recent_avg_pace) / earlier_avg_pace * 100
+        else:
+            pace_improvement = 0
+        
+        # Calculate overall progression score
+        progression_score = max(0, min(100, 50 + pace_improvement * 10))
+        
+        return {
+            'score': round(progression_score, 1),
+            'pace_improvement_percent': round(pace_improvement, 2),
+            'trend': 'improving' if pace_improvement > 1 else 'stable' if pace_improvement > -1 else 'declining'
+        }
+    
+    def _calculate_improvement_rate(self, activities: List[Activity]) -> Dict:
+        """Calculate rate of improvement over time"""
+        if len(activities) < 15:
+            return {'rate': 0, 'message': 'Need more activities for improvement rate calculation'}
+        
+        # Use time-based improvement analysis
+        # Split into 3 periods and compare
+        period_size = len(activities) // 3
+        
+        periods = [
+            activities[:period_size],          # Most recent
+            activities[period_size:period_size*2],  # Middle
+            activities[period_size*2:]         # Earliest
+        ]
+        
+        period_paces = []
+        
+        for period in periods:
+            paces = []
+            for activity in period:
+                if activity.distance and activity.moving_time and activity.distance > 3000:
+                    pace = activity.moving_time / (activity.distance / 1000)
+                    if 200 <= pace <= 600:
+                        paces.append(pace)
+            
+            if paces:
+                period_paces.append(statistics.mean(paces))
+        
+        if len(period_paces) < 3:
+            return {'rate': 0, 'message': 'Insufficient pace data'}
+        
+        # Calculate improvement rate (seconds per km per month)
+        total_improvement = period_paces[-1] - period_paces[0]  # Earliest - Recent
+        months_analyzed = len(activities) * 7 / 30  # Approximate months
+        
+        monthly_improvement = total_improvement / months_analyzed if months_analyzed > 0 else 0
+        
+        return {
+            'rate': round(monthly_improvement, 2),
+            'unit': 'seconds_per_km_per_month',
+            'trend': 'improving' if monthly_improvement > 2 else 'stable' if monthly_improvement > -2 else 'declining'
+        }
+    
+    def _generate_split_strategy(self, target_pace: float, distance_km: float, race_distance: str) -> List[Dict]:
+        """Generate detailed split strategy"""
+        splits = []
+        
+        if race_distance == '5K':
+            # 5K split strategy
+            splits.append({'km': 1, 'target_pace': self._format_pace(target_pace + 10), 'strategy': 'Start conservatively'})
+            splits.append({'km': 2, 'target_pace': self._format_pace(target_pace + 5), 'strategy': 'Settle into rhythm'})
+            splits.append({'km': 3, 'target_pace': self._format_pace(target_pace), 'strategy': 'Target pace'})
+            splits.append({'km': 4, 'target_pace': self._format_pace(target_pace), 'strategy': 'Stay strong'})
+            splits.append({'km': 5, 'target_pace': self._format_pace(target_pace - 5), 'strategy': 'Final push'})
+        
+        elif race_distance == '10K':
+            # 10K split strategy
+            for km in range(1, 11):
+                if km <= 2:
+                    pace = target_pace + 8
+                    strategy = 'Conservative start'
+                elif km <= 7:
+                    pace = target_pace
+                    strategy = 'Target pace'
+                else:
+                    pace = target_pace - 3
+                    strategy = 'Pick up pace'
+                
+                splits.append({'km': km, 'target_pace': self._format_pace(pace), 'strategy': strategy})
+        
+        elif race_distance == 'Half Marathon':
+            # Half Marathon split strategy (5K segments)
+            segments = [
+                {'km': '0-5', 'target_pace': self._format_pace(target_pace + 10), 'strategy': 'Conservative start'},
+                {'km': '5-10', 'target_pace': self._format_pace(target_pace + 5), 'strategy': 'Settle in'},
+                {'km': '10-15', 'target_pace': self._format_pace(target_pace), 'strategy': 'Target pace'},
+                {'km': '15-21', 'target_pace': self._format_pace(target_pace), 'strategy': 'Stay strong to finish'}
+            ]
+            splits = segments
+        
+        else:  # Marathon
+            # Marathon split strategy (10K segments)
+            segments = [
+                {'km': '0-10', 'target_pace': self._format_pace(target_pace + 15), 'strategy': 'Very conservative start'},
+                {'km': '10-20', 'target_pace': self._format_pace(target_pace + 8), 'strategy': 'Gradual progression'},
+                {'km': '20-30', 'target_pace': self._format_pace(target_pace), 'strategy': 'Target pace'},
+                {'km': '30-42', 'target_pace': self._format_pace(target_pace + 5), 'strategy': 'Maintain effort, accept slower pace'}
+            ]
+            splits = segments
+        
+        return splits
+    
+    def _generate_hr_targets(self, activities: List[Activity], race_distance: str) -> Dict:
+        """Generate heart rate targets if data available"""
+        hr_values = [a.average_heartrate for a in activities if a.average_heartrate and a.average_heartrate > 100]
+        
+        if not hr_values:
+            return {'message': 'Heart rate data not available for target calculation'}
+        
+        avg_hr = statistics.mean(hr_values)
+        max_hr_estimate = avg_hr * 1.15  # Rough estimate
+        
+        if race_distance == '5K':
+            target_hr_percent = 0.90
+        elif race_distance == '10K':
+            target_hr_percent = 0.85
+        elif race_distance == 'Half Marathon':
+            target_hr_percent = 0.80
+        else:  # Marathon
+            target_hr_percent = 0.75
+        
+        target_hr = max_hr_estimate * target_hr_percent
+        
+        return {
+            'target_hr': round(target_hr),
+            'target_hr_range': [round(target_hr - 5), round(target_hr + 5)],
+            'avg_training_hr': round(avg_hr),
+            'estimated_max_hr': round(max_hr_estimate)
+        }
+    
+    def _generate_pacing_advice(self, race_distance: str) -> List[str]:
+        """Generate race-specific pacing advice"""
+        if race_distance == '5K':
+            return [
+                'Start 10-15 seconds slower than target pace',
+                'Gradually increase pace after 2km',
+                'Save energy for strong final kilometer',
+                'Focus on maintaining turnover in final 1km'
+            ]
+        elif race_distance == '10K':
+            return [
+                'Start conservatively, 8-10 seconds slower than target',
+                'Settle into target pace by 3km mark',
+                'Begin gradual progression after 7km',
+                'Maintain strong effort through finish'
+            ]
+        elif race_distance == 'Half Marathon':
+            return [
+                'Very conservative first 5km - 10+ seconds slower',
+                'Gradually work down to target pace by 10km',
+                'Focus on maintaining pace through 15km',
+                'Stay mentally strong in final 6km'
+            ]
+        else:  # Marathon
+            return [
+                'Ultra-conservative first 10km - 15+ seconds slower',
+                'Gradually progress to target pace by halfway',
+                'Focus on maintaining effort (not pace) after 30km',
+                'Break race into smaller segments mentally'
+            ]
+    
+    def _generate_race_specific_recommendations(self, race_distance: str, training_analysis: Dict) -> List[Dict]:
+        """Generate race-distance specific training recommendations"""
+        recommendations = []
+        
+        if race_distance in ['5K', '10K']:
+            recommendations.append({
+                'category': 'Speed Work',
+                'priority': 'High',
+                'recommendation': 'Include weekly interval training at race pace',
+                'implementation': f'4-6 x 1km at {race_distance} pace with 2-3min recovery',
+                'timeline': '6-8 weeks'
+            })
+            
+            recommendations.append({
+                'category': 'VO2 Max',
+                'priority': 'Medium',
+                'recommendation': 'Add VO2 max intervals for speed development',
+                'implementation': '5 x 3min at 5K pace with 3min recovery',
+                'timeline': '4-6 weeks'
+            })
+        
+        else:  # Half Marathon, Marathon
+            recommendations.append({
+                'category': 'Long Runs',
+                'priority': 'High',
+                'recommendation': 'Build weekly long run progressively',
+                'implementation': f'Work up to {18 if race_distance == "Half Marathon" else 32}km long runs',
+                'timeline': '8-12 weeks'
+            })
+            
+            recommendations.append({
+                'category': 'Tempo Work',
+                'priority': 'High',
+                'recommendation': 'Include weekly tempo runs at lactate threshold',
+                'implementation': '20-40min at comfortably hard effort',
+                'timeline': '6-10 weeks'
+            })
+        
+        return recommendations
+    
+    def _analyze_pace_distribution(self, activities: List[Activity]) -> Dict:
+        """Analyze variety in training paces"""
+        paces = []
+        
+        for activity in activities:
+            if activity.distance and activity.moving_time:
+                pace = activity.moving_time / (activity.distance / 1000)
+                if 200 <= pace <= 600:
+                    paces.append(pace)
+        
+        if len(paces) < 5:
+            return {'pace_variety_score': 0}
+        
+        # Calculate pace variety (coefficient of variation)
+        pace_cv = (statistics.stdev(paces) / statistics.mean(paces)) * 100
+        variety_score = min(100, pace_cv * 2)  # Scale to 0-100
+        
+        return {
+            'pace_variety_score': round(variety_score, 1),
+            'fastest_pace': self._format_pace(min(paces)),
+            'slowest_pace': self._format_pace(max(paces)),
+            'avg_pace': self._format_pace(statistics.mean(paces))
+        }
+    
+    def _is_improving_trend(self, activities: List[Activity]) -> bool:
+        """Check if recent activities show improvement"""
+        if len(activities) < 5:
+            return False
+        
+        paces = []
+        for activity in activities:
+            if activity.distance and activity.moving_time and activity.distance > 3000:
+                pace = activity.moving_time / (activity.distance / 1000)
+                if 200 <= pace <= 600:
+                    paces.append(pace)
+        
+        if len(paces) < 5:
+            return False
+        
+        # Check if recent paces are faster than earlier ones
+        recent_avg = statistics.mean(paces[:len(paces)//2])
+        earlier_avg = statistics.mean(paces[len(paces)//2:])
+        
+        return recent_avg < earlier_avg * 0.98  # 2% improvement threshold
+    
+    def _is_declining_trend(self, activities: List[Activity]) -> bool:
+        """Check if recent activities show decline"""
+        if len(activities) < 5:
+            return False
+        
+        paces = []
+        for activity in activities:
+            if activity.distance and activity.moving_time and activity.distance > 3000:
+                pace = activity.moving_time / (activity.distance / 1000)
+                if 200 <= pace <= 600:
+                    paces.append(pace)
+        
+        if len(paces) < 5:
+            return False
+        
+        # Check if recent paces are slower than earlier ones
+        recent_avg = statistics.mean(paces[:len(paces)//2])
+        earlier_avg = statistics.mean(paces[len(paces)//2:])
+        
+        return recent_avg > earlier_avg * 1.02  # 2% decline threshold
+    
+    def _generate_overall_assessment(self, strengths: List[str], weaknesses: List[str]) -> str:
+        """Generate overall training assessment"""
+        if len(strengths) > len(weaknesses):
+            return 'Strong overall training foundation with room for specific improvements'
+        elif len(weaknesses) > len(strengths):
+            return 'Several areas for improvement identified - focus on consistency and volume'
+        else:
+            return 'Balanced training profile with both strengths and development areas'
+    
+    def _generate_nutrition_strategy(self, race_distance: str) -> List[str]:
+        """Generate race nutrition strategy"""
+        if race_distance == '5K':
+            return [
+                'No nutrition needed during race',
+                'Stay hydrated before race',
+                'Light breakfast 2-3 hours before'
+            ]
+        elif race_distance == '10K':
+            return [
+                'Small sip of water at halfway if very hot',
+                'No solid nutrition needed',
+                'Normal pre-race meal 2-3 hours before'
+            ]
+        elif race_distance == 'Half Marathon':
+            return [
+                'Water at aid stations as needed',
+                'Sports drink after 10km if desired',
+                'Carbohydrate breakfast 3 hours before',
+                'Consider energy gel at 15km if race over 1:45'
+            ]
+        else:  # Marathon
+            return [
+                'Water and sports drink at regular intervals',
+                'Start fueling by 90 minutes into race',
+                'Aim for 30-60g carbs per hour after hour 1',
+                'Practice race nutrition in training',
+                'Larger carbohydrate meal night before and morning of'
+            ]
+    
+    def _calculate_training_load_score(self, activities: List[Activity]) -> float:
+        """Calculate training load score 0-100"""
+        if not activities:
+            return 0
+        
+        total_distance = sum(a.distance or 0 for a in activities) / 1000
+        total_time = sum(a.moving_time or 0 for a in activities) / 3600  # hours
+        
+        # Normalize based on number of weeks
+        weeks = len(activities) * 7 / len(activities) if activities else 1
+        weekly_distance = total_distance / weeks * 7
+        weekly_hours = total_time / weeks * 7
+        
+        # Score based on training volume
+        distance_score = min(100, weekly_distance * 2)  # Peak at 50km/week
+        time_score = min(100, weekly_hours * 20)  # Peak at 5 hours/week
+        
+        return (distance_score + time_score) / 2
+    
+    def _calculate_fitness_trend_score(self, activities: List[Activity]) -> float:
+        """Calculate fitness trend score 0-100"""
+        if len(activities) < 10:
+            return 50  # Neutral score
+        
+        # Analyze pace trend over time
+        paces = []
+        for activity in activities:
+            if activity.distance and activity.moving_time and activity.distance > 3000:
+                pace = activity.moving_time / (activity.distance / 1000)
+                if 200 <= pace <= 600:
+                    paces.append(pace)
+        
+        if len(paces) < 5:
+            return 50
+        
+        # Compare recent vs earlier paces
+        mid_point = len(paces) // 2
+        recent_avg = statistics.mean(paces[:mid_point])
+        earlier_avg = statistics.mean(paces[mid_point:])
+        
+        improvement_percent = (earlier_avg - recent_avg) / earlier_avg * 100
+        
+        # Convert to 0-100 score
+        score = 50 + (improvement_percent * 10)  # 1% improvement = 10 points
+        return max(0, min(100, score))
+    
+    def _calculate_readiness_score(self, activities: List[Activity], training_analysis: Dict) -> float:
+        """Calculate race readiness score 0-100"""
+        if not activities:
+            return 0
+        
+        # Factors for readiness
+        consistency = training_analysis.get('volume_consistency_score', 0)
+        volume = training_analysis.get('avg_weekly_volume_km', 0)
+        
+        # Recent activity frequency
+        recent_activities = [a for a in activities[:14] if a.start_date and 
+                           a.start_date >= datetime.now() - timedelta(days=14)]
+        frequency_score = min(100, len(recent_activities) * 20)  # Peak at 5 activities/2 weeks
+        
+        # Volume adequacy
+        volume_score = min(100, volume * 3)  # Peak at ~33km/week
+        
+        # Weighted combination
+        readiness = (consistency * 0.3 + volume_score * 0.3 + frequency_score * 0.4)
+        return max(0, min(100, readiness))
+    
+    def _estimate_improvement_potential(self, activities: List[Activity], training_analysis: Dict) -> float:
+        """Estimate potential for improvement as percentage"""
+        if not activities:
+            return 0
+        
+        consistency = training_analysis.get('volume_consistency_score', 0)
+        volume = training_analysis.get('avg_weekly_volume_km', 0)
+        
+        # Areas for improvement
+        consistency_gap = max(0, 90 - consistency) / 90 * 100
+        volume_gap = max(0, 50 - volume) / 50 * 100  # Assume 50km/week as high volume
+        
+        # Average improvement potential
+        potential = (consistency_gap + volume_gap) / 2
+        
+        # Cap at reasonable improvement levels
+        return min(25, potential * 0.25)  # Max 25% improvement potential
 
 
-# Global functions for API endpoints
-def optimize_race_performance(athlete_id: int, race_distance: str, target_time: Optional[str] = None) -> Dict:
-    """Global function for race performance optimization"""
-    optimizer = RacePerformanceOptimizer()
-    return optimizer.optimize_race_strategy(athlete_id, race_distance, target_time)
+def generate_race_optimization_plan(db_session: Session, athlete_id: int, race_distance: str, days_analysis: int = 90) -> Dict:
+    """
+    Global function to generate race optimization plan
+    """
+    optimizer = RaceOptimizer()
+    return optimizer.generate_race_optimization_plan(db_session, athlete_id, race_distance, days_analysis)
 
-def get_pacing_strategy(athlete_id: int, race_distance: str, target_time: Optional[str] = None) -> Dict:
-    """Get pacing strategy specifically"""
-    result = optimize_race_performance(athlete_id, race_distance, target_time)
-    return result.get('pacing_strategy', {})
+def optimize_race_performance(db_session: Session, athlete_id: int, race_distance: str) -> Dict:
+    """
+    Optimize race performance with comprehensive analysis
+    """
+    optimizer = RaceOptimizer()
+    return optimizer.generate_race_optimization_plan(db_session, athlete_id, race_distance, 90)
 
-def get_training_optimization(athlete_id: int, race_distance: str) -> Dict:
-    """Get training optimization recommendations"""
-    result = optimize_race_performance(athlete_id, race_distance)
-    return result.get('training_optimization', {})
+def get_pacing_strategy(db_session: Session, athlete_id: int, race_distance: str) -> Dict:
+    """
+    Get detailed pacing strategy for race
+    """
+    optimizer = RaceOptimizer()
+    full_plan = optimizer.generate_race_optimization_plan(db_session, athlete_id, race_distance, 90)
+    return full_plan.get('pacing_strategy', {})
+
+def get_training_optimization(db_session: Session, athlete_id: int, race_distance: str) -> Dict:
+    """
+    Get training optimization recommendations
+    """
+    optimizer = RaceOptimizer()
+    full_plan = optimizer.generate_race_optimization_plan(db_session, athlete_id, race_distance, 90)
+    return {
+        'training_recommendations': full_plan.get('training_recommendations', []),
+        'strengths_weaknesses': full_plan.get('strengths_weaknesses', {}),
+        'training_analysis': full_plan.get('training_analysis', {})
+    }
+
+class RacePerformanceOptimizer:
+    """
+    Legacy compatibility class
+    """
+    def __init__(self):
+        self.optimizer = RaceOptimizer()
+    
+    def optimize_performance(self, db_session: Session, athlete_id: int, race_distance: str) -> Dict:
+        return self.optimizer.generate_race_optimization_plan(db_session, athlete_id, race_distance, 90)
