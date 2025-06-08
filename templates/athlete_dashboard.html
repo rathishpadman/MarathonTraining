@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Athlete Analytics Dashboard - Marathon Training</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .metric-title {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .metric-unit {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        
+        .charts-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .insights-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .risk-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .risk-low { background: #4CAF50; }
+        .risk-moderate { background: #FF9800; }
+        .risk-high { background: #f44336; }
+        
+        .activity-trends {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .activity-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            opacity: 0.7;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+        
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50px;
+            padding: 10px 20px;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 768px) {
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/community" class="back-btn">← Back to Community</a>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🏃‍♂️ Athlete Analytics Dashboard</h1>
+            <p>Comprehensive fitness insights powered by machine learning</p>
+        </div>
+        
+        <!-- Fitness Metrics -->
+        <div class="metrics-grid" id="metricsGrid">
+            <div class="loading">Loading fitness metrics...</div>
+        </div>
+        
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <div class="chart-container">
+                <div class="chart-title">
+                    📈 Recent Activity Trends
+                </div>
+                <div id="activityTrends" class="activity-trends">
+                    <div class="loading">Loading activity trends...</div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">
+                    🚨 Injury Risk Assessment
+                </div>
+                <div id="injuryRisk">
+                    <div class="loading">Analyzing injury risk...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Insights Section -->
+        <div class="insights-section">
+            <div class="chart-title">
+                🧠 AI-Powered Insights & Recommendations
+            </div>
+            <div id="insights">
+                <div class="loading">Generating personalized insights...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAthleteAnalytics();
+        });
+
+        async function loadAthleteAnalytics() {
+            try {
+                // Use athlete ID 1 for demo (in real app, get from session/auth)
+                const athleteId = 1;
+                const response = await fetch(`/api/athletes/${athleteId}/fitness-analytics`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                renderFitnessMetrics(data.fitness_metrics);
+                renderActivityTrends(data.activity_trends);
+                renderInjuryRisk(data.injury_risk);
+                renderInsights(data);
+                
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+                showError('Failed to load analytics data. Please refresh the page.');
+            }
+        }
+
+        function renderFitnessMetrics(metrics) {
+            const container = document.getElementById('metricsGrid');
+            
+            const metricsData = [
+                { title: 'Current Fitness', value: metrics.current_fitness || 0, unit: '/100' },
+                { title: 'Aerobic Capacity', value: metrics.aerobic_capacity || 0, unit: 'VO₂ max' },
+                { title: 'Training Load', value: metrics.training_load || 0, unit: 'TSS' },
+                { title: 'Consistency Score', value: metrics.consistency_score || 0, unit: '/100' },
+                { title: 'Injury Risk', value: metrics.injury_risk || 0, unit: '%' },
+                { title: 'Fatigue Level', value: metrics.fatigue_level || 0, unit: '/100' }
+            ];
+            
+            container.innerHTML = metricsData.map(metric => `
+                <div class="metric-card">
+                    <div class="metric-title">${metric.title}</div>
+                    <div class="metric-value">${metric.value}</div>
+                    <div class="metric-unit">${metric.unit}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderActivityTrends(trends) {
+            const container = document.getElementById('activityTrends');
+            
+            if (!trends || trends.length === 0) {
+                container.innerHTML = '<div class="loading">No recent activities found</div>';
+                return;
+            }
+            
+            container.innerHTML = trends.map(activity => `
+                <div class="activity-item">
+                    <div>
+                        <div style="font-weight: bold;">${activity.name}</div>
+                        <div style="font-size: 0.8rem; opacity: 0.8;">${activity.date}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div>${activity.distance}km</div>
+                        <div style="font-size: 0.8rem; opacity: 0.8;">${formatPace(activity.pace)} min/km</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderInjuryRisk(risk) {
+            const container = document.getElementById('injuryRisk');
+            
+            const riskLevel = risk.risk_level || 'unknown';
+            const riskScore = Math.round((risk.overall_risk || 0) * 100);
+            
+            let riskClass = 'risk-low';
+            if (riskScore > 60) riskClass = 'risk-high';
+            else if (riskScore > 30) riskClass = 'risk-moderate';
+            
+            container.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="font-size: 2rem; font-weight: bold;">${riskScore}%</div>
+                    <span class="risk-indicator ${riskClass}">${riskLevel.toUpperCase()}</span>
+                </div>
+                <div style="font-size: 0.9rem; opacity: 0.8;">
+                    ${risk.risk_factors ? risk.risk_factors.slice(0, 3).join(', ') : 'No specific risk factors identified'}
+                </div>
+            `;
+        }
+
+        function renderInsights(data) {
+            const container = document.getElementById('insights');
+            
+            const insights = [];
+            
+            // Generate insights based on data
+            if (data.fitness_metrics.current_fitness < 50) {
+                insights.push("🎯 Focus on building aerobic base with easy-paced runs");
+            }
+            
+            if (data.injury_risk.overall_risk > 0.6) {
+                insights.push("⚠️ Consider reducing training intensity and adding recovery days");
+            }
+            
+            if (data.fitness_metrics.consistency_score < 70) {
+                insights.push("📅 Aim for more consistent training schedule to improve performance");
+            }
+            
+            if (data.activity_trends && data.activity_trends.length > 0) {
+                const avgPace = data.activity_trends.reduce((sum, a) => sum + a.pace, 0) / data.activity_trends.length;
+                insights.push(`⏱️ Your average pace is ${formatPace(avgPace)} min/km - maintain this for steady improvement`);
+            }
+            
+            if (insights.length === 0) {
+                insights.push("✅ Your training metrics look good! Keep maintaining consistent effort.");
+            }
+            
+            container.innerHTML = `
+                <div style="display: grid; gap: 15px;">
+                    ${insights.map(insight => `
+                        <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px;">
+                            ${insight}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function formatPace(paceMinKm) {
+            const minutes = Math.floor(paceMinKm);
+            const seconds = Math.round((paceMinKm - minutes) * 60);
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function showError(message) {
+            document.body.innerHTML = `
+                <div class="container">
+                    <div class="error">${message}</div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

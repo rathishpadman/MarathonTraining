@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Race Performance Predictor - Marathon Training</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .prediction-form {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .predict-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .predict-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        .predict-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .results-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .result-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+        
+        .result-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .predicted-time {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+        
+        .confidence-score {
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+        
+        .pacing-strategy {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 30px;
+        }
+        
+        .strategy-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .pace-splits {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .pace-split {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .split-distance {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .split-pace {
+            font-size: 1.1rem;
+            color: #4CAF50;
+        }
+        
+        .recommendations {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .recommendations-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .recommendation-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50px;
+            padding: 10px 20px;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            opacity: 0.7;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .results-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .pace-splits {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/community" class="back-btn">← Back to Community</a>
+    
+    <div class="container">
+        <div class="header">
+            <h1>⚡ Race Performance Predictor</h1>
+            <p>AI-powered race time predictions based on your training data</p>
+        </div>
+        
+        <div class="prediction-form">
+            <div class="form-group">
+                <label for="raceDistance">Select Race Distance:</label>
+                <select id="raceDistance">
+                    <option value="5K">5K Race</option>
+                    <option value="10K">10K Race</option>
+                    <option value="Half Marathon">Half Marathon (21.1K)</option>
+                    <option value="Marathon" selected>Marathon (42.2K)</option>
+                </select>
+            </div>
+            
+            <button class="predict-btn" onclick="predictRaceTime()">
+                Predict My Race Time
+            </button>
+        </div>
+        
+        <div id="results" style="display: none;">
+            <div class="results-section">
+                <div class="result-card">
+                    <div class="result-title">🏁 Predicted Finish Time</div>
+                    <div class="predicted-time" id="predictedTime">--:--:--</div>
+                    <div class="confidence-score" id="confidenceScore">Confidence: --%</div>
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-title">📊 Fitness Metrics</div>
+                    <div style="margin-bottom: 10px;">
+                        <strong>Fitness Score:</strong> <span id="fitnessScore">--</span>/100
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <strong>Aerobic Capacity:</strong> <span id="aerobicCapacity">--</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pacing-strategy">
+                <div class="strategy-title">🎯 Recommended Pacing Strategy</div>
+                <div class="pace-splits" id="pacingSplits">
+                    <!-- Pacing splits will be populated here -->
+                </div>
+            </div>
+            
+            <div class="recommendations">
+                <div class="recommendations-title">💡 Training Recommendations</div>
+                <div id="recommendationsList">
+                    <!-- Recommendations will be populated here -->
+                </div>
+            </div>
+        </div>
+        
+        <div id="loadingMessage" class="loading" style="display: none;">
+            Analyzing your training data and generating predictions...
+        </div>
+        
+        <div id="errorMessage" class="error" style="display: none;">
+            Failed to generate prediction. Please try again.
+        </div>
+    </div>
+
+    <script>
+        async function predictRaceTime() {
+            const raceDistance = document.getElementById('raceDistance').value;
+            const predictBtn = document.querySelector('.predict-btn');
+            const loadingMessage = document.getElementById('loadingMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const results = document.getElementById('results');
+            
+            // Show loading state
+            predictBtn.disabled = true;
+            predictBtn.textContent = 'Predicting...';
+            loadingMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+            results.style.display = 'none';
+            
+            try {
+                // Use athlete ID 1 for demo (in real app, get from session/auth)
+                const athleteId = 1;
+                const response = await fetch(`/api/athletes/${athleteId}/race-prediction?distance=${encodeURIComponent(raceDistance)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const predictionData = await response.json();
+                
+                // Display results
+                displayPredictionResults(predictionData);
+                
+            } catch (error) {
+                console.error('Error predicting race time:', error);
+                errorMessage.style.display = 'block';
+                errorMessage.textContent = 'Failed to generate prediction. Please ensure you have sufficient training data.';
+            } finally {
+                // Reset button state
+                predictBtn.disabled = false;
+                predictBtn.textContent = 'Predict My Race Time';
+                loadingMessage.style.display = 'none';
+            }
+        }
+
+        function displayPredictionResults(data) {
+            const results = document.getElementById('results');
+            
+            // Update predicted time and confidence
+            document.getElementById('predictedTime').textContent = data.predicted_time_formatted || '--:--:--';
+            document.getElementById('confidenceScore').textContent = `Confidence: ${data.confidence_score || 0}%`;
+            document.getElementById('fitnessScore').textContent = data.fitness_score || '--';
+            document.getElementById('aerobicCapacity').textContent = data.aerobic_capacity || '--';
+            
+            // Update pacing strategy
+            displayPacingStrategy(data.pacing_strategy || []);
+            
+            // Update recommendations
+            displayRecommendations(data.training_recommendations || []);
+            
+            // Show results
+            results.style.display = 'block';
+            
+            // Scroll to results
+            results.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function displayPacingStrategy(strategy) {
+            const container = document.getElementById('pacingSplits');
+            
+            if (!strategy || strategy.length === 0) {
+                container.innerHTML = '<div class="pace-split">No pacing strategy available</div>';
+                return;
+            }
+            
+            container.innerHTML = strategy.map(split => `
+                <div class="pace-split">
+                    <div class="split-distance">${split.distance || 'Split'}</div>
+                    <div class="split-pace">${split.pace || 'N/A'}</div>
+                </div>
+            `).join('');
+        }
+
+        function displayRecommendations(recommendations) {
+            const container = document.getElementById('recommendationsList');
+            
+            if (!recommendations || recommendations.length === 0) {
+                container.innerHTML = '<div class="recommendation-item">Continue with your current training plan. Maintain consistent effort and focus on building endurance.</div>';
+                return;
+            }
+            
+            container.innerHTML = recommendations.map(rec => `
+                <div class="recommendation-item">${rec}</div>
+            `).join('');
+        }
+
+        // Auto-predict on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            predictRaceTime();
+        });
+    </script>
+</body>
+</html>

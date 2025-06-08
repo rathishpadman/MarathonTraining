@@ -31,6 +31,39 @@ def community_dashboard():
         logger.error(f"Error rendering community dashboard: {str(e)}")
         return f"<h1>Error loading dashboard: {str(e)}</h1>", 500
 
+@main_bp.route('/dashboard')
+def athlete_dashboard():
+    """Individual athlete analytics dashboard"""
+    try:
+        from flask import render_template
+        logger.info("Accessing athlete dashboard")
+        return render_template('athlete_dashboard.html')
+    except Exception as e:
+        logger.error(f"Error rendering athlete dashboard: {str(e)}")
+        return f"<h1>Error loading dashboard: {str(e)}</h1>", 500
+
+@main_bp.route('/race_predictor')
+def race_predictor():
+    """Race performance predictor page"""
+    try:
+        from flask import render_template
+        logger.info("Accessing race predictor")
+        return render_template('race_predictor.html')
+    except Exception as e:
+        logger.error(f"Error rendering race predictor: {str(e)}")
+        return f"<h1>Error loading race predictor: {str(e)}</h1>", 500
+
+@main_bp.route('/analytics')
+def risk_analyser():
+    """Injury risk analysis page"""
+    try:
+        from flask import render_template
+        logger.info("Accessing risk analyser")
+        return render_template('risk_analyser.html')
+    except Exception as e:
+        logger.error(f"Error rendering risk analyser: {str(e)}")
+        return f"<h1>Error loading risk analyser: {str(e)}</h1>", 500
+
 # Initialize components
 config = Config()
 security = ReplitSecurity()
@@ -1693,6 +1726,58 @@ def get_injury_prevention_api(athlete_id):
     except Exception as e:
         logger.error(f"Error generating prevention plan: {str(e)}")
         return jsonify({'error': 'Prevention plan generation failed'}), 500
+
+@api_bp.route('/athletes/<int:athlete_id>/fitness-analytics')
+def get_fitness_analytics(athlete_id):
+    """Get comprehensive fitness analytics for athlete dashboard"""
+    try:
+        logger.info(f"Generating fitness analytics for athlete {athlete_id}")
+        
+        # Initialize race predictor for fitness analysis
+        race_predictor = SimpleRacePredictor()
+        
+        # Get fitness analysis
+        fitness_data = race_predictor.analyze_fitness(db.session, athlete_id, days=90)
+        
+        # Get injury risk assessment
+        injury_risk = predict_injury_risk(athlete_id)
+        
+        # Get recent activities for trends
+        cutoff_date = datetime.now() - timedelta(days=30)
+        recent_activities = db.session.query(Activity).filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= cutoff_date,
+            Activity.sport_type.in_(['Run', 'VirtualRun'])
+        ).order_by(Activity.start_date.desc()).all()
+        
+        # Create activity trend data
+        activity_trends = []
+        for activity in recent_activities[:10]:  # Last 10 activities
+            if activity.distance and activity.moving_time:
+                pace_per_km = (activity.moving_time / 60) / (activity.distance / 1000)
+                activity_trends.append({
+                    'date': activity.start_date.strftime('%Y-%m-%d'),
+                    'distance': round(activity.distance / 1000, 2),
+                    'pace': round(pace_per_km, 2),
+                    'name': activity.name
+                })
+        
+        # Combine all analytics
+        analytics_data = {
+            'fitness_metrics': fitness_data.get('fitness_metrics', {}),
+            'injury_risk': injury_risk,
+            'activity_trends': activity_trends,
+            'summary': fitness_data.get('summary', {}),
+            'athlete_id': athlete_id
+        }
+        
+        return jsonify(analytics_data)
+        
+    except Exception as e:
+        logger.error(f"Error generating fitness analytics for athlete {athlete_id}: {str(e)}")
+        return jsonify({'error': 'Fitness analytics generation failed'}), 500
+
+
 
 @api_bp.route('/athletes/<int:athlete_id>/race-optimization')
 def get_race_optimization(athlete_id):

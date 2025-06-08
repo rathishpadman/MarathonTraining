@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Injury Risk Analyser - Marathon Training</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .risk-overview {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .risk-score-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+        
+        .risk-score {
+            font-size: 4rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .risk-level {
+            font-size: 1.2rem;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .risk-low { 
+            background: #4CAF50; 
+            color: white;
+        }
+        
+        .risk-moderate { 
+            background: #FF9800; 
+            color: white;
+        }
+        
+        .risk-high { 
+            background: #f44336; 
+            color: white;
+        }
+        
+        .risk-factors {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .factor-list {
+            display: grid;
+            gap: 12px;
+        }
+        
+        .factor-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .factor-severity {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .severity-low { background: #4CAF50; }
+        .severity-moderate { background: #FF9800; }
+        .severity-high { background: #f44336; }
+        
+        .prevention-plan {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 30px;
+        }
+        
+        .prevention-categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .prevention-category {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .category-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #4CAF50;
+        }
+        
+        .recommendation-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .insights-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .insight-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .insight-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50px;
+            padding: 10px 20px;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            opacity: 0.7;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+        
+        .refresh-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+        
+        .refresh-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 768px) {
+            .risk-overview {
+                grid-template-columns: 1fr;
+            }
+            
+            .prevention-categories {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .risk-score {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/community" class="back-btn">← Back to Community</a>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🚨 Injury Risk Analyser</h1>
+            <p>AI-powered injury prevention using advanced biomechanical analysis</p>
+            <button class="refresh-btn" onclick="loadRiskAnalysis()">Refresh Analysis</button>
+        </div>
+        
+        <div id="analysisContent">
+            <div class="loading">Analyzing injury risk patterns and generating personalized prevention plan...</div>
+        </div>
+        
+        <div id="errorMessage" class="error" style="display: none;">
+            Failed to load risk analysis. Please try again.
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadRiskAnalysis();
+        });
+
+        async function loadRiskAnalysis() {
+            const content = document.getElementById('analysisContent');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Show loading state
+            content.innerHTML = '<div class="loading">Analyzing injury risk patterns and generating personalized prevention plan...</div>';
+            errorMessage.style.display = 'none';
+            
+            try {
+                // Use athlete ID 1 for demo (in real app, get from session/auth)
+                const athleteId = 1;
+                
+                // Load both injury risk and prevention plan
+                const [riskResponse, preventionResponse] = await Promise.all([
+                    fetch(`/api/injury-risk/${athleteId}`),
+                    fetch(`/api/injury-prevention/${athleteId}`)
+                ]);
+                
+                if (!riskResponse.ok || !preventionResponse.ok) {
+                    throw new Error('Failed to fetch analysis data');
+                }
+                
+                const riskData = await riskResponse.json();
+                const preventionData = await preventionResponse.json();
+                
+                renderRiskAnalysis(riskData, preventionData);
+                
+            } catch (error) {
+                console.error('Error loading risk analysis:', error);
+                content.style.display = 'none';
+                errorMessage.style.display = 'block';
+                errorMessage.textContent = 'Failed to load risk analysis. Please ensure you have sufficient training data.';
+            }
+        }
+
+        function renderRiskAnalysis(riskData, preventionData) {
+            const content = document.getElementById('analysisContent');
+            
+            const riskScore = Math.round((riskData.overall_risk || 0) * 100);
+            const riskLevel = riskData.risk_level || 'unknown';
+            
+            let riskClass = 'risk-low';
+            let riskColor = '#4CAF50';
+            if (riskScore > 60) {
+                riskClass = 'risk-high';
+                riskColor = '#f44336';
+            } else if (riskScore > 30) {
+                riskClass = 'risk-moderate';
+                riskColor = '#FF9800';
+            }
+            
+            content.innerHTML = `
+                <div class="risk-overview">
+                    <div class="risk-score-card">
+                        <div class="risk-score" style="color: ${riskColor};">${riskScore}%</div>
+                        <div class="risk-level ${riskClass}">${riskLevel.toUpperCase()}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.8; margin-top: 10px;">
+                            Based on recent training patterns and biomechanical indicators
+                        </div>
+                    </div>
+                    
+                    <div class="risk-factors">
+                        <div class="section-title">⚠️ Key Risk Factors</div>
+                        <div class="factor-list" id="riskFactorsList">
+                            ${renderRiskFactors(riskData.risk_factors || [])}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="prevention-plan">
+                    <div class="section-title">🛡️ Personalized Prevention Plan</div>
+                    <div class="prevention-categories" id="preventionCategories">
+                        ${renderPreventionPlan(preventionData)}
+                    </div>
+                </div>
+                
+                <div class="insights-section">
+                    <div class="section-title">🧠 AI Insights & Recommendations</div>
+                    <div id="aiInsights">
+                        ${renderAIInsights(riskData, preventionData)}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderRiskFactors(factors) {
+            if (!factors || factors.length === 0) {
+                return '<div class="factor-item">No significant risk factors detected</div>';
+            }
+            
+            return factors.slice(0, 5).map(factor => {
+                const severity = getSeverityLevel(factor);
+                return `
+                    <div class="factor-item">
+                        <span>${factor}</span>
+                        <span class="factor-severity severity-${severity}">${severity.toUpperCase()}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getSeverityLevel(factor) {
+            const highRiskTerms = ['overuse', 'sudden increase', 'high intensity', 'insufficient recovery'];
+            const moderateRiskTerms = ['consistent', 'moderate', 'slight increase'];
+            
+            const factorLower = factor.toLowerCase();
+            
+            if (highRiskTerms.some(term => factorLower.includes(term))) {
+                return 'high';
+            } else if (moderateRiskTerms.some(term => factorLower.includes(term))) {
+                return 'moderate';
+            }
+            return 'low';
+        }
+
+        function renderPreventionPlan(preventionData) {
+            const categories = [
+                {
+                    title: 'Training Modifications',
+                    icon: '🏃‍♂️',
+                    items: preventionData.training_modifications || [
+                        'Reduce weekly mileage by 10-15%',
+                        'Add more easy-paced recovery runs',
+                        'Include cross-training activities'
+                    ]
+                },
+                {
+                    title: 'Recovery Strategies',
+                    icon: '😴',
+                    items: preventionData.recovery_strategies || [
+                        'Ensure 7-9 hours of quality sleep',
+                        'Schedule regular rest days',
+                        'Practice active recovery techniques'
+                    ]
+                },
+                {
+                    title: 'Strength & Mobility',
+                    icon: '💪',
+                    items: preventionData.strength_mobility || [
+                        'Focus on core strengthening exercises',
+                        'Perform dynamic warm-ups before runs',
+                        'Include post-run stretching routine'
+                    ]
+                },
+                {
+                    title: 'Nutrition & Hydration',
+                    icon: '🥗',
+                    items: preventionData.nutrition_hydration || [
+                        'Maintain proper pre/post-run nutrition',
+                        'Stay adequately hydrated throughout the day',
+                        'Consider anti-inflammatory foods'
+                    ]
+                }
+            ];
+            
+            return categories.map(category => `
+                <div class="prevention-category">
+                    <div class="category-title">${category.icon} ${category.title}</div>
+                    ${category.items.map(item => `
+                        <div class="recommendation-item">${item}</div>
+                    `).join('')}
+                </div>
+            `).join('');
+        }
+
+        function renderAIInsights(riskData, preventionData) {
+            const insights = [];
+            
+            const riskScore = Math.round((riskData.overall_risk || 0) * 100);
+            
+            if (riskScore < 30) {
+                insights.push({
+                    title: 'Low Risk Status',
+                    content: 'Your current training pattern shows low injury risk. Continue with your current approach while maintaining consistency in recovery and cross-training.'
+                });
+            } else if (riskScore < 60) {
+                insights.push({
+                    title: 'Moderate Risk Alert',
+                    content: 'Some training patterns indicate elevated risk. Focus on the prevention strategies above, particularly recovery and training load management.'
+                });
+            } else {
+                insights.push({
+                    title: 'High Risk Warning',
+                    content: 'Your training data shows concerning patterns that significantly increase injury risk. Immediate action is recommended to modify your training approach.'
+                });
+            }
+            
+            if (riskData.risk_factors && riskData.risk_factors.length > 0) {
+                insights.push({
+                    title: 'Primary Concern',
+                    content: `Focus on addressing: ${riskData.risk_factors[0]}. This appears to be the most significant risk factor in your current training pattern.`
+                });
+            }
+            
+            insights.push({
+                title: 'Next Steps',
+                content: 'Monitor your training response over the next 1-2 weeks. If symptoms persist or worsen, consider consulting with a sports medicine professional.'
+            });
+            
+            return insights.map(insight => `
+                <div class="insight-card">
+                    <div class="insight-title">${insight.title}</div>
+                    <div>${insight.content}</div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
