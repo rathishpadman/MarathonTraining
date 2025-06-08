@@ -280,8 +280,8 @@
             errorMessage.style.display = 'none';
             
             try {
-                // Use athlete ID 1 for demo (in real app, get from session/auth)
-                const athleteId = 1;
+                // Get athlete ID from template variable or default to 1
+                const athleteId = {{ athlete_id | default(1) }};
                 
                 // Load both injury risk and prevention plan
                 const [riskResponse, preventionResponse] = await Promise.all([

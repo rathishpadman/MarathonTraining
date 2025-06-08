@@ -32,34 +32,37 @@ def community_dashboard():
         return f"<h1>Error loading dashboard: {str(e)}</h1>", 500
 
 @main_bp.route('/dashboard')
-def athlete_dashboard():
+@main_bp.route('/dashboard/<int:athlete_id>')
+def athlete_dashboard(athlete_id=1):
     """Individual athlete analytics dashboard"""
     try:
         from flask import render_template
-        logger.info("Accessing athlete dashboard")
-        return render_template('athlete_dashboard.html')
+        logger.info(f"Accessing athlete dashboard for athlete {athlete_id}")
+        return render_template('athlete_dashboard.html', athlete_id=athlete_id)
     except Exception as e:
         logger.error(f"Error rendering athlete dashboard: {str(e)}")
         return f"<h1>Error loading dashboard: {str(e)}</h1>", 500
 
 @main_bp.route('/race_predictor')
-def race_predictor():
+@main_bp.route('/race_predictor/<int:athlete_id>')
+def race_predictor(athlete_id=1):
     """Race performance predictor page"""
     try:
         from flask import render_template
-        logger.info("Accessing race predictor")
-        return render_template('race_predictor.html')
+        logger.info(f"Accessing race predictor for athlete {athlete_id}")
+        return render_template('race_predictor.html', athlete_id=athlete_id)
     except Exception as e:
         logger.error(f"Error rendering race predictor: {str(e)}")
         return f"<h1>Error loading race predictor: {str(e)}</h1>", 500
 
 @main_bp.route('/analytics')
-def risk_analyser():
+@main_bp.route('/analytics/<int:athlete_id>')
+def risk_analyser(athlete_id=1):
     """Injury risk analysis page"""
     try:
         from flask import render_template
-        logger.info("Accessing risk analyser")
-        return render_template('risk_analyser.html')
+        logger.info(f"Accessing risk analyser for athlete {athlete_id}")
+        return render_template('risk_analyser.html', athlete_id=athlete_id)
     except Exception as e:
         logger.error(f"Error rendering risk analyser: {str(e)}")
         return f"<h1>Error loading risk analyser: {str(e)}</h1>", 500
