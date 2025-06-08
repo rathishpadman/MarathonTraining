@@ -490,30 +490,7 @@
         </div>
     </div>
 
-    <!-- Recent Milestones -->
-    <div class="milestones-section">
-        <div class="section-title">
-            <i class="fas fa-medal"></i>
-            Recent Community Milestones
-        </div>
-        <div class="milestones-grid">
-        <div class="milestone-card">
-            <div class="milestone-icon">🏆</div>
-            <div class="milestone-title">First Marathon Complete!</div>
-            <div class="milestone-description">Sarah completed her first marathon in 4:23:15</div>
-        </div>
-        <div class="milestone-card">
-            <div class="milestone-icon">🎯</div>
-            <div class="milestone-title">Weekly Goal Achieved</div>
-            <div class="milestone-description">Community reached 500km this week</div>
-        </div>
-        <div class="milestone-card">
-            <div class="milestone-icon">🔥</div>
-            <div class="milestone-title">Training Streak</div>
-            <div class="milestone-description">Mike hit 30 consecutive training days</div>
-        </div>
-        </div>
-    </div>
+
 
     <!-- Activity Stream -->
     <div class="activity-stream">
@@ -692,12 +669,46 @@ function renderTrainingTrendsChart(data) {
 
 function renderTrainingLoadChart(data) {
     const ctx = document.getElementById('trainingLoadChart').getContext('2d');
+    
+    if (!data || !data.labels || data.labels.length === 0) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.fillStyle = '#6B7280';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('No training load data', ctx.canvas.width / 2, ctx.canvas.height / 2 - 10);
+        ctx.fillText('available', ctx.canvas.width / 2, ctx.canvas.height / 2 + 10);
+        return;
+    }
+    
+    // Create meaningful distribution data for community view
+    const processedData = {
+        labels: ['Light Training', 'Moderate Training', 'High Training', 'Peak Training'],
+        data: []
+    };
+    
+    // Distribute athletes across training intensity ranges
+    const totalDistance = data.data.reduce((sum, val) => sum + val, 0);
+    data.data.forEach((distance, index) => {
+        const percentage = (distance / totalDistance) * 100;
+        if (distance < 50) processedData.data[0] = (processedData.data[0] || 0) + percentage;
+        else if (distance < 100) processedData.data[1] = (processedData.data[1] || 0) + percentage;
+        else if (distance < 150) processedData.data[2] = (processedData.data[2] || 0) + percentage;
+        else processedData.data[3] = (processedData.data[3] || 0) + percentage;
+    });
+    
+    // Remove empty categories
+    const finalData = {
+        labels: processedData.labels.filter((_, i) => processedData.data[i] > 0),
+        data: processedData.data.filter(val => val > 0)
+    };
+    
     new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: data.labels,
+            labels: finalData.labels,
             datasets: [{
-                data: data.data,
+                data: finalData.data,
                 backgroundColor: [
                     '#14B8A6',
                     '#0F766E',
@@ -718,7 +729,17 @@ function renderTrainingLoadChart(data) {
                     labels: {
                         color: 'white',
                         usePointStyle: true,
-                        padding: 15
+                        padding: 15,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.label}: ${context.parsed.toFixed(1)}%`;
+                        }
                     }
                 }
             }
@@ -740,23 +761,23 @@ async function loadActivityStream() {
                     <div class="activity-header">
                         <div class="activity-name">
                             <i class="fas fa-running me-2"></i>
-                            ${activity.name || 'Running Activity'}
+                            ${activity.activity_name || activity.name || 'Running Activity'}
                         </div>
-                        <div class="activity-time">${formatActivityTime(activity.start_date)}</div>
+                        <div class="activity-time">${activity.relative_time || formatActivityTime(activity.start_date)}</div>
                     </div>
                     <div class="activity-stats">
-                        <div class="stat-item">
+                        <span class="stat-item">
                             <i class="fas fa-route"></i>
-                            ${(activity.distance / 1000).toFixed(1)}km
-                        </div>
-                        <div class="stat-item">
+                            ${activity.distance_km || (activity.distance / 1000).toFixed(1)}km
+                        </span>
+                        <span class="stat-item">
                             <i class="fas fa-clock"></i>
-                            ${formatDuration(activity.moving_time)}
-                        </div>
-                        <div class="stat-item">
+                            ${activity.pace || formatDuration(activity.moving_time)}
+                        </span>
+                        <span class="stat-item">
                             <i class="fas fa-user"></i>
                             ${activity.athlete_name}
-                        </div>
+                        </span>
                     </div>
                 </div>
             `).join('');
