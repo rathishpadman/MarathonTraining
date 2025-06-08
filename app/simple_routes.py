@@ -361,6 +361,50 @@ def get_performance_insights(athlete_id):
         logger.error(f"Error getting performance insights: {str(e)}")
         return jsonify({'error': 'Failed to get performance insights'}), 500
 
+@main_bp.route('/api/athletes/<int:athlete_id>/recent-activities')
+def get_athlete_recent_activities(athlete_id):
+    """Get recent activities for athlete"""
+    try:
+        limit = request.args.get('limit', 10, type=int)
+        
+        # Get athlete
+        athlete = db.session.query(ReplitAthlete).filter_by(id=athlete_id).first()
+        if not athlete:
+            return jsonify({'error': 'Athlete not found'}), 404
+        
+        # Get recent activities
+        activities = db.session.query(Activity).filter(
+            Activity.athlete_id == athlete_id
+        ).order_by(Activity.start_date.desc()).limit(limit).all()
+        
+        # Format activities for response
+        activities_data = []
+        for activity in activities:
+            activities_data.append({
+                'id': activity.id,
+                'name': activity.name,
+                'sport_type': activity.sport_type,
+                'start_date': activity.start_date.isoformat() if activity.start_date else None,
+                'distance': activity.distance,
+                'moving_time': activity.moving_time,
+                'elapsed_time': activity.elapsed_time,
+                'average_speed': activity.average_speed,
+                'average_heartrate': activity.average_heartrate,
+                'max_heartrate': activity.max_heartrate,
+                'calories': activity.calories,
+                'total_elevation_gain': activity.total_elevation_gain
+            })
+        
+        return jsonify({
+            'activities': activities_data,
+            'athlete_name': athlete.name,
+            'total_count': len(activities_data)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching recent activities for athlete {athlete_id}: {str(e)}")
+        return jsonify({'error': 'Failed to fetch recent activities'}), 500
+
 # AI Race Recommendations endpoint
 @api_bp.route('/athletes/<int:athlete_id>/ai-race-recommendations', methods=['POST'])
 def get_ai_race_recommendations(athlete_id):
