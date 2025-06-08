@@ -690,37 +690,43 @@ function createSimpleVolumeChart(athleteId, timePeriod) {
                     analyticsCharts.volume.destroy();
                 }
                 
-                analyticsCharts.volume = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: data.dates,
-                        datasets: [{
-                            label: 'Distance (km)',
-                            data: data.distances,
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { labels: { color: '#ffffff' } }
+                try {
+                    console.log('Creating Chart.js instance with data:', data.dates, data.distances);
+                    analyticsCharts.volume = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.dates,
+                            datasets: [{
+                                label: 'Distance (km)',
+                                data: data.distances,
+                                borderColor: '#3b82f6',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            }]
                         },
-                        scales: {
-                            x: {
-                                ticks: { color: '#ffffff' },
-                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { labels: { color: '#343a40' } }
                             },
-                            y: {
-                                ticks: { color: '#ffffff' },
-                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            scales: {
+                                x: {
+                                    ticks: { color: '#343a40' },
+                                    grid: { color: 'rgba(52, 58, 64, 0.1)' }
+                                },
+                                y: {
+                                    ticks: { color: '#343a40' },
+                                    grid: { color: 'rgba(52, 58, 64, 0.1)' }
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                    console.log('Volume chart created successfully:', analyticsCharts.volume);
+                } catch (error) {
+                    console.error('Error creating volume chart:', error);
+                }
             }
         })
         .catch(error => console.error('Error loading volume chart:', error));
