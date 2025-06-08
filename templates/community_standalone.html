@@ -287,6 +287,67 @@
         svg {
             background: transparent !important;
         }
+        
+        /* Strava Connect Section Styling */
+        .connect-section {
+            text-align: center;
+            padding: 20px 0;
+        }
+        
+        .connect-section h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: white;
+        }
+        
+        .connect-section p {
+            font-size: 1rem;
+            margin-bottom: 25px;
+            opacity: 0.9;
+        }
+        
+        .connect-benefits {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .benefit {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            transition: background 0.3s ease;
+        }
+        
+        .benefit:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .benefit-icon {
+            font-size: 1.5rem;
+        }
+        
+        .strava-connect-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            margin: 20px 0;
+        }
+        
+        .strava-connect-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .connect-note {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -364,6 +425,41 @@
                 Community Activity Stream
             </div>
             <div id="activityStream" class="activity-stream loading">Loading activities...</div>
+        </div>
+
+        <!-- Strava Connect Section -->
+        <div class="section">
+            <div class="chart-title">
+                <span class="section-icon">🚀</span>
+                Join Our Community
+            </div>
+            <div class="connect-section">
+                <h3>Connect Your Strava Account</h3>
+                <p>Track your progress, compete with friends, and achieve your marathon goals together!</p>
+                <div class="connect-benefits">
+                    <div class="benefit">
+                        <span class="benefit-icon">📊</span>
+                        <span>Real-time Performance Analytics</span>
+                    </div>
+                    <div class="benefit">
+                        <span class="benefit-icon">🏆</span>
+                        <span>Community Leaderboards</span>
+                    </div>
+                    <div class="benefit">
+                        <span class="benefit-icon">🎯</span>
+                        <span>AI-Powered Training Insights</span>
+                    </div>
+                    <div class="benefit">
+                        <span class="benefit-icon">👥</span>
+                        <span>Social Training Experience</span>
+                    </div>
+                </div>
+                <button class="strava-connect-btn" onclick="connectStrava()">
+                    <img src="https://developers.strava.com/images/btn_strava_connectwith_orange.png" 
+                         alt="Connect with Strava" style="height: 48px;">
+                </button>
+                <p class="connect-note">Secure OAuth 2.0 authentication - your data remains private</p>
+            </div>
         </div>
     </div>
 
@@ -443,6 +539,26 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        function connectStrava() {
+            // Check if user is already authenticated
+            fetch('/auth/status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.authenticated) {
+                        alert('You are already connected to Strava! Your activities are being tracked.');
+                        return;
+                    }
+                    
+                    // Redirect to Strava OAuth
+                    window.location.href = '/auth/strava';
+                })
+                .catch(error => {
+                    console.error('Error checking auth status:', error);
+                    // Proceed with Strava connection
+                    window.location.href = '/auth/strava';
+                });
         }
 
         function renderActivityStream(activities) {
