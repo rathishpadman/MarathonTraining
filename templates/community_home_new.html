@@ -1,0 +1,1266 @@
+{% extends "base.html" %}
+
+{% block title %}Community Dashboard - Marathon Training{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --primary-teal: #14B8A6;
+        --secondary-teal: #0F766E;
+        --light-teal: #5EEAD4;
+        --dark-green: #065f46;
+        --accent-orange: #F97316;
+        --accent-purple: #8B5CF6;
+        --accent-yellow: #FBBF24;
+        --accent-pink: #EC4899;
+        --text-primary: #ffffff;
+        --text-secondary: rgba(255, 255, 255, 0.9);
+        --text-muted: rgba(255, 255, 255, 0.7);
+        --glass-bg: rgba(20, 184, 166, 0.12);
+        --glass-border: rgba(20, 184, 166, 0.25);
+        --glass-strong: rgba(20, 184, 166, 0.2);
+        --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.2);
+        --shadow-xl: 0 25px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    body {
+        background: linear-gradient(135deg, var(--dark-green) 0%, var(--secondary-teal) 40%, var(--primary-teal) 100%);
+        min-height: 100vh;
+        color: var(--text-primary);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        overflow-x: hidden;
+    }
+
+    .community-container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+        position: relative;
+    }
+
+    /* Header Section */
+    .community-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        position: relative;
+    }
+
+    .community-title {
+        font-size: clamp(2.5rem, 6vw, 4rem);
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--text-primary), var(--light-teal), var(--accent-yellow));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 1rem;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .community-subtitle {
+        font-size: 1.25rem;
+        color: var(--text-secondary);
+        max-width: 600px;
+        margin: 0 auto 2rem;
+        line-height: 1.6;
+    }
+
+    .live-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 50px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        animation: pulse 2s infinite;
+    }
+
+    .live-dot {
+        width: 8px;
+        height: 8px;
+        background: #10B981;
+        border-radius: 50%;
+        animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+
+    /* Community KPIs Grid */
+    .kpi-section {
+        margin-bottom: 3rem;
+    }
+
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .kpi-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(25px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 2rem;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-xl);
+        border-color: var(--light-teal);
+    }
+
+    .kpi-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--accent-orange), var(--accent-purple), var(--accent-pink));
+        border-radius: 20px 20px 0 0;
+    }
+
+    .kpi-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+    }
+
+    .kpi-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple));
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        box-shadow: 0 8px 25px rgba(249, 115, 22, 0.3);
+    }
+
+    .kpi-trend {
+        font-size: 0.9rem;
+        color: #10B981;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .kpi-value {
+        font-size: clamp(2rem, 4vw, 3rem);
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .kpi-label {
+        color: var(--text-secondary);
+        font-weight: 600;
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .kpi-detail {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+
+    /* Performance Leaderboard */
+    .leaderboard-section {
+        background: var(--glass-strong);
+        backdrop-filter: blur(30px);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        padding: 2.5rem;
+        margin-bottom: 3rem;
+        box-shadow: var(--shadow-xl);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .leaderboard-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: linear-gradient(90deg, var(--accent-yellow), var(--accent-orange), var(--accent-pink), var(--accent-purple));
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: clamp(1.75rem, 3vw, 2.25rem);
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .section-title-icon {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4);
+    }
+
+    .leaderboard-filters {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .filter-btn {
+        padding: 0.75rem 1.5rem;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 25px;
+        color: var(--text-secondary);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(20px);
+    }
+
+    .filter-btn.active,
+    .filter-btn:hover {
+        background: linear-gradient(135deg, var(--primary-teal), var(--secondary-teal));
+        color: var(--text-primary);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(20, 184, 166, 0.3);
+    }
+
+    /* Athlete Cards */
+    .leaderboard-grid {
+        display: grid;
+        gap: 1.5rem;
+    }
+
+    .athlete-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(25px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 2rem;
+        transition: all 0.4s ease;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .athlete-card:hover {
+        transform: translateY(-6px) scale(1.02);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+        border-color: var(--light-teal);
+    }
+
+    .athlete-rank {
+        position: absolute;
+        top: -10px;
+        right: 2rem;
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1.5rem;
+        color: #1F2937;
+        box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4);
+        border: 3px solid var(--text-primary);
+    }
+
+    .athlete-rank.gold {
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        animation: shine 2s ease-in-out infinite;
+    }
+
+    .athlete-rank.silver {
+        background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
+    }
+
+    .athlete-rank.bronze {
+        background: linear-gradient(135deg, #CD7F32, #B8860B);
+    }
+
+    .athlete-content {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 2rem;
+        align-items: center;
+    }
+
+    .athlete-avatar {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--primary-teal), var(--secondary-teal));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        box-shadow: 0 8px 25px rgba(20, 184, 166, 0.3);
+        position: relative;
+    }
+
+    .athlete-avatar::after {
+        content: '';
+        position: absolute;
+        inset: -3px;
+        background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple), var(--accent-pink));
+        border-radius: 50%;
+        z-index: -1;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .athlete-card:hover .athlete-avatar::after {
+        opacity: 1;
+    }
+
+    .athlete-info {
+        min-width: 0;
+    }
+
+    .athlete-name {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .athlete-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--light-teal);
+        display: block;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+    }
+
+    .athlete-badges {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .badge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 15px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .badge.streak {
+        background: linear-gradient(135deg, #F59E0B, #D97706);
+        color: white;
+    }
+
+    .badge.achievement {
+        background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+        color: white;
+    }
+
+    .badge.pr {
+        background: linear-gradient(135deg, #10B981, #059669);
+        color: white;
+    }
+
+    .athlete-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        min-width: 140px;
+    }
+
+    .action-btn {
+        padding: 0.75rem 1.25rem;
+        border-radius: 25px;
+        border: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary-teal), var(--secondary-teal));
+        color: white;
+    }
+
+    .btn-secondary {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        color: var(--text-secondary);
+        backdrop-filter: blur(20px);
+    }
+
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Charts and Analytics Section */
+    .analytics-section {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .chart-container {
+        background: var(--glass-strong);
+        backdrop-filter: blur(30px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .chart-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary-teal), var(--accent-purple));
+    }
+
+    .chart-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .chart-title-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--primary-teal), var(--accent-purple));
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+
+    /* Activity Stream */
+    .activity-stream {
+        background: var(--glass-strong);
+        backdrop-filter: blur(30px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: var(--shadow-lg);
+        max-height: 600px;
+        overflow-y: auto;
+        position: relative;
+    }
+
+    .activity-stream::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--accent-orange), var(--accent-pink));
+    }
+
+    .activity-item {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        border-left: 4px solid var(--primary-teal);
+    }
+
+    .activity-item:hover {
+        transform: translateX(4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        border-left-color: var(--accent-orange);
+    }
+
+    .activity-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .activity-type {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .activity-time {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
+
+    .activity-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 1rem;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    /* Milestones Section */
+    .milestones-section {
+        background: var(--glass-strong);
+        backdrop-filter: blur(30px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 3rem;
+        box-shadow: var(--shadow-lg);
+        position: relative;
+    }
+
+    .milestones-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--accent-yellow), var(--accent-orange));
+    }
+
+    .milestones-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .milestone-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .milestone-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+    }
+
+    .milestone-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .milestone-icon {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .milestone-info h4 {
+        color: var(--text-primary);
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+
+    .milestone-info p {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+        .analytics-section {
+            grid-template-columns: 1fr;
+        }
+        
+        .athlete-content {
+            grid-template-columns: auto 1fr;
+            gap: 1.5rem;
+        }
+        
+        .athlete-actions {
+            grid-column: 1 / -1;
+            flex-direction: row;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .community-container {
+            padding: 1rem;
+        }
+        
+        .kpi-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .leaderboard-filters {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .athlete-content {
+            grid-template-columns: 1fr;
+            text-align: center;
+            gap: 1rem;
+        }
+        
+        .athlete-rank {
+            position: static;
+            margin: 0 auto 1rem;
+        }
+    }
+
+    /* Animations */
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    @keyframes ping {
+        75%, 100% {
+            transform: scale(2);
+            opacity: 0;
+        }
+    }
+
+    @keyframes shine {
+        0%, 100% { box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4); }
+        50% { box-shadow: 0 8px 25px rgba(251, 191, 36, 0.8), 0 0 30px rgba(251, 191, 36, 0.3); }
+    }
+
+    /* Loading States */
+    .loading-skeleton {
+        background: linear-gradient(90deg, var(--glass-bg) 25%, var(--glass-border) 50%, var(--glass-bg) 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 8px;
+    }
+
+    @keyframes loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    /* Custom Scrollbar */
+    .activity-stream::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .activity-stream::-webkit-scrollbar-track {
+        background: var(--glass-bg);
+        border-radius: 4px;
+    }
+
+    .activity-stream::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, var(--primary-teal), var(--accent-purple));
+        border-radius: 4px;
+    }
+
+    .activity-stream::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, var(--accent-orange), var(--accent-pink));
+    }
+</style>
+
+<div class="community-container">
+    <!-- Header Section -->
+    <div class="community-header">
+        <h1 class="community-title">🏃‍♂️ Community Dashboard</h1>
+        <p class="community-subtitle">
+            Track progress, compete with friends, and achieve your marathon goals together
+        </p>
+        <div class="live-indicator">
+            <div class="live-dot"></div>
+            Live Community Activity
+        </div>
+    </div>
+
+    <!-- Community KPIs -->
+    <div class="kpi-section">
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="kpi-trend">
+                        <i class="fas fa-arrow-up"></i>
+                        +12%
+                    </div>
+                </div>
+                <div class="kpi-value" id="totalAthletes">0</div>
+                <div class="kpi-label">Active Athletes</div>
+                <div class="kpi-detail">Training together this week</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon">
+                        <i class="fas fa-route"></i>
+                    </div>
+                    <div class="kpi-trend">
+                        <i class="fas fa-arrow-up"></i>
+                        +8%
+                    </div>
+                </div>
+                <div class="kpi-value" id="totalDistance">0 km</div>
+                <div class="kpi-label">Community Distance</div>
+                <div class="kpi-detail">Total kilometers logged this month</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                    <div class="kpi-trend">
+                        <i class="fas fa-arrow-up"></i>
+                        +15%
+                    </div>
+                </div>
+                <div class="kpi-value" id="totalActivities">0</div>
+                <div class="kpi-label">Total Activities</div>
+                <div class="kpi-detail">Workouts completed this week</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <div class="kpi-icon">
+                        <i class="fas fa-stopwatch"></i>
+                    </div>
+                    <div class="kpi-trend">
+                        <i class="fas fa-arrow-down" style="color: #10B981;"></i>
+                        -3%
+                    </div>
+                </div>
+                <div class="kpi-value" id="avgPace">0:00</div>
+                <div class="kpi-label">Average Pace</div>
+                <div class="kpi-detail">Community average per kilometer</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Leaderboard -->
+    <div class="leaderboard-section">
+        <div class="section-header">
+            <div class="section-title">
+                <div class="section-title-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                Performance Leaderboard
+            </div>
+            <div class="leaderboard-filters">
+                <button class="filter-btn active" data-filter="weekly">This Week</button>
+                <button class="filter-btn" data-filter="monthly">This Month</button>
+                <button class="filter-btn" data-filter="alltime">All Time</button>
+            </div>
+        </div>
+        
+        <div class="leaderboard-grid" id="leaderboardContent">
+            <!-- Loading state -->
+            <div class="athlete-card">
+                <div class="loading-skeleton" style="height: 100px; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics and Activity Stream -->
+    <div class="analytics-section">
+        <div class="chart-container">
+            <div class="chart-title">
+                <div class="chart-title-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                Community Training Trends
+            </div>
+            <canvas id="trainingTrendsChart" height="300"></canvas>
+        </div>
+
+        <div class="activity-stream">
+            <div class="chart-title">
+                <div class="chart-title-icon">
+                    <i class="fas fa-stream"></i>
+                </div>
+                Live Activity Feed
+            </div>
+            <div id="activityStreamContent">
+                <!-- Loading state -->
+                <div class="activity-item">
+                    <div class="loading-skeleton" style="height: 60px; width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Training Load Distribution -->
+    <div class="chart-container">
+        <div class="chart-title">
+            <div class="chart-title-icon">
+                <i class="fas fa-dumbbell"></i>
+            </div>
+            Training Load Distribution
+        </div>
+        <canvas id="trainingLoadChart" height="300"></canvas>
+    </div>
+
+    <!-- Recent Milestones -->
+    <div class="milestones-section">
+        <div class="chart-title">
+            <div class="chart-title-icon">
+                <i class="fas fa-star"></i>
+            </div>
+            Recent Community Achievements
+        </div>
+        
+        <div class="milestones-grid">
+            <div class="milestone-card">
+                <div class="milestone-header">
+                    <div class="milestone-icon">
+                        <i class="fas fa-medal"></i>
+                    </div>
+                    <div class="milestone-info">
+                        <h4>Marathon Goal Achieved</h4>
+                        <p>Sarah completed her first sub-4:00 marathon!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="milestone-card">
+                <div class="milestone-header">
+                    <div class="milestone-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="milestone-info">
+                        <h4>Training Streak</h4>
+                        <p>Mike reached a 30-day consecutive training streak</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="milestone-card">
+                <div class="milestone-header">
+                    <div class="milestone-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="milestone-info">
+                        <h4>Community Milestone</h4>
+                        <p>1,000km combined distance this month!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Community Dashboard loading...');
+    loadCommunityData();
+    setupEventListeners();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(loadCommunityData, 30000);
+});
+
+function setupEventListeners() {
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            loadLeaderboard(this.dataset.filter);
+        });
+    });
+}
+
+async function loadCommunityData() {
+    try {
+        console.log('Loading community overview...');
+        const response = await fetch('/api/community/overview');
+        const data = await response.json();
+        
+        console.log('Community data loaded:', data);
+        
+        // Update KPIs
+        if (data.kpis) {
+            updateKPIs(data.kpis);
+        }
+        
+        // Render leaderboard
+        if (data.leaderboard && data.leaderboard.length > 0) {
+            renderLeaderboard(data.leaderboard);
+        } else {
+            showNoAthletes();
+        }
+        
+        // Render charts
+        if (data.communityTrends) {
+            renderTrainingTrendsChart(data.communityTrends);
+        }
+        
+        if (data.trainingLoadDistribution) {
+            renderTrainingLoadChart(data.trainingLoadDistribution);
+        }
+        
+        // Load activity stream
+        loadActivityStream();
+        
+    } catch (error) {
+        console.error('Error loading community data:', error);
+        showErrorState();
+    }
+}
+
+function updateKPIs(kpis) {
+    document.getElementById('totalAthletes').textContent = kpis.totalAthletes || 0;
+    document.getElementById('totalDistance').textContent = `${Math.round(kpis.totalDistance || 0)} km`;
+    document.getElementById('totalActivities').textContent = kpis.totalActivities || 0;
+    
+    if (kpis.avgPace) {
+        const minutes = Math.floor(kpis.avgPace);
+        const seconds = Math.round((kpis.avgPace - minutes) * 60);
+        document.getElementById('avgPace').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+}
+
+function renderLeaderboard(athletes) {
+    console.log('Rendering leaderboard:', athletes);
+    const container = document.getElementById('leaderboardContent');
+    
+    if (!athletes || athletes.length === 0) {
+        showNoAthletes();
+        return;
+    }
+    
+    container.innerHTML = athletes.map((athlete, index) => {
+        const rank = index + 1;
+        const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+        const initial = athlete.name ? athlete.name.charAt(0).toUpperCase() : 'A';
+        
+        return `
+            <div class="athlete-card">
+                <div class="athlete-rank ${rankClass}">${rank}</div>
+                <div class="athlete-content">
+                    <div class="athlete-avatar">${initial}</div>
+                    <div class="athlete-info">
+                        <div class="athlete-name">${athlete.name || 'Anonymous Athlete'}</div>
+                        <div class="athlete-stats">
+                            <div class="stat-item">
+                                <span class="stat-value">${Math.round(athlete.distance || 0)} km</span>
+                                <span class="stat-label">Distance</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">${athlete.activities || 0}</span>
+                                <span class="stat-label">Activities</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">${formatPace(athlete.avg_pace)}</span>
+                                <span class="stat-label">Avg Pace</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">${Math.round(athlete.avg_hr || 0)} bpm</span>
+                                <span class="stat-label">Avg HR</span>
+                            </div>
+                        </div>
+                        <div class="athlete-badges">
+                            ${rank <= 3 ? '<span class="badge achievement"><i class="fas fa-medal"></i> Top Performer</span>' : ''}
+                            ${athlete.activities >= 5 ? '<span class="badge streak"><i class="fas fa-fire"></i> Active Streak</span>' : ''}
+                            ${athlete.distance > 50 ? '<span class="badge pr"><i class="fas fa-trophy"></i> Distance Goal</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="athlete-actions">
+                        <a href="/dashboard?athlete_id=${athlete.id}" class="action-btn btn-primary">
+                            <i class="fas fa-chart-line"></i> View Dashboard
+                        </a>
+                        <a href="/api/athletes/${athlete.id}/race-prediction?distance=Marathon" class="action-btn btn-secondary">
+                            <i class="fas fa-crystal-ball"></i> Race Prediction
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function formatPace(pace) {
+    if (!pace) return '0:00';
+    const minutes = Math.floor(pace);
+    const seconds = Math.round((pace - minutes) * 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function showNoAthletes() {
+    document.getElementById('leaderboardContent').innerHTML = `
+        <div class="athlete-card" style="text-align: center; padding: 3rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">🏃‍♂️</div>
+            <h3 style="color: var(--text-secondary); margin-bottom: 1rem;">No Athletes Yet</h3>
+            <p style="color: var(--text-muted); margin-bottom: 2rem;">Be the first to join our marathon training community!</p>
+            <a href="/auth/strava" class="action-btn btn-primary">
+                <i class="fab fa-strava"></i> Connect with Strava
+            </a>
+        </div>
+    `;
+}
+
+function showErrorState() {
+    document.getElementById('leaderboardContent').innerHTML = `
+        <div class="athlete-card" style="text-align: center; padding: 3rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">⚠️</div>
+            <h3 style="color: var(--text-secondary); margin-bottom: 1rem;">Unable to Load Data</h3>
+            <p style="color: var(--text-muted); margin-bottom: 2rem;">Please try refreshing the page or check your connection.</p>
+            <button onclick="loadCommunityData()" class="action-btn btn-primary">
+                <i class="fas fa-refresh"></i> Retry
+            </button>
+        </div>
+    `;
+}
+
+async function loadActivityStream() {
+    try {
+        const response = await fetch('/api/community/activity-stream');
+        const activities = await response.json();
+        
+        console.log('Activity stream loaded:', activities);
+        renderActivityStream(activities);
+    } catch (error) {
+        console.error('Error loading activity stream:', error);
+        document.getElementById('activityStreamContent').innerHTML = `
+            <div class="activity-item" style="text-align: center;">
+                <div style="color: var(--text-muted);">Unable to load recent activities</div>
+            </div>
+        `;
+    }
+}
+
+function renderActivityStream(activities) {
+    const container = document.getElementById('activityStreamContent');
+    
+    if (!activities || activities.length === 0) {
+        container.innerHTML = `
+            <div class="activity-item" style="text-align: center;">
+                <div style="color: var(--text-muted);">No recent activities</div>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = activities.map(activity => `
+        <div class="activity-item">
+            <div class="activity-header">
+                <div class="activity-type">
+                    <i class="fas fa-running"></i>
+                    ${activity.name || 'Training Run'}
+                </div>
+                <div class="activity-time">${formatTimeAgo(activity.start_date)}</div>
+            </div>
+            <div class="activity-details">
+                <div><strong>${(activity.distance / 1000).toFixed(1)} km</strong></div>
+                <div><strong>${formatDuration(activity.moving_time)}</strong></div>
+                <div><strong>${formatPace(activity.pace)}</strong> /km</div>
+                <div><strong>${activity.athlete_name || 'Athlete'}</strong></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function formatTimeAgo(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffDays > 0) return `${diffDays}d ago`;
+    if (diffHours > 0) return `${diffHours}h ago`;
+    return 'Just now';
+}
+
+function formatDuration(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) return `${hours}:${minutes.toString().padStart(2, '0')}h`;
+    return `${minutes}m`;
+}
+
+// Chart rendering functions
+let trainingTrendsChart = null;
+let trainingLoadChart = null;
+
+function renderTrainingTrendsChart(data) {
+    console.log('Rendering chart with data:', data);
+    const ctx = document.getElementById('trainingTrendsChart').getContext('2d');
+    
+    if (trainingTrendsChart) {
+        trainingTrendsChart.destroy();
+    }
+    
+    trainingTrendsChart = new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        font: { size: 12 }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                },
+                y: {
+                    ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                }
+            }
+        }
+    });
+}
+
+function renderTrainingLoadChart(data) {
+    const ctx = document.getElementById('trainingLoadChart').getContext('2d');
+    
+    if (trainingLoadChart) {
+        trainingLoadChart.destroy();
+    }
+    
+    trainingLoadChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: data.labels,
+            datasets: [{
+                data: data.data,
+                backgroundColor: [
+                    'rgba(20, 184, 166, 0.8)',
+                    'rgba(249, 115, 22, 0.8)',
+                    'rgba(139, 92, 246, 0.8)',
+                    'rgba(236, 72, 153, 0.8)',
+                    'rgba(251, 191, 36, 0.8)'
+                ],
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        font: { size: 12 },
+                        padding: 20
+                    }
+                }
+            }
+        }
+    });
+}
+
+async function loadLeaderboard(period = 'weekly') {
+    try {
+        console.log(`Loading ${period} leaderboard...`);
+        const response = await fetch(`/api/community/leaderboard?period=${period}`);
+        const data = await response.json();
+        
+        if (data.leaderboard) {
+            renderLeaderboard(data.leaderboard);
+        }
+    } catch (error) {
+        console.error('Error loading leaderboard:', error);
+        showErrorState();
+    }
+}
+</script>
+{% endblock %}

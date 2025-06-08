@@ -1579,9 +1579,9 @@ def home():
 
 @main_bp.route('/community')
 def community_dashboard():
-    """Legacy community dashboard"""
+    """Enhanced community dashboard with performance leaderboard"""
     from flask import render_template
-    return render_template('community_dashboard.html')
+    return render_template('community_home_new.html')
 
 @api_bp.route('/api/athletes/<int:athlete_id>/training-plan', methods=['POST'])
 def get_training_plan(athlete_id):
