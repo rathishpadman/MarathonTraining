@@ -834,9 +834,9 @@ def get_community_overview():
         from datetime import datetime, timedelta
         from app.models import Activity
         
-        start_date = datetime.now() - timedelta(days=30)
+        start_date = datetime.now() - timedelta(days=365)  # Extended to show full sport breakdown
         
-        # Get all recent activities for community analysis
+        # Get all activities for community analysis
         all_activities = Activity.query.filter(
             Activity.start_date >= start_date
         ).all()
