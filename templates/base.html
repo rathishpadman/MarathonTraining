@@ -824,34 +824,36 @@
             });
         }
         
-        // Global function to force table visibility and styling
+        // Global function to force table and chart visibility
         function forceTableStyling(container = document) {
+            // Force table visibility
             const tables = container.querySelectorAll('table, .table');
             tables.forEach(table => {
                 // Add styling class
                 table.classList.add('js-table-fixed');
                 
-                // Force table container styles
-                table.style.cssText = 'background-color: rgba(33, 37, 41, 0.95) !important; border-radius: 8px !important; border: 2px solid rgba(0, 123, 255, 0.6) !important; overflow: hidden !important; margin-bottom: 1rem !important;';
+                // Force table container styles with solid backgrounds
+                table.style.cssText = 'background-color: #212529 !important; border-radius: 8px !important; border: 2px solid #007bff !important; overflow: hidden !important; margin-bottom: 1rem !important; width: 100% !important; display: table !important;';
                 
-                // Style headers
+                // Style headers with solid colors
                 const headers = table.querySelectorAll('th');
                 headers.forEach(th => {
-                    th.style.cssText = 'background: linear-gradient(135deg, rgba(0, 123, 255, 0.9) 0%, rgba(0, 86, 179, 0.9) 100%) !important; color: #ffffff !important; font-weight: 700 !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.8) !important; border: 1px solid rgba(255, 255, 255, 0.4) !important; padding: 12px 15px !important; font-size: 14px !important;';
+                    th.style.cssText = 'background-color: #007bff !important; color: #ffffff !important; font-weight: 700 !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.8) !important; border: 1px solid #ffffff !important; padding: 12px 15px !important; font-size: 14px !important; text-align: center !important;';
                 });
                 
-                // Style cells
-                const cells = table.querySelectorAll('td');
-                cells.forEach(td => {
-                    td.style.cssText = 'background-color: rgba(52, 58, 64, 0.9) !important; color: #ffffff !important; font-weight: 600 !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.7) !important; border: 1px solid rgba(255, 255, 255, 0.3) !important; padding: 10px 15px !important; font-size: 14px !important;';
-                });
-                
-                // Style rows for hover effects
+                // Style cells with alternating colors
                 const rows = table.querySelectorAll('tr');
-                rows.forEach((row, index) => {
-                    if (index > 0) { // Skip header row
+                rows.forEach((row, rowIndex) => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach(td => {
+                        const bgColor = rowIndex % 2 === 0 ? '#343a40' : '#495057';
+                        td.style.cssText = `background-color: ${bgColor} !important; color: #ffffff !important; font-weight: 600 !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.7) !important; border: 1px solid #6c757d !important; padding: 10px 15px !important; font-size: 14px !important; text-align: center !important;`;
+                    });
+                    
+                    // Add hover effects
+                    if (rowIndex > 0) {
                         row.addEventListener('mouseenter', function() {
-                            this.style.backgroundColor = 'rgba(0, 123, 255, 0.2)';
+                            this.style.backgroundColor = '#007bff';
                             this.style.transform = 'scale(1.01)';
                             this.style.transition = 'all 0.2s ease';
                         });
@@ -862,22 +864,50 @@
                     }
                 });
             });
+            
+            // Force chart container visibility
+            const chartContainers = container.querySelectorAll('canvas, .chart-container, [id*="chart"], [class*="chart"]');
+            chartContainers.forEach(chart => {
+                chart.style.cssText = 'background-color: #ffffff !important; border: 2px solid #007bff !important; border-radius: 8px !important; padding: 10px !important; margin: 10px 0 !important; display: block !important; width: 100% !important; height: auto !important; min-height: 300px !important;';
+                
+                // Force parent container visibility
+                if (chart.parentElement) {
+                    chart.parentElement.style.cssText = 'background-color: #f8f9fa !important; padding: 15px !important; border-radius: 8px !important; margin-bottom: 20px !important; display: block !important;';
+                }
+            });
+            
+            // Force div content visibility
+            const contentDivs = container.querySelectorAll('div[class*="content"], div[class*="data"], .card-body, .card-content');
+            contentDivs.forEach(div => {
+                div.style.cssText = 'color: #212529 !important; background-color: rgba(255, 255, 255, 0.95) !important; padding: 15px !important; border-radius: 8px !important; margin: 10px 0 !important;';
+            });
+        }
+        
+        // Aggressive table styling with retry mechanism
+        function applyTableStylingAggressively() {
+            forceTableStyling();
+            
+            // Retry styling multiple times to catch dynamically loaded content
+            setTimeout(() => forceTableStyling(), 500);
+            setTimeout(() => forceTableStyling(), 1000);
+            setTimeout(() => forceTableStyling(), 2000);
+            setTimeout(() => forceTableStyling(), 3000);
         }
         
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             initializeSocket();
             
-            // Apply table styling immediately
-            forceTableStyling();
+            // Apply aggressive table styling
+            applyTableStylingAggressively();
             
             // Re-apply styling when new content is added
             const observer = new MutationObserver(function(mutations) {
                 mutations.forEach(function(mutation) {
                     if (mutation.type === 'childList') {
                         mutation.addedNodes.forEach(function(node) {
-                            if (node.nodeType === 1) { // Element node
-                                forceTableStyling(node);
+                            if (node.nodeType === 1) {
+                                setTimeout(() => forceTableStyling(node), 100);
                             }
                         });
                     }
@@ -895,6 +925,11 @@
                     card.classList.add('fade-in');
                 }, index * 100);
             });
+        });
+        
+        // Also apply styling when window loads (after all resources)
+        window.addEventListener('load', function() {
+            applyTableStylingAggressively();
         });
     </script>
     
