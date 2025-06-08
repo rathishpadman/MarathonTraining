@@ -941,6 +941,53 @@
             return `${minutes}:${secs.toString().padStart(2, '0')}/km`;
         }
 
+        async function fetchAIRecommendations(athleteId) {
+            try {
+                const response = await fetch(`/api/ai_recommendations/${athleteId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const aiData = await response.json();
+                console.log('AI Recommendations Response:', aiData);
+                
+                displayAIRecommendations(aiData.recommendations);
+                
+            } catch (error) {
+                console.error('Error fetching AI recommendations:', error);
+                displayAIRecommendations(['AI recommendations temporarily unavailable. Please try again later.']);
+            }
+        }
+
+        function displayAIRecommendations(recommendations) {
+            const aiSection = document.getElementById('aiInsightsSection');
+            const aiContainer = document.getElementById('aiRecommendations');
+            
+            if (!recommendations || recommendations.length === 0) {
+                aiSection.style.display = 'none';
+                return;
+            }
+            
+            // Clear existing content
+            aiContainer.innerHTML = '';
+            
+            // Add each recommendation as a styled item
+            recommendations.forEach((recommendation, index) => {
+                const recommendationDiv = document.createElement('div');
+                recommendationDiv.className = 'ai-recommendation-item';
+                recommendationDiv.innerHTML = `
+                    <div style="font-weight: bold; color: #4A90E2; margin-bottom: 5px;">
+                        ${index === 0 ? 'AI Analysis' : `Recommendation ${index}`}
+                    </div>
+                    <div>${recommendation}</div>
+                `;
+                aiContainer.appendChild(recommendationDiv);
+            });
+            
+            // Show the section
+            aiSection.style.display = 'block';
+        }
+
         // Auto-predict on page load
         document.addEventListener('DOMContentLoaded', function() {
             predictRaceTime();
