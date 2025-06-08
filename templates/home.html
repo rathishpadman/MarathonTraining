@@ -1,0 +1,755 @@
+{% extends "base.html" %}
+
+{% block title %}Marathon Training Community - Train Smarter, Run Faster{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --primary-teal: #14B8A6;
+        --secondary-teal: #0F766E;
+        --light-teal: #5EEAD4;
+        --dark-green: #065f46;
+        --accent-orange: #F97316;
+        --accent-purple: #8B5CF6;
+        --text-primary: #ffffff;
+        --text-secondary: rgba(255, 255, 255, 0.9);
+        --text-muted: rgba(255, 255, 255, 0.7);
+        --glass-bg: rgba(20, 184, 166, 0.15);
+        --glass-border: rgba(20, 184, 166, 0.3);
+        --gradient-primary: linear-gradient(135deg, var(--dark-green) 0%, var(--secondary-teal) 50%, var(--primary-teal) 100%);
+        --gradient-accent: linear-gradient(135deg, var(--accent-orange), var(--accent-purple));
+    }
+
+    body {
+        background: var(--gradient-primary);
+        min-height: 100vh;
+        color: var(--text-primary);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .hero-section {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        padding: 2rem 1rem;
+    }
+
+    .hero-content {
+        max-width: 1200px;
+        z-index: 2;
+        position: relative;
+    }
+
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 50px;
+        padding: 0.75rem 1.5rem;
+        margin-bottom: 2rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+
+    .hero-title {
+        font-size: clamp(3rem, 8vw, 6rem);
+        font-weight: 800;
+        line-height: 1.1;
+        margin-bottom: 1.5rem;
+        background: linear-gradient(135deg, var(--text-primary), var(--light-teal));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .hero-subtitle {
+        font-size: clamp(1.25rem, 3vw, 1.5rem);
+        color: var(--text-secondary);
+        margin-bottom: 3rem;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.6;
+    }
+
+    .hero-cta {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 4rem;
+    }
+
+    .cta-button {
+        padding: 1rem 2rem;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .cta-primary {
+        background: var(--gradient-accent);
+        color: white;
+    }
+
+    .cta-secondary {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        color: var(--text-primary);
+    }
+
+    .cta-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .hero-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 2rem;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--light-teal);
+        display: block;
+    }
+
+    .stat-label {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+    }
+
+    .features-section {
+        padding: 6rem 1rem;
+        background: rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(20px);
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 4rem;
+    }
+
+    .section-title {
+        font-size: clamp(2.5rem, 5vw, 3.5rem);
+        font-weight: 700;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, var(--text-primary), var(--light-teal));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .section-subtitle {
+        font-size: 1.25rem;
+        color: var(--text-secondary);
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 2rem;
+        margin-bottom: 4rem;
+    }
+
+    .feature-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 2.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    }
+
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+        background: var(--gradient-accent);
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .feature-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+    }
+
+    .feature-description {
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+
+    .feature-link {
+        color: var(--light-teal);
+        text-decoration: none;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .feature-link:hover {
+        color: var(--accent-orange);
+        transform: translateX(5px);
+    }
+
+    .demo-section {
+        padding: 6rem 1rem;
+        text-align: center;
+    }
+
+    .demo-preview {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 3rem;
+        margin-bottom: 3rem;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .demo-image {
+        width: 100%;
+        height: 400px;
+        background: linear-gradient(135deg, var(--secondary-teal), var(--primary-teal));
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: var(--text-primary);
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .demo-features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .demo-feature {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    .demo-feature-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--gradient-accent);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+
+    .cta-section {
+        padding: 6rem 1rem;
+        background: rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(20px);
+        text-align: center;
+    }
+
+    .cta-content {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .footer-section {
+        padding: 3rem 1rem 2rem;
+        border-top: 1px solid var(--glass-border);
+        background: rgba(0, 0, 0, 0.1);
+    }
+
+    .footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .footer-section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+    }
+
+    .footer-links {
+        list-style: none;
+        padding: 0;
+    }
+
+    .footer-links li {
+        margin-bottom: 0.5rem;
+    }
+
+    .footer-links a {
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .footer-links a:hover {
+        color: var(--light-teal);
+    }
+
+    .footer-bottom {
+        text-align: center;
+        padding-top: 2rem;
+        border-top: 1px solid var(--glass-border);
+        color: var(--text-muted);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .hero-cta {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .cta-button {
+            width: 100%;
+            max-width: 300px;
+            justify-content: center;
+        }
+
+        .features-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .feature-card {
+            padding: 2rem;
+        }
+    }
+
+    /* Animation */
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+
+    .hero-badge {
+        animation: float 3s ease-in-out infinite;
+    }
+
+    /* Background decoration */
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+            radial-gradient(circle at 20% 20%, rgba(20, 184, 166, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 40% 60%, rgba(249, 115, 22, 0.05) 0%, transparent 50%);
+        pointer-events: none;
+    }
+</style>
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="hero-content">
+        <div class="hero-badge">
+            <i class="fas fa-bolt"></i>
+            Powered by AI & Real Strava Data
+        </div>
+        
+        <h1 class="hero-title">Train Smarter<br>Run Faster</h1>
+        
+        <p class="hero-subtitle">
+            Join the ultimate marathon training community. Get AI-powered insights, 
+            connect with fellow runners, and achieve your personal best with data-driven training.
+        </p>
+        
+        <div class="hero-cta">
+            <a href="/auth/strava" class="cta-button cta-primary">
+                <i class="fab fa-strava"></i>
+                Connect with Strava
+            </a>
+            <a href="/community" class="cta-button cta-secondary">
+                <i class="fas fa-chart-line"></i>
+                View Community Dashboard
+            </a>
+        </div>
+        
+        <div class="hero-stats" id="heroStats">
+            <div class="stat-item">
+                <span class="stat-number" id="totalAthletes">0</span>
+                <span class="stat-label">Active Athletes</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="totalDistance">0</span>
+                <span class="stat-label">KM Logged</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="totalActivities">0</span>
+                <span class="stat-label">Activities Tracked</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="avgPace">0:00</span>
+                <span class="stat-label">Avg Community Pace</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Powerful Features</h2>
+            <p class="section-subtitle">
+                Everything you need to optimize your marathon training and connect with a community of passionate runners.
+            </p>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <h3 class="feature-title">AI Race Predictions</h3>
+                <p class="feature-description">
+                    Get personalized race time predictions and pacing strategies powered by Google Gemini AI 
+                    and your real training data from Strava.
+                </p>
+                <a href="/community" class="feature-link">
+                    Explore Predictions <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3 class="feature-title">Injury Risk Analysis</h3>
+                <p class="feature-description">
+                    Advanced machine learning algorithms analyze your training patterns to predict and prevent 
+                    potential injuries before they happen.
+                </p>
+                <a href="/community" class="feature-link">
+                    View Analysis <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3 class="feature-title">Community Dashboard</h3>
+                <p class="feature-description">
+                    Connect with fellow marathoners, compare performance metrics, and get motivated by 
+                    community achievements and leaderboards.
+                </p>
+                <a href="/community" class="feature-link">
+                    Join Community <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3 class="feature-title">Performance Analytics</h3>
+                <p class="feature-description">
+                    Deep dive into your training metrics with comprehensive analytics, progress tracking, 
+                    and personalized insights for continuous improvement.
+                </p>
+                <a href="/community" class="feature-link">
+                    View Analytics <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-target"></i>
+                </div>
+                <h3 class="feature-title">Training Optimization</h3>
+                <p class="feature-description">
+                    Receive AI-powered training recommendations based on your current fitness level, 
+                    goals, and recovery patterns for optimal performance gains.
+                </p>
+                <a href="/community" class="feature-link">
+                    Optimize Training <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h3 class="feature-title">Race Strategy</h3>
+                <p class="feature-description">
+                    Get detailed pacing strategies, nutrition timing, and race-day tactics tailored to 
+                    your specific marathon goals and fitness profile.
+                </p>
+                <a href="/community" class="feature-link">
+                    Plan Strategy <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Demo Section -->
+<section class="demo-section">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">See It In Action</h2>
+            <p class="section-subtitle">
+                Experience the power of data-driven marathon training with real-time insights and community features.
+            </p>
+        </div>
+        
+        <div class="demo-preview">
+            <div class="demo-image">
+                <i class="fas fa-play-circle" style="font-size: 4rem; opacity: 0.7;"></i>
+                <div style="position: absolute; bottom: 20px; left: 20px; right: 20px; background: rgba(0,0,0,0.5); padding: 1rem; border-radius: 10px;">
+                    <strong>Live Community Dashboard</strong><br>
+                    Real-time training data and community insights
+                </div>
+            </div>
+            
+            <div class="demo-features">
+                <div class="demo-feature">
+                    <div class="demo-feature-icon">
+                        <i class="fas fa-sync"></i>
+                    </div>
+                    <span>Real-time Strava Sync</span>
+                </div>
+                <div class="demo-feature">
+                    <div class="demo-feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <span>AI-Powered Insights</span>
+                </div>
+                <div class="demo-feature">
+                    <div class="demo-feature-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <span>Mobile Responsive</span>
+                </div>
+                <div class="demo-feature">
+                    <div class="demo-feature-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <span>Secure & Private</span>
+                </div>
+            </div>
+        </div>
+        
+        <a href="/community" class="cta-button cta-primary">
+            <i class="fas fa-rocket"></i>
+            Try Live Demo
+        </a>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="container">
+        <div class="cta-content">
+            <h2 class="section-title">Ready to Transform Your Training?</h2>
+            <p class="section-subtitle">
+                Join thousands of runners who are already using AI-powered insights to achieve their marathon goals.
+            </p>
+            <div style="margin-top: 2rem;">
+                <a href="/auth/strava" class="cta-button cta-primary" style="margin-right: 1rem;">
+                    <i class="fab fa-strava"></i>
+                    Get Started Free
+                </a>
+                <a href="/community" class="cta-button cta-secondary">
+                    <i class="fas fa-eye"></i>
+                    View Demo
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer-section">
+    <div class="container">
+        <div class="footer-content">
+            <div>
+                <h4 class="footer-section-title">Marathon Training Community</h4>
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                    Empowering runners with AI-driven insights and community support to achieve their marathon goals.
+                </p>
+            </div>
+            
+            <div>
+                <h4 class="footer-section-title">Features</h4>
+                <ul class="footer-links">
+                    <li><a href="/community">Community Dashboard</a></li>
+                    <li><a href="/community">AI Race Predictions</a></li>
+                    <li><a href="/community">Injury Risk Analysis</a></li>
+                    <li><a href="/community">Performance Analytics</a></li>
+                </ul>
+            </div>
+            
+            <div>
+                <h4 class="footer-section-title">Connect</h4>
+                <ul class="footer-links">
+                    <li><a href="/auth/strava">Connect Strava</a></li>
+                    <li><a href="/community">Join Community</a></li>
+                    <li><a href="/dashboard">Personal Dashboard</a></li>
+                    <li><a href="/community">Live Activity Feed</a></li>
+                </ul>
+            </div>
+            
+            <div>
+                <h4 class="footer-section-title">Resources</h4>
+                <ul class="footer-links">
+                    <li><a href="/community">Training Plans</a></li>
+                    <li><a href="/community">Race Strategies</a></li>
+                    <li><a href="/community">Injury Prevention</a></li>
+                    <li><a href="/community">Performance Tips</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2025 Marathon Training Community. Powered by AI, built for runners.</p>
+        </div>
+    </div>
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadCommunityStats();
+    
+    // Animate numbers on load
+    setTimeout(() => {
+        animateNumbers();
+    }, 500);
+});
+
+async function loadCommunityStats() {
+    try {
+        const response = await fetch('/api/community/overview');
+        const data = await response.json();
+        
+        if (data.kpis) {
+            updateHeroStats(data.kpis);
+        }
+    } catch (error) {
+        console.error('Error loading community stats:', error);
+        // Set default values if API fails
+        updateHeroStats({
+            totalAthletes: 1,
+            totalDistance: 104.7,
+            totalActivities: 14,
+            avgPace: 7.13
+        });
+    }
+}
+
+function updateHeroStats(kpis) {
+    document.getElementById('totalAthletes').textContent = kpis.totalAthletes || 0;
+    document.getElementById('totalDistance').textContent = Math.round(kpis.totalDistance || 0);
+    document.getElementById('totalActivities').textContent = kpis.totalActivities || 0;
+    
+    if (kpis.avgPace) {
+        const minutes = Math.floor(kpis.avgPace);
+        const seconds = Math.round((kpis.avgPace - minutes) * 60);
+        document.getElementById('avgPace').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+}
+
+function animateNumbers() {
+    const numberElements = document.querySelectorAll('.stat-number');
+    
+    numberElements.forEach(element => {
+        const finalValue = element.textContent;
+        let currentValue = 0;
+        const increment = parseInt(finalValue) / 30; // Animate over 30 steps
+        
+        const animation = setInterval(() => {
+            currentValue += increment;
+            if (currentValue >= parseInt(finalValue)) {
+                element.textContent = finalValue;
+                clearInterval(animation);
+            } else {
+                element.textContent = Math.floor(currentValue);
+            }
+        }, 50);
+    });
+}
+
+// Smooth scrolling for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    });
+});
+</script>
+{% endblock %}
