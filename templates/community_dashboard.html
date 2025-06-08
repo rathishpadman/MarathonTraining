@@ -418,30 +418,34 @@
                 </div>
             </div>
 
-            <!-- Training Load Distribution -->
+            <!-- Community Training Zones -->
             <div class="col-lg-6 mb-4">
                 <div class="glass-container h-100">
                     <h3 class="section-title">
-                        <i data-feather="bar-chart-2" class="me-2"></i>
-                        Training Load Distribution
+                        <i data-feather="users" class="me-2"></i>
+                        Community Training Zones
                     </h3>
                     <div class="chart-container d-flex align-items-center justify-content-center" style="height: 420px;">
-                        <canvas id="trainingLoadChart"></canvas>
+                        <canvas id="communityZonesChart"></canvas>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Community Trends -->
+        <!-- Community Activity Stream -->
         <div class="row">
             <div class="col-12 mb-4">
                 <div class="glass-container">
                     <h3 class="section-title">
-                        <i data-feather="trending-up" class="me-2"></i>
-                        Community Training Trends (Last 7 Days)
+                        <i data-feather="activity" class="me-2"></i>
+                        Community Activity Stream
                     </h3>
-                    <div class="chart-container">
-                        <canvas id="communityTrendsChart" width="400" height="200"></canvas>
+                    <div id="communityActivityStream" style="max-height: 400px; overflow-y: auto; min-height: 300px;">
+                        <div class="loading-spinner">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -454,8 +458,7 @@
         feather.replace();
 
         // Global chart instances
-        let trainingLoadChart;
-        let communityTrendsChart;
+        let communityZonesChart;
 
         // Load community data
         async function loadCommunityData() {
@@ -475,7 +478,7 @@
                 }
 
                 // Validate data structure
-                if (!data.kpis || !data.leaderboard || !data.trainingLoadDistribution || !data.communityTrends) {
+                if (!data.kpis || !data.leaderboard) {
                     console.error('Invalid data structure received:', data);
                     showErrorMessage('Invalid data received from server.');
                     return;
@@ -484,12 +487,34 @@
                 // Update components safely
                 updateKPICards(data.kpis);
                 updateLeaderboard(data.leaderboard);
-                updateTrainingLoadChart(data.trainingLoadDistribution);
-                updateCommunityTrendsChart(data.communityTrends);
+                loadCommunityTrainingZones();
+                loadCommunityActivityStream();
                 
             } catch (error) {
                 console.error('Error loading community data:', error);
                 showErrorMessage('Unable to connect to server. Please check your connection.');
+            }
+        }
+
+        // Load Community Training Zones
+        async function loadCommunityTrainingZones() {
+            try {
+                const response = await fetch('/api/community/training_zones');
+                const data = await response.json();
+                createCommunityZonesChart(data);
+            } catch (error) {
+                console.error('Error loading community training zones:', error);
+            }
+        }
+
+        // Load Community Activity Stream
+        async function loadCommunityActivityStream() {
+            try {
+                const response = await fetch('/api/community/activity_stream');
+                const data = await response.json();
+                displayCommunityActivityStream(data);
+            } catch (error) {
+                console.error('Error loading community activity stream:', error);
             }
         }
 
@@ -636,43 +661,140 @@
             });
         }
 
-        function updateCommunityTrendsChart(data) {
-            const ctx = document.getElementById('communityTrendsChart').getContext('2d');
-            
-            if (communityTrendsChart) {
-                communityTrendsChart.destroy();
+        // Create Community Training Zones Chart
+        function createCommunityZonesChart(data) {
+            const ctx = document.getElementById('communityZonesChart');
+            if (!ctx) return;
+
+            // Destroy existing chart if it exists
+            if (communityZonesChart) {
+                communityZonesChart.destroy();
             }
+
+            const zones = data.zones || {};
+            const percentages = data.percentages || {};
             
-            communityTrendsChart = new Chart(ctx, {
-                type: 'line',
+            communityZonesChart = new Chart(ctx, {
+                type: 'doughnut',
                 data: {
-                    labels: data.labels,
-                    datasets: data.datasets.map(dataset => ({
-                        ...dataset,
-                        tension: 0.4,
-                        borderWidth: 3,
-                        pointRadius: 5,
-                        pointHoverRadius: 7,
-                        fill: true
-                    }))
+                    labels: ['Low', 'Moderate', 'High', 'Overreaching'],
+                    datasets: [{
+                        data: [
+                            zones.Low || 0,
+                            zones.Moderate || 0,
+                            zones.High || 0,
+                            zones.Overreaching || 0
+                        ],
+                        backgroundColor: [
+                            '#28a745',  // Green for Low
+                            '#ffc107',  // Yellow for Moderate
+                            '#fd7e14',  // Orange for High
+                            '#dc3545'   // Red for Overreaching
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Training Metrics',
-                                color: '#475569',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#ffffff',
                                 font: {
                                     size: 12,
-                                    weight: '600'
+                                    weight: 'bold'
+                                },
+                                padding: 15,
+                                generateLabels: function(chart) {
+                                    const data = chart.data;
+                                    return data.labels.map((label, i) => ({
+                                        text: `${label}: ${percentages[label] || 0}%`,
+                                        fillStyle: data.datasets[0].backgroundColor[i],
+                                        strokeStyle: data.datasets[0].borderColor,
+                                        lineWidth: data.datasets[0].borderWidth,
+                                        hidden: false,
+                                        index: i
+                                    }));
                                 }
-                            },
-                            ticks: {
-                                color: '#64748b',
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label;
+                                    const value = context.parsed;
+                                    const percentage = percentages[label] || 0;
+                                    return `${label}: ${value} athletes (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Display Community Activity Stream
+        function displayCommunityActivityStream(data) {
+            const container = document.getElementById('communityActivityStream');
+            if (!container) return;
+
+            const stream = data.stream || [];
+            
+            if (stream.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted p-4" style="color: rgba(255,255,255,0.7);">No recent community activities</div>';
+                return;
+            }
+
+            let html = '';
+            
+            stream.forEach(item => {
+                if (item.type === 'milestone') {
+                    html += `
+                        <div class="activity-item" style="border-left: 4px solid #ffc107; margin-bottom: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="activity-name" style="color: white;">
+                                    <i data-feather="award" style="width: 16px; height: 16px; color: #ffc107; margin-right: 8px;"></i>
+                                    <strong>${item.athlete_name}</strong> achieved ${item.achievement}
+                                </div>
+                                <small style="color: rgba(255,255,255,0.6);">${item.relative_time}</small>
+                            </div>
+                            <div class="activity-details" style="color: rgba(255,255,255,0.7);">
+                                ${item.details}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="activity-item" style="border-left: 4px solid #007bff; margin-bottom: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="activity-name" style="color: white;">
+                                    <i data-feather="activity" style="width: 16px; height: 16px; color: #007bff; margin-right: 8px;"></i>
+                                    <strong>${item.athlete_name}</strong> - ${item.activity_name}
+                                </div>
+                                <small style="color: rgba(255,255,255,0.6);">${item.relative_time}</small>
+                            </div>
+                            <div class="activity-details" style="color: rgba(255,255,255,0.7);">
+                                ${item.sport_type} • ${item.distance_km}km • ${item.pace} pace
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            container.innerHTML = html;
+            feather.replace();
+        }
+
+        function updateOldChart(data) {
+            const ctx = document.getElementById('oldChart');
+            
+            if (!ctx) return;
+            
+            // This function exists for compatibility but won't be used
+            console.log('Old chart function called, but not needed with new design');
                                 font: {
                                     size: 11
                                 }
