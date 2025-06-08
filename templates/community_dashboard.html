@@ -1,19 +1,23 @@
 {% extends "base.html" %}
 
-{% block title %}Performance Leaderboard - Marathon Training{% endblock %}
+{% block title %}Community Dashboard - Marathon Training{% endblock %}
 
 {% block content %}
 <style>
-    .performance-leaderboard {
+    body {
+        background: linear-gradient(135deg, #14B8A6 0%, #0F766E 100%);
+        min-height: 100vh;
+    }
+    
+    .performance-section {
         background: linear-gradient(135deg, #14B8A6 0%, #0F766E 100%);
         border-radius: 20px;
         padding: 2rem;
-        margin: 0;
-        min-height: 100vh;
-        box-shadow: none;
+        margin-bottom: 2rem;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     }
     
-    .leaderboard-header {
+    .section-header {
         color: white;
         font-size: 1.8rem;
         font-weight: 600;
@@ -107,24 +111,6 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
     
-    .performance-icon {
-        font-size: 1.5rem;
-    }
-    
-    .loading-spinner {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 200px;
-        color: white;
-    }
-    
-    .no-athletes {
-        text-align: center;
-        color: white;
-        padding: 2rem;
-    }
-    
     .athlete-card::before {
         content: '';
         position: absolute;
@@ -132,20 +118,150 @@
         left: 0;
         right: 0;
         height: 4px;
-        background: linear-gradient(90deg, var(--primary-teal), var(--light-teal));
+        background: linear-gradient(90deg, #14B8A6, #5EEAD4);
+    }
+    
+    .kpi-card {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        margin-bottom: 1rem;
+        backdrop-filter: blur(10px);
+    }
+    
+    .kpi-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #0F766E;
+        margin-bottom: 0.5rem;
+    }
+    
+    .kpi-label {
+        color: #6b7280;
+        font-weight: 500;
+    }
+    
+    .chart-container {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 15px;
+        padding: 1.5rem;
+        backdrop-filter: blur(10px);
+    }
+    
+    .activity-item {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border-left: 4px solid #14B8A6;
+    }
+    
+    .activity-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .activity-name {
+        font-weight: 600;
+        color: #1f2937;
+    }
+    
+    .activity-time {
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+    
+    .activity-stats {
+        color: #6b7280;
+        font-size: 0.9rem;
     }
 </style>
 
-<div class="performance-leaderboard">
-    <div class="leaderboard-header">
-        <i class="fas fa-trophy performance-icon"></i>
-        Performance Leaderboard
+<div class="container-fluid p-0">
+    <!-- Performance Leaderboard Section -->
+    <div class="performance-section">
+        <div class="section-header">
+            <i class="fas fa-trophy"></i>
+            Performance Leaderboard
+        </div>
+        
+        <div id="leaderboardContent">
+            <div class="d-flex justify-content-center">
+                <div class="spinner-border text-light" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
     </div>
     
-    <div id="leaderboardContent">
-        <div class="loading-spinner">
-            <div class="spinner-border text-light" role="status">
-                <span class="visually-hidden">Loading...</span>
+    <!-- Community KPIs -->
+    <div class="row mx-2 mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="kpi-card">
+                <div class="kpi-value" id="totalAthletes">0</div>
+                <div class="kpi-label">Active Athletes</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="kpi-card">
+                <div class="kpi-value" id="totalDistance">0 km</div>
+                <div class="kpi-label">Total Distance</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="kpi-card">
+                <div class="kpi-value" id="totalActivities">0</div>
+                <div class="kpi-label">Total Activities</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="kpi-card">
+                <div class="kpi-value" id="avgPace">0:00</div>
+                <div class="kpi-label">Avg Pace</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Section -->
+    <div class="row mx-2 mb-4">
+        <div class="col-lg-8 mb-3">
+            <div class="chart-container">
+                <h4 class="text-dark mb-3">
+                    <i class="fas fa-chart-area me-2"></i>
+                    Community Training Trends
+                </h4>
+                <canvas id="trainingTrendsChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-3">
+            <div class="chart-container">
+                <h4 class="text-dark mb-3">
+                    <i class="fas fa-dumbbell me-2"></i>
+                    Training Load Distribution
+                </h4>
+                <canvas id="trainingLoadChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Activity Stream -->
+    <div class="row mx-2 mb-4">
+        <div class="col-12">
+            <div class="chart-container">
+                <h4 class="text-dark mb-3">
+                    <i class="fas fa-stream me-2"></i>
+                    Recent Community Activities
+                </h4>
+                <div id="activityStream">
+                    <div class="d-flex justify-content-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading activities...</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -165,16 +281,41 @@ async function loadCommunityData() {
         
         console.log('KPI data:', data);
         
+        // Update KPIs
+        if (data.kpis) {
+            updateKPIs(data.kpis);
+        }
+        
+        // Render leaderboard
         if (data.leaderboard && data.leaderboard.length > 0) {
             renderLeaderboard(data.leaderboard);
         } else {
             showNoAthletes();
         }
         
+        // Render charts
+        if (data.communityTrends) {
+            renderTrainingTrendsChart(data.communityTrends);
+        }
+        
+        if (data.trainingLoadDistribution) {
+            renderTrainingLoadChart(data.trainingLoadDistribution);
+        }
+        
+        // Load activity stream
+        loadActivityStream();
+        
     } catch (error) {
         console.error('Error loading community data:', error);
         showErrorState();
     }
+}
+
+function updateKPIs(kpis) {
+    document.getElementById('totalAthletes').textContent = kpis.totalAthletes || 0;
+    document.getElementById('totalDistance').textContent = `${(kpis.totalDistance || 0).toFixed(1)} km`;
+    document.getElementById('totalActivities').textContent = kpis.totalActivities || 0;
+    document.getElementById('avgPace').textContent = formatPace(kpis.avgPace || 0);
 }
 
 function renderLeaderboard(athletes) {
@@ -219,10 +360,96 @@ function renderLeaderboard(athletes) {
     content.innerHTML = leaderboardHTML;
 }
 
+function renderTrainingTrendsChart(data) {
+    const ctx = document.getElementById('trainingTrendsChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.labels,
+            datasets: data.datasets.map(dataset => ({
+                ...dataset,
+                borderColor: '#14B8A6',
+                backgroundColor: 'rgba(20, 184, 166, 0.1)',
+                tension: 0.4
+            }))
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function renderTrainingLoadChart(data) {
+    const ctx = document.getElementById('trainingLoadChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: data.labels,
+            datasets: [{
+                data: data.data,
+                backgroundColor: [
+                    '#14B8A6',
+                    '#0F766E',
+                    '#5EEAD4',
+                    '#FBBF24'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+async function loadActivityStream() {
+    try {
+        const response = await fetch('/api/community/activities');
+        const activities = await response.json();
+        
+        const streamContainer = document.getElementById('activityStream');
+        
+        if (activities && activities.length > 0) {
+            const activitiesHTML = activities.slice(0, 10).map(activity => `
+                <div class="activity-item">
+                    <div class="activity-header">
+                        <div class="activity-name">${activity.name || 'Running Activity'}</div>
+                        <div class="activity-time">${formatActivityTime(activity.start_date)}</div>
+                    </div>
+                    <div class="activity-stats">
+                        ${(activity.distance / 1000).toFixed(1)}km • ${formatDuration(activity.moving_time)} • ${activity.athlete_name}
+                    </div>
+                </div>
+            `).join('');
+            
+            streamContainer.innerHTML = activitiesHTML;
+        } else {
+            streamContainer.innerHTML = '<p class="text-center text-muted">No recent activities</p>';
+        }
+    } catch (error) {
+        console.error('Error loading activity stream:', error);
+        document.getElementById('activityStream').innerHTML = '<p class="text-center text-muted">Failed to load activities</p>';
+    }
+}
+
 function showNoAthletes() {
     const content = document.getElementById('leaderboardContent');
     content.innerHTML = `
-        <div class="no-athletes">
+        <div class="text-center text-white py-5">
             <i class="fas fa-users fa-3x mb-3"></i>
             <h4>No Athletes Found</h4>
             <p>Connect your Strava account to start tracking performance</p>
@@ -233,7 +460,7 @@ function showNoAthletes() {
 function showErrorState() {
     const content = document.getElementById('leaderboardContent');
     content.innerHTML = `
-        <div class="no-athletes">
+        <div class="text-center text-white py-5">
             <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
             <h4>Unable to Load Data</h4>
             <p>Please try refreshing the page</p>
@@ -246,6 +473,24 @@ function formatPace(paceSeconds) {
     const minutes = Math.floor(paceSeconds / 60);
     const seconds = Math.floor(paceSeconds % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function formatDuration(seconds) {
+    if (!seconds) return '0:00';
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hrs > 0) {
+        return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function formatActivityTime(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 }
 </script>
 {% endblock %}
