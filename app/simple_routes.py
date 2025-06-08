@@ -1616,7 +1616,8 @@ def get_ai_recommendations(athlete_id):
         valid_pace_activities = [a for a in recent_activities if a.average_speed and a.average_speed > 0]
         valid_hr_activities = [a for a in recent_activities if a.average_heartrate and a.average_heartrate > 0]
         
-        avg_pace = sum(60 / a.average_speed for a in valid_pace_activities) / len(valid_pace_activities) if valid_pace_activities else 6.5
+        # Convert speed (m/s) to pace (min/km): pace = 1000 / (speed_m_s * 60)
+        avg_pace = sum(1000 / (a.average_speed * 60) for a in valid_pace_activities) / len(valid_pace_activities) if valid_pace_activities else 6.5
         avg_hr = sum(a.average_heartrate for a in valid_hr_activities) / len(valid_hr_activities) if valid_hr_activities else 150
         
         athlete_data = {
@@ -1634,7 +1635,7 @@ def get_ai_recommendations(athlete_id):
         current_activity = {
             'distance': (latest_activity.distance or 0) / 1000,
             'heart_rate': latest_activity.average_heartrate or 150,
-            'pace': 60 / latest_activity.average_speed if latest_activity.average_speed else 6.5
+            'pace': 1000 / (latest_activity.average_speed * 60) if latest_activity.average_speed else 6.5
         }
         
         # Get AI recommendations
