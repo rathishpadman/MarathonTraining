@@ -140,8 +140,8 @@
                             Training Volume Trend
                         </h5>
                     </div>
-                    <div class="card-body">
-                        <canvas id="trainingVolumeChart" height="300"></canvas>
+                    <div class="card-body" style="height: 350px;">
+                        <canvas id="trainingVolumeChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -155,8 +155,8 @@
                             Pace Analysis
                         </h5>
                     </div>
-                    <div class="card-body">
-                        <canvas id="paceAnalysisChart" height="300"></canvas>
+                    <div class="card-body" style="height: 350px;">
+                        <canvas id="paceAnalysisChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -172,8 +172,8 @@
                             Heart Rate Zones
                         </h5>
                     </div>
-                    <div class="card-body">
-                        <canvas id="heartRateZonesChart" height="300"></canvas>
+                    <div class="card-body" style="height: 350px;">
+                        <canvas id="heartRateZonesChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -187,8 +187,8 @@
                             Training Load
                         </h5>
                     </div>
-                    <div class="card-body">
-                        <canvas id="trainingLoadChart" height="300"></canvas>
+                    <div class="card-body" style="height: 350px;">
+                        <canvas id="trainingLoadChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -664,11 +664,19 @@ function createTrainingLoadChart(data) {
 
 // Simplified chart functions for basic charts
 function createSimpleVolumeChart(athleteId, timePeriod) {
+    console.log('Creating volume chart for athlete:', athleteId);
     fetch(`/api/athletes/${athleteId}/volume-trend?days=${timePeriod}`)
         .then(response => response.json())
         .then(data => {
+            console.log('Volume chart data:', data);
             if (data.dates && data.distances) {
-                const ctx = document.getElementById('trainingVolumeChart').getContext('2d');
+                const canvas = document.getElementById('trainingVolumeChart');
+                console.log('Canvas element found:', canvas);
+                if (!canvas) {
+                    console.error('Volume chart canvas not found');
+                    return;
+                }
+                const ctx = canvas.getContext('2d');
                 
                 if (analyticsCharts.volume) {
                     analyticsCharts.volume.destroy();
