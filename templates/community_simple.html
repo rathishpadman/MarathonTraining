@@ -502,10 +502,73 @@
         50% { opacity: 0.5; }
     }
 
-    /* Ensure canvas transparency */
+    /* Ensure canvas and chart transparency */
     canvas {
         background: transparent !important;
         background-color: transparent !important;
+    }
+
+    /* Force all white backgrounds to be transparent */
+    * {
+        background-color: transparent !important;
+    }
+
+    /* Override specific elements that need backgrounds */
+    body {
+        background: linear-gradient(135deg, #065f46 0%, #0F766E 50%, #14B8A6 100%) !important;
+    }
+
+    .kpi-card, .section, .chart-container, .athlete-card, .activity-item, .milestone-card {
+        background: rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(10px) !important;
+    }
+
+    .live-indicator, .filter-btn {
+        background: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .athlete-rank {
+        background: #FBBF24 !important;
+    }
+
+    .athlete-rank.gold {
+        background: linear-gradient(135deg, #FFD700, #FFA500) !important;
+    }
+
+    .athlete-rank.silver {
+        background: linear-gradient(135deg, #C0C0C0, #A8A8A8) !important;
+    }
+
+    .athlete-rank.bronze {
+        background: linear-gradient(135deg, #CD7F32, #B8860B) !important;
+    }
+
+    .athlete-avatar {
+        background: #14B8A6 !important;
+    }
+
+    .milestone-icon {
+        background: #FBBF24 !important;
+    }
+
+    .action-btn.btn-primary {
+        background: #14B8A6 !important;
+    }
+
+    .action-btn.btn-secondary {
+        background: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .badge.streak {
+        background: #F59E0B !important;
+    }
+
+    .badge.achievement {
+        background: #8B5CF6 !important;
+    }
+
+    .badge.pr {
+        background: #10B981 !important;
     }
 </style>
 
@@ -885,8 +948,9 @@ function renderTrainingTrendsChart(data) {
         trainingTrendsChart.destroy();
     }
     
-    // Ensure transparent background
+    // Force transparent background
     context.canvas.style.backgroundColor = 'transparent';
+    context.canvas.style.background = 'none';
     
     trainingTrendsChart = new Chart(context, {
         type: 'line',
@@ -894,6 +958,7 @@ function renderTrainingTrendsChart(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            backgroundColor: 'transparent',
             plugins: {
                 legend: {
                     labels: {
@@ -905,15 +970,32 @@ function renderTrainingTrendsChart(data) {
             scales: {
                 x: {
                     ticks: { color: 'rgba(255, 255, 255, 0.8)' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    grid: { 
+                        color: 'rgba(255, 255, 255, 0.1)',
+                        backgroundColor: 'transparent'
+                    },
+                    backgroundColor: 'transparent'
                 },
                 y: {
                     ticks: { color: 'rgba(255, 255, 255, 0.8)' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    grid: { 
+                        color: 'rgba(255, 255, 255, 0.1)',
+                        backgroundColor: 'transparent'
+                    },
+                    backgroundColor: 'transparent'
                 }
+            },
+            layout: {
+                backgroundColor: 'transparent'
             }
         }
     });
+    
+    // Additional force transparent after creation
+    setTimeout(() => {
+        context.canvas.style.backgroundColor = 'transparent';
+        context.canvas.style.background = 'none';
+    }, 100);
 }
 
 function renderTrainingLoadChart(data) {
@@ -926,8 +1008,9 @@ function renderTrainingLoadChart(data) {
         trainingLoadChart.destroy();
     }
     
-    // Ensure transparent background
+    // Force transparent background
     context.canvas.style.backgroundColor = 'transparent';
+    context.canvas.style.background = 'none';
     
     trainingLoadChart = new Chart(context, {
         type: 'doughnut',
@@ -949,6 +1032,7 @@ function renderTrainingLoadChart(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            backgroundColor: 'transparent',
             plugins: {
                 legend: {
                     position: 'bottom',
@@ -958,9 +1042,18 @@ function renderTrainingLoadChart(data) {
                         padding: 20
                     }
                 }
+            },
+            layout: {
+                backgroundColor: 'transparent'
             }
         }
     });
+    
+    // Additional force transparent after creation
+    setTimeout(() => {
+        context.canvas.style.backgroundColor = 'transparent';
+        context.canvas.style.background = 'none';
+    }, 100);
 }
 
 async function loadLeaderboard(period = 'weekly') {
