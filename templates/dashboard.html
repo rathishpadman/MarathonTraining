@@ -530,7 +530,26 @@ function createWeeklyProgressChartFromActivities(activities, athleteData) {
                             const heartRate = avgHeartRates[dataIndex];
                             
                             if (distance > 0 && heartRate > 0) {
-                                return generateRaceRecommendation(distance, heartRate, athleteData);
+                                // Store context for async AI call
+                                window.currentTooltipContext = { distance, heartRate, dataIndex };
+                                
+                                // Trigger AI recommendations loading
+                                setTimeout(() => loadAIRecommendationsForTooltip(), 100);
+                                
+                                // Check if we already have cached AI recommendations
+                                if (window.aiRecommendations && window.aiRecommendations.length > 0) {
+                                    return [
+                                        '',
+                                        '🤖 AI Race Recommendations:',
+                                        ...window.aiRecommendations
+                                    ];
+                                } else {
+                                    return [
+                                        '',
+                                        '🤖 AI Race Recommendations:',
+                                        'Loading AI insights...'
+                                    ];
+                                }
                             }
                             return '';
                         }
@@ -744,6 +763,29 @@ function generateFallbackRecommendations(distance, heartRate, athleteData) {
     recommendations.push(`🎯 Est. 10K: ${Math.floor(predicted10K / 60)}:${String(predicted10K % 60).padStart(2, '0')}`);
     
     return recommendations;
+}
+
+// Function to load AI recommendations asynchronously after tooltip display
+async function loadAIRecommendationsForTooltip() {
+    if (!window.currentTooltipContext || !currentDashboardData) return;
+    
+    const { distance, heartRate } = window.currentTooltipContext;
+    
+    try {
+        const recommendations = await generateRaceRecommendation(distance, heartRate, currentDashboardData);
+        
+        // Store recommendations globally for use in tooltips
+        window.aiRecommendations = recommendations;
+        
+        // Force chart tooltip refresh if active
+        if (window.performanceChart && window.performanceChart.tooltip && window.performanceChart.tooltip._active && window.performanceChart.tooltip._active.length > 0) {
+            const activePoints = window.performanceChart.tooltip._active;
+            window.performanceChart.tooltip.setActiveElements(activePoints, {x: 0, y: 0});
+            window.performanceChart.update('none');
+        }
+    } catch (error) {
+        console.warn('Failed to load AI recommendations:', error);
+    }
 }
 
 // Create weekly progress chart (legacy function)
