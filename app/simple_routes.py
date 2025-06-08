@@ -1303,6 +1303,7 @@ def get_fitness_analysis(athlete_id):
         days = int(request.args.get('days', 90))
         logger.info(f"Analyzing fitness for athlete {athlete_id} over {days} days")
         
+        from app.race_predictor_simple import SimpleRacePredictor
         predictor = SimpleRacePredictor()
         analysis = predictor.analyze_fitness(db.session, athlete_id, days)
         
@@ -1335,8 +1336,9 @@ def get_training_plan(athlete_id):
         
         logger.info(f"Generating training plan for athlete {athlete_id}, race: {race_distance}")
         
+        from app.race_optimizer import RacePerformanceOptimizer
         optimizer = RacePerformanceOptimizer()
-        training_plan = optimizer.optimize_training_plan(db.session, athlete_id, race_distance, race_date)
+        training_plan = optimizer.optimize_race_strategy(athlete_id, race_distance)
         
         return jsonify(training_plan)
         
