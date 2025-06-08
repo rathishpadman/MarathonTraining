@@ -248,6 +248,51 @@
 
         .trend-up { color: #4CAF50; }
         .trend-down { color: #F44336; }
+
+        .pacing-table {
+            width: 100%;
+            margin-top: 1rem;
+            border-radius: 8px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .pacing-header {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            background: rgba(255, 215, 0, 0.1);
+            padding: 1rem;
+            font-weight: 600;
+            color: #FFD700;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .pacing-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background-color 0.2s ease;
+        }
+
+        .pacing-row:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .header-cell, .pace-cell {
+            padding: 0.25rem 0.5rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .strategy-cell {
+            font-size: 0.9rem;
+            line-height: 1.3;
+        }
+
+        .pace-value {
+            font-weight: 600;
+            color: #FFD700;
+        }
         .trend-stable { color: #FFC107; }
         
         .back-btn {
@@ -487,36 +532,8 @@
         function displayPacingStrategy(strategy) {
             const container = document.getElementById('pacingSplits');
             
-            if (!strategy || typeof strategy !== 'object') {
-                container.innerHTML = '<div class="pace-split">No pacing strategy available</div>';
-                return;
-            }
-            
-            // Handle object-based pacing strategy from API
-            const splits = [];
-            for (const [key, value] of Object.entries(strategy)) {
-                if (key.startsWith('km_')) {
-                    const km = key.replace('km_', '');
-                    // Convert seconds to minutes:seconds pace format
-                    const totalSeconds = Math.round(value);
-                    const minutes = Math.floor(totalSeconds / 60);
-                    const seconds = totalSeconds % 60;
-                    const pace = `${minutes}:${seconds.toString().padStart(2, '0')}/km`;
-                    splits.push({ km: `KM ${km}`, pace: pace });
-                }
-            }
-            
-            if (splits.length === 0) {
-                container.innerHTML = '<div class="pace-split">No pacing strategy available</div>';
-                return;
-            }
-            
-            container.innerHTML = splits.slice(0, 10).map(split => `
-                <div class="pace-split">
-                    <div class="split-distance">${split.km || 'Split'}</div>
-                    <div class="split-pace">${split.pace || 'N/A'}</div>
-                </div>
-            `).join('');
+            // This will be populated by the optimization insights with proper strategic segments
+            container.innerHTML = '<div class="pace-split">Loading pacing strategy...</div>';
         }
 
         function displayRecommendations(recommendations) {
@@ -555,6 +572,11 @@
                 return; // Don't show insights if data is unavailable
             }
 
+            // Display strategic pacing table from optimization data
+            if (data.pacing_strategy && data.pacing_strategy.splits) {
+                displayStrategicPacing(data.pacing_strategy.splits);
+            }
+
             // Display training analysis
             displayTrainingAnalysis(data.training_analysis || {});
             
@@ -569,6 +591,33 @@
             
             // Show the insights container
             insightsContainer.style.display = 'block';
+        }
+
+        function displayStrategicPacing(splits) {
+            const container = document.getElementById('pacingSplits');
+            
+            if (!splits || splits.length === 0) {
+                container.innerHTML = '<div class="pace-split">No pacing strategy available</div>';
+                return;
+            }
+            
+            // Create strategic pacing table
+            container.innerHTML = `
+                <div class="pacing-table">
+                    <div class="pacing-header">
+                        <div class="header-cell">Distance</div>
+                        <div class="header-cell">Strategy</div>
+                        <div class="header-cell">Target Pace</div>
+                    </div>
+                    ${splits.map(split => `
+                        <div class="pacing-row">
+                            <div class="pace-cell">${split.km || 'N/A'}</div>
+                            <div class="pace-cell strategy-cell">${split.strategy || 'N/A'}</div>
+                            <div class="pace-cell pace-value">${split.target_pace || 'N/A'}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
         }
 
         function displayTrainingAnalysis(analysis) {
