@@ -22,7 +22,7 @@ class AIRaceAdvisor:
         self.api_key = os.environ.get('GEMINI_API_KEY')
         if self.api_key:
             genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-pro')
+            self.model = genai.GenerativeModel('gemini-1.5-flash')
         else:
             logger.warning("GEMINI_API_KEY not found, AI recommendations will use fallback logic")
             self.model = None
