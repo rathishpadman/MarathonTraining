@@ -498,6 +498,8 @@
                 }
 
                 // Update components safely
+                console.log('KPI data:', data.kpis);
+                console.log('Leaderboard data:', data.leaderboard);
                 updateKPICards(data.kpis);
                 updateLeaderboard(data.leaderboard);
                 loadCommunityTrainingZones();
