@@ -71,13 +71,40 @@ class SimpleRacePredictor:
             predictions.append(volume_prediction)
         
         if not predictions:
-            raise ValueError("Unable to generate prediction")
-        
-        # Use median of predictions for stability
-        final_prediction = sorted(predictions)[len(predictions) // 2]
-        
-        # Calculate confidence based on data quality
-        confidence = self._calculate_confidence(activities, predictions)
+            # Fallback prediction based on average pace from all activities
+            all_paces = []
+            for activity in activities:
+                if activity.distance and activity.moving_time and activity.distance > 1000:
+                    activity_km = activity.distance / 1000
+                    pace = activity.moving_time / activity_km
+                    if 200 < pace < 800:
+                        all_paces.append(pace)
+            
+            if all_paces:
+                avg_pace = sum(all_paces) / len(all_paces)
+                # Conservative pace adjustment for race distance
+                if distance_km <= 5:
+                    race_pace = avg_pace * 0.98
+                elif distance_km <= 10:
+                    race_pace = avg_pace * 1.02
+                elif distance_km <= 21.1:
+                    race_pace = avg_pace * 1.08
+                else:  # Marathon
+                    race_pace = avg_pace * 1.15
+                
+                final_prediction = race_pace * distance_km
+                confidence = 0.6  # Lower confidence for fallback
+            else:
+                # Ultimate fallback based on race distance
+                fallback_paces = {'5K': 300, '10K': 315, 'Half Marathon': 330, 'Marathon': 345}  # seconds per km
+                race_pace = fallback_paces.get(race_distance, 330)
+                final_prediction = race_pace * distance_km
+                confidence = 0.4  # Very low confidence
+        else:
+            # Use median of predictions for stability
+            final_prediction = sorted(predictions)[len(predictions) // 2]
+            # Calculate confidence based on data quality
+            confidence = self._calculate_confidence(activities, predictions)
         
         # Generate training recommendations
         recommendations = self._generate_recommendations(activities, race_distance, fitness_score)
