@@ -1630,12 +1630,12 @@ def get_fitness_analysis(athlete_id):
         logger.error(f"Error analyzing fitness: {str(e)}")
         return jsonify({'error': 'Failed to analyze fitness'}), 500
 
-# Home page route
+# Home page route - redirect to community dashboard
 @main_bp.route('/')
 def home():
-    """Modern home page"""
-    from flask import render_template
-    return render_template('home.html')
+    """Redirect to community dashboard as home page"""
+    from flask import redirect, url_for
+    return redirect(url_for('main.community_dashboard'))
 
 
 
