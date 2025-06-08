@@ -8,17 +8,25 @@
         --primary-teal: #14B8A6;
         --secondary-teal: #0F766E;
         --light-teal: #5EEAD4;
+        --dark-green: #065f46;
         --accent-yellow: #FBBF24;
-        --text-dark: #1F2937;
-        --text-light: #6B7280;
-        --glass-bg: rgba(255, 255, 255, 0.1);
-        --glass-border: rgba(255, 255, 255, 0.2);
+        --text-primary: #ffffff;
+        --text-secondary: rgba(255, 255, 255, 0.9);
+        --glass-bg: rgba(20, 184, 166, 0.15);
+        --glass-border: rgba(20, 184, 166, 0.3);
+    }
+
+    body {
+        background: linear-gradient(135deg, var(--dark-green) 0%, var(--secondary-teal) 50%, var(--primary-teal) 100%);
+        min-height: 100vh;
+        color: var(--text-primary);
     }
 
     .community-container {
         max-width: 1400px;
         margin: 0 auto;
         padding: 1rem;
+        background: transparent;
     }
 
     .hero-section {
@@ -35,14 +43,14 @@
     .hero-title {
         font-size: 2.25rem;
         font-weight: 700;
-        color: white;
+        color: var(--text-primary);
         margin-bottom: 0.75rem;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
 
     .hero-subtitle {
         font-size: 1.1rem;
-        color: rgba(255, 255, 255, 0.9);
+        color: var(--text-secondary);
         margin-bottom: 1.5rem;
     }
 
