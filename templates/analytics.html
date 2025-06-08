@@ -449,8 +449,11 @@ function loadBasicCharts(athleteId, timePeriod) {
         return;
     }
     
-    // Create a simple training volume chart using summary data
+    // Create all charts with real athlete data
     createSimpleVolumeChart(athleteId, timePeriod);
+    createPaceAnalysisChart(athleteId, timePeriod);
+    createHeartRateZonesChart(athleteId, timePeriod);
+    createTrainingLoadChart(athleteId, timePeriod);
 }
 
 // Load and display charts (legacy function)
@@ -915,5 +918,222 @@ function createSimpleVolumeChart(athleteId, timePeriod) {
         console.error('Error creating training volume chart:', error);
     }
 }
+
+// Create pace analysis chart with real athlete data
+function createPaceAnalysisChart(athleteId, timePeriod) {
+    try {
+        const canvas = document.getElementById('paceAnalysisChart');
+        if (!canvas) return;
+        
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js library not loaded');
+            return;
+        }
+        
+        fetch(`/api/athletes/${athleteId}/pace-analysis?days=${timePeriod}`)
+            .then(response => response.json())
+            .then(data => {
+                const ctx = canvas.getContext('2d');
+                
+                if (window.paceChart) {
+                    window.paceChart.destroy();
+                }
+                
+                window.paceChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: 'Pace (min/km)',
+                            data: data.paces,
+                            borderColor: '#4fc3f7',
+                            backgroundColor: 'rgba(79, 195, 247, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Pace Analysis',
+                                color: 'white'
+                            },
+                            legend: {
+                                labels: {
+                                    color: 'white'
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                ticks: {
+                                    color: 'white'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: 'white'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching pace data:', error);
+            });
+    } catch (error) {
+        console.error('Error creating pace analysis chart:', error);
+    }
+}
+
+// Create heart rate zones chart with real athlete data
+function createHeartRateZonesChart(athleteId, timePeriod) {
+    try {
+        const canvas = document.getElementById('heartRateZonesChart');
+        if (!canvas) return;
+        
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js library not loaded');
+            return;
+        }
+        
+        fetch(`/api/athletes/${athleteId}/heart-rate-zones?days=${timePeriod}`)
+            .then(response => response.json())
+            .then(data => {
+                const ctx = canvas.getContext('2d');
+                
+                if (window.hrZonesChart) {
+                    window.hrZonesChart.destroy();
+                }
+                
+                const zones = data.zones;
+                window.hrZonesChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(zones),
+                        datasets: [{
+                            data: Object.values(zones),
+                            backgroundColor: [
+                                '#81c784',  // Zone 1 - Light green
+                                '#ffb74d',  // Zone 2 - Orange
+                                '#ff8a65',  // Zone 3 - Light red
+                                '#f06292',  // Zone 4 - Pink
+                                '#ba68c8'   // Zone 5 - Purple
+                            ],
+                            borderWidth: 2,
+                            borderColor: '#2c3e50'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Heart Rate Zones Distribution (%)',
+                                color: 'white'
+                            },
+                            legend: {
+                                labels: {
+                                    color: 'white'
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching heart rate zones data:', error);
+            });
+    } catch (error) {
+        console.error('Error creating heart rate zones chart:', error);
+    }
+}
+
+// Create training load chart with real athlete data
+function createTrainingLoadChart(athleteId, timePeriod) {
+    try {
+        const canvas = document.getElementById('trainingLoadChart');
+        if (!canvas) return;
+        
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js library not loaded');
+            return;
+        }
+        
+        fetch(`/api/athletes/${athleteId}/training-load?days=${timePeriod}`)
+            .then(response => response.json())
+            .then(data => {
+                const ctx = canvas.getContext('2d');
+                
+                if (window.loadChart) {
+                    window.loadChart.destroy();
+                }
+                
+                window.loadChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: 'Training Load (TRIMP)',
+                            data: data.loads,
+                            backgroundColor: 'rgba(156, 39, 176, 0.6)',
+                            borderColor: '#9c27b0',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Training Load Trend',
+                                color: 'white'
+                            },
+                            legend: {
+                                labels: {
+                                    color: 'white'
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: 'white'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: 'white'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching training load data:', error);
+            });
+    } catch (error) {
+        console.error('Error creating training load chart:', error);
+    }
+}
+
 </script>
 {% endblock %}
