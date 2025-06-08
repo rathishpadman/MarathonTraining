@@ -1026,10 +1026,21 @@ function loadRecentActivities(athleteId) {
 
 // Load fitness analysis data
 function loadFitnessAnalysis(athleteId) {
+    console.log('Loading fitness analysis for athlete:', athleteId);
+    const fitnessContainer = document.getElementById('fitnessAnalysis');
+    
+    if (!fitnessContainer) {
+        console.error('Fitness container not found!');
+        return;
+    }
+    
     fetch(`/api/athletes/${athleteId}/fitness-analysis?days=90`)
-        .then(response => response.json())
+        .then(response => {
+            console.log('Fitness API response status:', response.status);
+            return response.json();
+        })
         .then(data => {
-            const fitnessContainer = document.getElementById('fitnessAnalysis');
+            console.log('Fitness data received:', data);
             if (data.fitness_metrics) {
                 const metrics = data.fitness_metrics;
                 const summary = data.summary || {};

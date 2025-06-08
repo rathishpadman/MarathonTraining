@@ -499,14 +499,26 @@ function displayPacingStrategy(pacing) {
         pacing.splits.forEach(split => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${split.split_number}</td>
+                <td>Split ${split.split_number}</td>
                 <td>${split.distance_km} km</td>
                 <td>${split.pace_formatted}/km</td>
                 <td>${split.split_time_formatted}</td>
                 <td>${split.cumulative_time_formatted}</td>
             `;
+            row.style.cssText = 'background-color: rgba(33, 37, 41, 0.9) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.3) !important;';
+            
+            // Style individual cells
+            const cells = row.querySelectorAll('td');
+            cells.forEach(cell => {
+                cell.style.cssText = 'color: #ffffff !important; font-weight: 600 !important; padding: 10px !important; border: 1px solid rgba(255, 255, 255, 0.3) !important;';
+            });
+            
             splitsBody.appendChild(row);
         });
+    } else {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td colspan="5" class="text-center text-white-50">No split data available</td>`;
+        splitsBody.appendChild(row);
     }
 }
 
