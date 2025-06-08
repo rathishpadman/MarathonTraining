@@ -4,13 +4,30 @@
 
 {% block content %}
 <style>
+    /* Force override all potential white backgrounds */
+    html, body, #root, .container-fluid, .container, main {
+        background: linear-gradient(135deg, #065f46 0%, #0F766E 50%, #14B8A6 100%) !important;
+        background-attachment: fixed !important;
+        min-height: 100vh !important;
+        color: white !important;
+        font-family: Arial, sans-serif !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Override Bootstrap's default white backgrounds */
+    * {
+        background-color: transparent !important;
+    }
+    
     body {
-        background: linear-gradient(135deg, #065f46 0%, #0F766E 50%, #14B8A6 100%);
-        min-height: 100vh;
-        color: white;
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 20px;
+        background: linear-gradient(135deg, #065f46 0%, #0F766E 50%, #14B8A6 100%) !important;
+        background-attachment: fixed !important;
+        min-height: 100vh !important;
+        color: white !important;
+        font-family: Arial, sans-serif !important;
+        margin: 0 !important;
+        padding: 20px !important;
     }
 
     .container {
