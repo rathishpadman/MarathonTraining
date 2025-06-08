@@ -385,6 +385,7 @@ function loadAthleteAnalytics() {
             } else {
                 displayAnalyticsSummary(data);
                 loadRecentActivities(athleteId);
+                console.log('About to call loadBasicCharts from loadAthleteAnalytics');
                 loadBasicCharts(athleteId, timePeriod);
                 showAnalytics();
             }
@@ -442,6 +443,8 @@ function displayAnalytics(data) {
 
 // Load basic charts with simplified functionality
 function loadBasicCharts(athleteId, timePeriod) {
+    console.log('loadBasicCharts called with:', athleteId, timePeriod);
+    
     // Wait for Chart.js to be available
     if (typeof Chart === 'undefined') {
         console.log('Chart.js not ready, retrying in 100ms');
@@ -449,11 +452,16 @@ function loadBasicCharts(athleteId, timePeriod) {
         return;
     }
     
-    // Create all charts with real athlete data
-    createSimpleVolumeChart(athleteId, timePeriod);
-    createPaceAnalysisChart(athleteId, timePeriod);
-    createHeartRateZonesChart(athleteId, timePeriod);
-    createTrainingLoadChart(athleteId, timePeriod);
+    console.log('Chart.js is available, creating charts...');
+    
+    // Add a small delay to ensure DOM is ready
+    setTimeout(() => {
+        console.log('Creating all charts now...');
+        createSimpleVolumeChart(athleteId, timePeriod);
+        createPaceAnalysisChart(athleteId, timePeriod);
+        createHeartRateZonesChart(athleteId, timePeriod);
+        createTrainingLoadChart(athleteId, timePeriod);
+    }, 100);
 }
 
 // Load and display charts (legacy function)
