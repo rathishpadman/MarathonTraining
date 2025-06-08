@@ -678,6 +678,7 @@ function createSimpleVolumeChart(athleteId, timePeriod) {
         .then(data => {
             console.log('Volume chart data:', data);
             if (data.dates && data.distances) {
+                console.log('Volume chart - valid data found, proceeding with chart creation');
                 const canvas = document.getElementById('trainingVolumeChart');
                 console.log('Canvas element found:', canvas);
                 if (!canvas) {
@@ -727,6 +728,9 @@ function createSimpleVolumeChart(athleteId, timePeriod) {
                 } catch (error) {
                     console.error('Error creating volume chart:', error);
                 }
+            } else {
+                console.log('Volume chart data validation failed. Data structure:', data);
+                console.log('Has dates?', !!data.dates, 'Has distances?', !!data.distances);
             }
         })
         .catch(error => console.error('Error loading volume chart:', error));
