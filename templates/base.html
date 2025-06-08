@@ -327,20 +327,48 @@
             background-color: transparent !important;
         }
         
-        .table {
-            color: var(--charcoal) !important;
+        /* Custom activities table styling */
+        .activities-table,
+        .activities-table th,
+        .activities-table td {
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
         }
         
-        .table th, .table td {
-            color: var(--charcoal) !important;
-            border-color: rgba(52, 58, 64, 0.2);
+        .activities-table th {
+            background-color: rgba(0, 123, 255, 0.9) !important;
+            font-weight: 700 !important;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8) !important;
         }
         
-        .card-glassmorphism .table {
-            color: var(--charcoal) !important;
+        .activities-table td {
+            background-color: rgba(52, 58, 64, 0.8) !important;
+            font-weight: 600 !important;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7) !important;
         }
         
-        .card-glassmorphism .table th, .card-glassmorphism .table td {
+        /* Global table overrides for all pages */
+        .table,
+        .table th,
+        .table td,
+        table th,
+        table td {
+            color: #ffffff !important;
+        }
+        
+        /* Race optimizer tables */
+        .race-optimizer table,
+        .race-optimizer .table,
+        .race-optimizer th,
+        .race-optimizer td {
+            color: #ffffff !important;
+            background-color: rgba(52, 58, 64, 0.8) !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        }
+        
+        /* Override Bootstrap table defaults */
+        .card-glassmorphism .table th, 
+        .card-glassmorphism .table td {
             color: var(--charcoal) !important;
             border-color: rgba(52, 58, 64, 0.2);
         }
