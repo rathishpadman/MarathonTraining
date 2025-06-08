@@ -653,9 +653,18 @@ function renderTrainingTrendsChart(data) {
     
     console.log('Rendering chart with data:', data);
     
-    // Force transparent background on canvas
-    ctx.canvas.style.backgroundColor = 'transparent';
-    ctx.globalCompositeOperation = 'source-over';
+    // Create custom plugin to force transparent background
+    const transparentPlugin = {
+        id: 'transparentBackground',
+        beforeDraw: (chart) => {
+            const ctx = chart.canvas.getContext('2d');
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.fillStyle = 'transparent';
+            ctx.fillRect(0, 0, chart.canvas.width, chart.canvas.height);
+            ctx.restore();
+        }
+    };
     
     const chart = new Chart(ctx, {
         type: 'line',
@@ -673,6 +682,7 @@ function renderTrainingTrendsChart(data) {
                 pointRadius: 4
             }))
         },
+        plugins: [transparentPlugin],
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -744,9 +754,18 @@ function renderTrainingLoadChart(data) {
         data: processedData.data.filter(val => val > 0)
     };
     
-    // Force transparent background on canvas
-    ctx.canvas.style.backgroundColor = 'transparent';
-    ctx.globalCompositeOperation = 'source-over';
+    // Create custom plugin to force transparent background
+    const transparentPlugin2 = {
+        id: 'transparentBackground2',
+        beforeDraw: (chart) => {
+            const ctx = chart.canvas.getContext('2d');
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.fillStyle = 'transparent';
+            ctx.fillRect(0, 0, chart.canvas.width, chart.canvas.height);
+            ctx.restore();
+        }
+    };
     
     const chart = new Chart(ctx, {
         type: 'doughnut',
@@ -765,6 +784,7 @@ function renderTrainingLoadChart(data) {
                 borderWidth: 0
             }]
         },
+        plugins: [transparentPlugin2],
         options: {
             responsive: true,
             maintainAspectRatio: false,
