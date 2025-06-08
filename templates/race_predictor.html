@@ -577,17 +577,17 @@
                 displayStrategicPacing(data.pacing_strategy.splits);
             }
 
-            // Display training analysis
-            displayTrainingAnalysis(data.training_analysis || {});
+            // Display training analysis using optimization metrics
+            displayTrainingAnalysisFromOptimization(data);
             
-            // Display performance trends
-            displayPerformanceTrends(data.performance_trends || {});
+            // Display performance trends using optimization metrics
+            displayPerformanceTrendsFromOptimization(data);
             
             // Display strengths and weaknesses
-            displayStrengthsWeaknesses(data.strengths_weaknesses || {});
+            displayStrengthsWeaknessesFromOptimization(data);
             
             // Display race day strategy
-            displayRaceDayStrategy(data.race_day_strategy || {});
+            displayRaceDayStrategyFromOptimization(data);
             
             // Show the insights container
             insightsContainer.style.display = 'block';
@@ -670,51 +670,171 @@
             }
         }
 
-        function displayPerformanceTrends(trends) {
+        function displayPerformanceTrendsFromOptimization(data) {
             const container = document.getElementById('performanceTrends');
             container.innerHTML = '';
 
-            if (trends.pace_trend) {
-                const trend = trends.pace_trend;
-                const trendClass = trend.direction === 'improving' ? 'trend-up' : 
-                                  trend.direction === 'declining' ? 'trend-down' : 'trend-stable';
-                const trendIcon = trend.direction === 'improving' ? '↗' : 
-                                 trend.direction === 'declining' ? '↘' : '→';
+            // Extract metrics from optimization data
+            const metrics = data.optimization_metrics || {};
+            const training = data.training_analysis || {};
+            
+            // Display Pace Trend based on fitness trend score
+            if (metrics.fitness_trend_score !== undefined) {
+                const score = metrics.fitness_trend_score;
+                let direction, trendClass, trendIcon;
+                
+                if (score >= 7) {
+                    direction = 'improving';
+                    trendClass = 'trend-up';
+                    trendIcon = '↗';
+                } else if (score <= 3) {
+                    direction = 'declining';
+                    trendClass = 'trend-down';
+                    trendIcon = '↘';
+                } else {
+                    direction = 'stable';
+                    trendClass = 'trend-stable';
+                    trendIcon = '→';
+                }
                 
                 container.innerHTML += `
                     <div class="metric-item">
                         <span class="metric-label">Pace Trend</span>
                         <span class="metric-value">
-                            ${trend.direction} 
+                            ${direction} 
                             <span class="trend-indicator ${trendClass}">${trendIcon}</span>
                         </span>
                     </div>
                 `;
             }
 
-            if (trends.distance_trend) {
-                const trend = trends.distance_trend;
-                const trendClass = trend.direction === 'increasing' ? 'trend-up' : 
-                                  trend.direction === 'decreasing' ? 'trend-down' : 'trend-stable';
-                const trendIcon = trend.direction === 'increasing' ? '↗' : 
-                                 trend.direction === 'decreasing' ? '↘' : '→';
+            // Display Distance Trend based on weekly distance average
+            if (training.weekly_distance_avg !== undefined) {
+                const weeklyDist = training.weekly_distance_avg;
+                let direction, trendClass, trendIcon;
+                
+                if (weeklyDist >= 50) {
+                    direction = 'increasing';
+                    trendClass = 'trend-up';
+                    trendIcon = '↗';
+                } else if (weeklyDist <= 25) {
+                    direction = 'decreasing';
+                    trendClass = 'trend-down';
+                    trendIcon = '↘';
+                } else {
+                    direction = 'stable';
+                    trendClass = 'trend-stable';
+                    trendIcon = '→';
+                }
                 
                 container.innerHTML += `
                     <div class="metric-item">
                         <span class="metric-label">Distance Trend</span>
                         <span class="metric-value">
-                            ${trend.direction} 
+                            ${direction} 
                             <span class="trend-indicator ${trendClass}">${trendIcon}</span>
                         </span>
                     </div>
                 `;
             }
 
-            if (trends.fitness_progression) {
+            // Display Fitness Score directly from optimization metrics
+            if (metrics.overall_optimization_score !== undefined) {
                 container.innerHTML += `
                     <div class="metric-item">
                         <span class="metric-label">Fitness Score</span>
-                        <span class="metric-value">${trends.fitness_progression.current_score || 0}/100</span>
+                        <span class="metric-value">${metrics.overall_optimization_score.toFixed(1)}/100</span>
+                    </div>
+                `;
+            }
+        }
+
+        function displayTrainingAnalysisFromOptimization(data) {
+            const container = document.getElementById('trainingAnalysis');
+            container.innerHTML = '';
+
+            const analysis = data.training_analysis || {};
+            const metrics = data.optimization_metrics || {};
+
+            if (analysis.weekly_distance_avg) {
+                container.innerHTML += `
+                    <div class="metric-item">
+                        <span class="metric-label">Weekly Distance Average</span>
+                        <span class="metric-value">${analysis.weekly_distance_avg.toFixed(1)} km</span>
+                    </div>
+                `;
+            }
+
+            if (analysis.consistency_score) {
+                container.innerHTML += `
+                    <div class="metric-item">
+                        <span class="metric-label">Training Consistency</span>
+                        <span class="metric-value">${analysis.consistency_score.toFixed(0)}%</span>
+                    </div>
+                `;
+            }
+
+            if (analysis.avg_pace_min_km) {
+                container.innerHTML += `
+                    <div class="metric-item">
+                        <span class="metric-label">Average Training Pace</span>
+                        <span class="metric-value">${formatPaceFromSeconds(analysis.avg_pace_min_km * 60)}</span>
+                    </div>
+                `;
+            }
+
+            if (metrics.race_readiness_score !== undefined) {
+                container.innerHTML += `
+                    <div class="metric-item">
+                        <span class="metric-label">Race Readiness</span>
+                        <span class="metric-value">${metrics.race_readiness_score.toFixed(1)}%</span>
+                    </div>
+                `;
+            }
+        }
+
+        function displayStrengthsWeaknessesFromOptimization(data) {
+            const container = document.getElementById('strengthsWeaknesses');
+            container.innerHTML = '';
+
+            const strengths = data.strengths_weaknesses?.strengths || [];
+            const weaknesses = data.strengths_weaknesses?.weaknesses || [];
+
+            if (strengths.length > 0) {
+                container.innerHTML += '<h4 style="color: #4CAF50; margin-bottom: 0.5rem;">Strengths</h4>';
+                strengths.forEach(strength => {
+                    container.innerHTML += `<div style="color: rgba(255, 255, 255, 0.9); margin-bottom: 0.3rem;">• ${strength}</div>`;
+                });
+            }
+
+            if (weaknesses.length > 0) {
+                container.innerHTML += '<h4 style="color: #F44336; margin-bottom: 0.5rem; margin-top: 1rem;">Areas for Improvement</h4>';
+                weaknesses.forEach(weakness => {
+                    container.innerHTML += `<div style="color: rgba(255, 255, 255, 0.9); margin-bottom: 0.3rem;">• ${weakness}</div>`;
+                });
+            }
+        }
+
+        function displayRaceDayStrategyFromOptimization(data) {
+            const container = document.getElementById('raceDayStrategy');
+            container.innerHTML = '';
+
+            const strategy = data.pacing_strategy || {};
+
+            if (strategy.pacing_advice && strategy.pacing_advice.length > 0) {
+                container.innerHTML += '<h4 style="color: #FFD700; margin-bottom: 0.5rem;">Race Day Strategy</h4>';
+                strategy.pacing_advice.forEach(advice => {
+                    container.innerHTML += `<div style="color: rgba(255, 255, 255, 0.9); margin-bottom: 0.3rem;">• ${advice}</div>`;
+                });
+            }
+
+            if (strategy.heart_rate_targets) {
+                const hr = strategy.heart_rate_targets;
+                container.innerHTML += `
+                    <h4 style="color: #FFD700; margin-bottom: 0.5rem; margin-top: 1rem;">Heart Rate Targets</h4>
+                    <div style="color: rgba(255, 255, 255, 0.9);">
+                        <div>Target HR: ${hr.target_hr} bpm (${hr.target_hr_range[0]}-${hr.target_hr_range[1]} range)</div>
+                        <div>Max HR: ${hr.estimated_max_hr} bpm</div>
                     </div>
                 `;
             }
