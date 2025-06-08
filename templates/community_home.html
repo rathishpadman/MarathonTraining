@@ -578,7 +578,7 @@ function renderLeaderboard(athletes) {
     
     const leaderboardHTML = athletes.map((athlete, index) => {
         const rank = index + 1;
-        const distance = (athlete.distance / 1000 || 0).toFixed(1); // Convert meters to km
+        const distance = (athlete.distance || 0).toFixed(1); // Already in km from backend
         const activities = athlete.activities || 0;
         const avgPace = formatPace(athlete.avg_pace || 0);
         const avgHR = Math.round(athlete.avg_hr || 0);
@@ -606,14 +606,11 @@ function renderTrainingTrendsChart(data) {
     const ctx = document.getElementById('trainingTrendsChart').getContext('2d');
     
     if (!data || !data.labels || data.labels.length === 0) {
-        ctx.fillStyle = '#rgba(255, 255, 255, 0.8)';
-        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        ctx.fillStyle = '#6B7280';
-        ctx.font = '16px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('No training data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
+        console.log('No chart data available, showing fallback');
         return;
     }
+    
+    console.log('Rendering chart with data:', data);
     
     new Chart(ctx, {
         type: 'line',
