@@ -174,10 +174,12 @@
 
 {% block extra_js %}
 <script>
-// Global Chart.js defaults to ensure dark text on white backgrounds
+// Global Chart.js defaults to ensure visible text colors
 Chart.defaults.color = '#343a40';
 Chart.defaults.scale.ticks.color = '#343a40';
 Chart.defaults.plugins.legend.labels.color = '#343a40';
+Chart.defaults.plugins.tooltip.titleColor = '#ffffff';
+Chart.defaults.plugins.tooltip.bodyColor = '#ffffff';
 
 // Dashboard-specific initialization
 
@@ -901,34 +903,65 @@ function createStatusChart(statusData) {
     });
 }
 
-// Load recent activities
+// Load recent activities with table format
 function loadRecentActivities(athleteId) {
     fetch(`/api/athletes/${athleteId}/dashboard-data`)
         .then(response => response.json())
         .then(data => {
             const activitiesContainer = document.getElementById('recentActivities');
             if (data.recent_activities && data.recent_activities.length > 0) {
-                let activitiesHtml = '';
+                let tableHtml = `
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped">
+                            <thead>
+                                <tr>
+                                    <th style="color: #ffffff;">Date</th>
+                                    <th style="color: #ffffff;">Type</th>
+                                    <th style="color: #ffffff;">Distance</th>
+                                    <th style="color: #ffffff;">Duration</th>
+                                    <th style="color: #ffffff;">Pace</th>
+                                    <th style="color: #ffffff;">Avg HR</th>
+                                    <th style="color: #ffffff;">Training Load</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
                 data.recent_activities.slice(0, 10).forEach(activity => {
                     const date = new Date(activity.start_date).toLocaleDateString();
-                    const distance = activity.distance ? activity.distance.toFixed(2) : '0.00';
+                    const distance = activity.distance ? (activity.distance / 1000).toFixed(2) : '0.00';
                     const time = activity.moving_time ? Math.floor(activity.moving_time / 60) : 0;
-                    const hr = activity.average_heartrate ? Math.round(activity.average_heartrate) : 'N/A';
+                    const hr = activity.average_heartrate ? Math.round(activity.average_heartrate) : '';
+                    const pace = activity.moving_time && activity.distance ? 
+                        ((activity.moving_time / 60) / (activity.distance / 1000)).toFixed(2) : '';
                     
-                    activitiesHtml += `
-                        <div class="activity-item d-flex justify-content-between align-items-center p-3 mb-2" style="background: rgba(255, 255, 255, 0.1); border-radius: 8px;">
-                            <div>
-                                <h6 class="text-white mb-1">${activity.name || 'Running Activity'}</h6>
-                                <small class="text-white-50">${date} • ${activity.sport_type || 'Run'}</small>
-                            </div>
-                            <div class="text-end">
-                                <div class="text-white">${distance} km</div>
-                                <small class="text-white-50">${time} min • HR: ${hr}</small>
-                            </div>
-                        </div>
+                    // Calculate training load using TRIMP method
+                    let trainingLoad = '';
+                    if (activity.moving_time && activity.average_heartrate) {
+                        const duration = activity.moving_time / 60; // minutes
+                        const hrReserveFactor = Math.max(0, (activity.average_heartrate - 60) / 140); // Simplified HR reserve
+                        trainingLoad = (duration * hrReserveFactor * 1.92).toFixed(1);
+                    }
+                    
+                    tableHtml += `
+                        <tr>
+                            <td style="color: #ffffff;">${date}</td>
+                            <td style="color: #ffffff;">${activity.sport_type || 'Run'}</td>
+                            <td style="color: #ffffff;">${distance} km</td>
+                            <td style="color: #ffffff;">${time}m</td>
+                            <td style="color: #ffffff;">${pace ? pace + ' min/km' : ''}</td>
+                            <td style="color: #ffffff;">${hr}</td>
+                            <td style="color: #ffffff;">${trainingLoad}</td>
+                        </tr>
                     `;
                 });
-                activitiesContainer.innerHTML = activitiesHtml;
+                
+                tableHtml += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                activitiesContainer.innerHTML = tableHtml;
             } else {
                 activitiesContainer.innerHTML = `
                     <div class="text-center text-white-50 p-4">
