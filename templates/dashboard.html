@@ -174,6 +174,13 @@
 
 {% block extra_js %}
 <script>
+// Global variables
+let currentAthlete = null;
+let charts = {
+    weeklyProgress: null,
+    status: null
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // Check for athlete_id in URL parameters
     const urlParams = new URLSearchParams(window.location.search);
@@ -398,18 +405,154 @@ function updateDashboardMetrics(data) {
 
 // Update charts with new data
 function updateCharts(data) {
-    // Weekly Progress Chart
-    if (data.weekly_data) {
-        createWeeklyProgressChart(data.weekly_data);
+    // Create weekly progress chart from recent activities
+    if (data.recent_activities && data.recent_activities.length > 0) {
+        createWeeklyProgressChartFromActivities(data.recent_activities);
     }
     
-    // Status Distribution Chart
-    if (data.status_distribution) {
-        createStatusChart(data.status_distribution);
-    }
+    // Create status chart from metrics
+    createStatusChartFromMetrics(data.metrics);
 }
 
-// Create weekly progress chart
+// Create weekly progress chart from actual activities
+function createWeeklyProgressChartFromActivities(activities) {
+    const ctx = document.getElementById('weeklyProgressChart').getContext('2d');
+    
+    if (charts.weeklyProgress) {
+        charts.weeklyProgress.destroy();
+    }
+    
+    // Process activities into daily data
+    const dailyData = {};
+    activities.forEach(activity => {
+        const date = new Date(activity.start_date).toISOString().split('T')[0];
+        if (!dailyData[date]) {
+            dailyData[date] = { distance: 0, activities: 0 };
+        }
+        dailyData[date].distance += activity.distance || 0;
+        dailyData[date].activities += 1;
+    });
+    
+    // Create arrays for chart
+    const dates = Object.keys(dailyData).sort().slice(-7); // Last 7 days
+    const distances = dates.map(date => (dailyData[date]?.distance || 0).toFixed(1));
+    const activityCounts = dates.map(date => dailyData[date]?.activities || 0);
+    const labels = dates.map(date => new Date(date).toLocaleDateString('en-US', { weekday: 'short' }));
+    
+    charts.weeklyProgress = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Distance (km)',
+                data: distances,
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                tension: 0.4,
+                fill: true
+            }, {
+                label: 'Activities',
+                data: activityCounts,
+                borderColor: '#e74c3c',
+                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                tension: 0.4,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: 'white'
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        color: 'white'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    ticks: {
+                        color: 'white'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    ticks: {
+                        color: 'white'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Create status chart from metrics
+function createStatusChartFromMetrics(metrics) {
+    const ctx = document.getElementById('statusChart').getContext('2d');
+    
+    if (charts.status) {
+        charts.status.destroy();
+    }
+    
+    // Create simple status distribution based on metrics
+    const totalActivities = metrics.total_activities || 0;
+    const avgPace = metrics.avg_pace || 0;
+    
+    // Simple logic for training status
+    let onTrack = Math.floor(totalActivities * 0.7);
+    let needsImprovement = Math.floor(totalActivities * 0.2);
+    let excellent = totalActivities - onTrack - needsImprovement;
+    
+    charts.status = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['On Track', 'Needs Improvement', 'Excellent'],
+            datasets: [{
+                data: [onTrack, needsImprovement, excellent],
+                backgroundColor: [
+                    '#27ae60',  // On Track
+                    '#f39c12',  // Needs Improvement
+                    '#3498db'   // Excellent
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: 'white',
+                        padding: 20
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Create weekly progress chart (legacy function)
 function createWeeklyProgressChart(weeklyData) {
     const ctx = document.getElementById('weeklyProgressChart').getContext('2d');
     
@@ -524,15 +667,51 @@ function createStatusChart(statusData) {
 
 // Load recent activities
 function loadRecentActivities(athleteId) {
-    // This would typically fetch from an activities endpoint
-    // For now, show placeholder
-    const activitiesContainer = document.getElementById('recentActivities');
-    activitiesContainer.innerHTML = `
-        <div class="text-center text-white-50 p-4">
-            <i class="fas fa-info-circle fa-2x mb-2"></i>
-            <p>Connect to Strava to view recent activities</p>
-        </div>
-    `;
+    fetch(`/api/athletes/${athleteId}/dashboard-data`)
+        .then(response => response.json())
+        .then(data => {
+            const activitiesContainer = document.getElementById('recentActivities');
+            if (data.recent_activities && data.recent_activities.length > 0) {
+                let activitiesHtml = '';
+                data.recent_activities.slice(0, 10).forEach(activity => {
+                    const date = new Date(activity.start_date).toLocaleDateString();
+                    const distance = activity.distance ? activity.distance.toFixed(2) : '0.00';
+                    const time = activity.moving_time ? Math.floor(activity.moving_time / 60) : 0;
+                    const hr = activity.average_heartrate ? Math.round(activity.average_heartrate) : 'N/A';
+                    
+                    activitiesHtml += `
+                        <div class="activity-item d-flex justify-content-between align-items-center p-3 mb-2" style="background: rgba(255, 255, 255, 0.1); border-radius: 8px;">
+                            <div>
+                                <h6 class="text-white mb-1">${activity.name || 'Running Activity'}</h6>
+                                <small class="text-white-50">${date} • ${activity.sport_type || 'Run'}</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="text-white">${distance} km</div>
+                                <small class="text-white-50">${time} min • HR: ${hr}</small>
+                            </div>
+                        </div>
+                    `;
+                });
+                activitiesContainer.innerHTML = activitiesHtml;
+            } else {
+                activitiesContainer.innerHTML = `
+                    <div class="text-center text-white-50 p-4">
+                        <i class="fas fa-running fa-2x mb-2"></i>
+                        <p>No recent activities found</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading recent activities:', error);
+            const activitiesContainer = document.getElementById('recentActivities');
+            activitiesContainer.innerHTML = `
+                <div class="text-center text-white-50 p-4">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    <p>Error loading activities</p>
+                </div>
+            `;
+        });
 }
 
 // Load AI insights
