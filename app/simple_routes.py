@@ -874,14 +874,16 @@ def get_community_overview():
         start_date_30d = datetime.now() - timedelta(days=30)  # Last 30 days for KPIs
         start_date_7d = datetime.now() - timedelta(days=7)   # Last 7 days for leaderboard
         
-        # Get all activities for 30-day KPIs
-        all_activities_30d = Activity.query.filter(
-            Activity.start_date >= start_date_30d
+        # Get activities for 30-day KPIs - only from active athletes
+        all_activities_30d = Activity.query.join(ReplitAthlete).filter(
+            Activity.start_date >= start_date_30d,
+            ReplitAthlete.is_active == True
         ).all()
         
-        # Get activities for 7-day leaderboard
-        all_activities_7d = Activity.query.filter(
-            Activity.start_date >= start_date_7d
+        # Get activities for 7-day leaderboard - only from active athletes
+        all_activities_7d = Activity.query.join(ReplitAthlete).filter(
+            Activity.start_date >= start_date_7d,
+            ReplitAthlete.is_active == True
         ).all()
         
         # Safe calculation with null checks for 30-day KPIs
