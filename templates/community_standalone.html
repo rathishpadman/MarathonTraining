@@ -71,9 +71,21 @@
         
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 20px;
             margin-bottom: 40px;
+        }
+        
+        @media (max-width: 1200px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
         }
         
         .kpi-card {
@@ -655,8 +667,8 @@
                 const data = await response.json();
                 console.log('Community data loaded:', data);
                 
-                // Check if we have any athletes
-                const hasAthletes = data.kpis && data.kpis.totalAthletes > 0;
+                // Check if we have any athletes or empty state flag
+                const hasAthletes = data.kpis && data.kpis.totalAthletes > 0 && !data.empty_state;
                 
                 if (hasAthletes) {
                     // Show data sections, hide connect section
@@ -686,6 +698,13 @@
                 const response = await fetch('/api/community/activity-stream');
                 const data = await response.json();
                 console.log('Activity stream loaded:', data);
+                
+                // Check for empty state
+                if (data.empty_state) {
+                    document.getElementById('activityStream').innerHTML = '<div class="loading">Connect to Strava to see activities</div>';
+                    return;
+                }
+                
                 renderActivityStream(data.stream);
             } catch (error) {
                 console.error('Error loading activity stream:', error);

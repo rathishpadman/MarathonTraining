@@ -854,6 +854,7 @@ def get_community_overview():
         athletes = ReplitAthlete.query.filter_by(is_active=True).all()
         
         if not athletes:
+            logger.info("No active athletes found - returning empty state")
             return jsonify({
                 'kpis': {
                     'totalAthletes': 0,
@@ -863,7 +864,8 @@ def get_community_overview():
                 },
                 'leaderboard': [],
                 'trainingLoadDistribution': {'labels': [], 'data': []},
-                'communityTrends': {'labels': [], 'datasets': []}
+                'communityTrends': {'labels': [], 'datasets': []},
+                'empty_state': True
             })
         
         # Calculate community KPIs
@@ -1103,6 +1105,17 @@ def get_community_activity_stream():
     """Get recent community activities and milestones"""
     try:
         logger.info("Fetching community activity stream")
+        
+        # Check if there are any active athletes first
+        active_athletes = ReplitAthlete.query.filter_by(is_active=True).count()
+        
+        if active_athletes == 0:
+            logger.info("No active athletes found - returning empty activity stream")
+            return jsonify({
+                'stream': [],
+                'total_activities': 0,
+                'empty_state': True
+            })
         
         # Get recent activities from all athletes
         seven_days_ago = datetime.now() - timedelta(days=7)
