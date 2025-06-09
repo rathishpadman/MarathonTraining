@@ -288,6 +288,83 @@
             background: transparent !important;
         }
         
+        /* Connect to Strava Section */
+        .connect-section {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            margin: 40px 0;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .connect-section h2 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: white;
+        }
+        
+        .connect-section p {
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        
+        .strava-connect-btn {
+            background: linear-gradient(45deg, #FC4C02, #FF6B35);
+            border: none;
+            border-radius: 25px;
+            padding: 15px 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(252, 76, 2, 0.3);
+            margin: 20px 0;
+            display: inline-block;
+        }
+        
+        .strava-connect-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(252, 76, 2, 0.4);
+        }
+        
+        .connect-benefits {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .benefit {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .benefit-icon {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 10px;
+        }
+        
+        .connect-note {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-top: 15px;
+        }
+        
+        /* Hide data sections when no athletes */
+        .data-section {
+            display: none;
+        }
+        
+        .data-section.has-data {
+            display: block;
+        }
+
         /* Leaderboard styling with action buttons */
         .leaderboard-item {
             display: flex;
@@ -454,14 +531,45 @@
         <div class="header">
             <h1>🏃‍♂️ Community Training Dashboard</h1>
             <p>Real-time insights from our marathon training community</p>
-            <div class="live-indicator">
+            <div class="live-indicator" id="connectionStatus">
                 <span class="live-dot"></span>
-                Live Data
+                Connecting...
             </div>
         </div>
 
-        <!-- KPI Cards -->
-        <div class="kpi-grid">
+        <!-- Connect to Strava Section (shown when no data) -->
+        <div class="connect-section" id="connectSection">
+            <h2>🚀 Join Our Marathon Training Community</h2>
+            <p>Connect your Strava account to track your progress, compete with friends, and achieve your marathon goals together!</p>
+            
+            <div class="connect-benefits">
+                <div class="benefit">
+                    <span class="benefit-icon">📊</span>
+                    <span>Real-time Performance Analytics</span>
+                </div>
+                <div class="benefit">
+                    <span class="benefit-icon">🏆</span>
+                    <span>Community Leaderboards</span>
+                </div>
+                <div class="benefit">
+                    <span class="benefit-icon">🤖</span>
+                    <span>AI-Powered Training Insights</span>
+                </div>
+                <div class="benefit">
+                    <span class="benefit-icon">👥</span>
+                    <span>Social Training Experience</span>
+                </div>
+            </div>
+            
+            <button class="strava-connect-btn" onclick="connectStrava()">
+                <img src="/attached_assets/btn_strava_connect_with_orange_x2_1749293089636.png" 
+                     alt="Connect with Strava" style="height: 48px;">
+            </button>
+            <p class="connect-note">Secure OAuth 2.0 authentication - your data remains private</p>
+        </div>
+
+        <!-- KPI Cards (shown when data available) -->
+        <div class="kpi-grid data-section" id="kpiSection">
             <div class="kpi-card">
                 <div class="kpi-icon">👥</div>
                 <div class="kpi-value" id="totalAthletes">-</div>
@@ -488,8 +596,8 @@
             </div>
         </div>
 
-        <!-- Weekly Leaderboard -->
-        <div class="section">
+        <!-- Weekly Leaderboard (shown when data available) -->
+        <div class="section data-section" id="leaderboardSection">
             <div class="chart-title">
                 <span class="section-icon">🏆</span>
                 Performance Leaderboard
@@ -497,8 +605,8 @@
             <div id="leaderboard" class="loading">Loading leaderboard...</div>
         </div>
 
-        <!-- Charts Row -->
-        <div class="charts-grid">
+        <!-- Charts Row (shown when data available) -->
+        <div class="charts-grid data-section" id="chartsSection">
             <div class="chart-container">
                 <div class="chart-title">
                     <span class="section-icon">📊</span>
@@ -516,48 +624,13 @@
             </div>
         </div>
 
-        <!-- Activity Stream -->
-        <div class="section">
+        <!-- Activity Stream (shown when data available) -->
+        <div class="section data-section" id="activitySection">
             <div class="chart-title">
                 <span class="section-icon">📱</span>
                 Community Activity Stream
             </div>
             <div id="activityStream" class="activity-stream loading">Loading activities...</div>
-        </div>
-
-        <!-- Strava Connect Section -->
-        <div class="section">
-            <div class="chart-title">
-                <span class="section-icon">🚀</span>
-                Join Our Community
-            </div>
-            <div class="connect-section">
-                <h3>Connect Your Strava Account</h3>
-                <p>Track your progress, compete with friends, and achieve your marathon goals together!</p>
-                <div class="connect-benefits">
-                    <div class="benefit">
-                        <span class="benefit-icon">📊</span>
-                        <span>Real-time Performance Analytics</span>
-                    </div>
-                    <div class="benefit">
-                        <span class="benefit-icon">🏆</span>
-                        <span>Community Leaderboards</span>
-                    </div>
-                    <div class="benefit">
-                        <span class="benefit-icon">🎯</span>
-                        <span>AI-Powered Training Insights</span>
-                    </div>
-                    <div class="benefit">
-                        <span class="benefit-icon">👥</span>
-                        <span>Social Training Experience</span>
-                    </div>
-                </div>
-                <button class="strava-connect-btn" onclick="connectStrava()">
-                    <img src="/attached_assets/btn_strava_connect_with_orange_x2_1749293089636.png" 
-                         alt="Connect with Strava" style="height: 48px;">
-                </button>
-                <p class="connect-note">Secure OAuth 2.0 authentication - your data remains private</p>
-            </div>
         </div>
     </div>
 
@@ -582,16 +655,29 @@
                 const data = await response.json();
                 console.log('Community data loaded:', data);
                 
-                updateKPIs(data.kpis);
-                renderLeaderboard(data.leaderboard);
-                renderTrainingTrendsChart(data.communityTrends);
-                renderTrainingLoadChart(data.trainingLoadDistribution);
+                // Check if we have any athletes
+                const hasAthletes = data.kpis && data.kpis.totalAthletes > 0;
                 
-                loadActivityStream();
+                if (hasAthletes) {
+                    // Show data sections, hide connect section
+                    showDataSections();
+                    updateConnectionStatus('Live Data');
+                    
+                    updateKPIs(data.kpis);
+                    renderLeaderboard(data.leaderboard);
+                    renderTrainingTrendsChart(data.communityTrends);
+                    renderTrainingLoadChart(data.trainingLoadDistribution);
+                    loadActivityStream();
+                } else {
+                    // Show connect section, hide data sections
+                    showConnectSection();
+                    updateConnectionStatus('No Athletes Connected');
+                }
                 
             } catch (error) {
                 console.error('Error loading community data:', error);
-                showError('Failed to load community data. Please refresh the page.');
+                showConnectSection();
+                updateConnectionStatus('Connection Error');
             }
         }
 
@@ -1081,6 +1167,30 @@
                     element.innerHTML = `<div class="error">${message}</div>`;
                 }
             });
+        }
+
+        function showConnectSection() {
+            document.getElementById('connectSection').style.display = 'block';
+            document.querySelectorAll('.data-section').forEach(section => {
+                section.style.display = 'none';
+            });
+        }
+        
+        function showDataSections() {
+            document.getElementById('connectSection').style.display = 'none';
+            document.querySelectorAll('.data-section').forEach(section => {
+                section.style.display = 'block';
+            });
+        }
+        
+        function updateConnectionStatus(status) {
+            const statusElement = document.getElementById('connectionStatus');
+            statusElement.innerHTML = `<span class="live-dot"></span>${status}`;
+        }
+
+        function connectStrava() {
+            // Redirect to Strava authorization
+            window.location.href = '/api/auth/strava/authorize';
         }
     </script>
 </body>
