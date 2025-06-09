@@ -850,41 +850,10 @@ def get_community_overview():
     try:
         logger.info("Fetching community overview data")
         
-        # Get all active athletes using raw SQL to bypass ORM caching
-        from app import db
-        from sqlalchemy import text
-        
-        # Direct SQL query to get active athletes
-        result = db.session.execute(text("SELECT COUNT(*) FROM athletes WHERE is_active = true"))
-        active_count = result.scalar()
-        logger.info(f"Raw SQL count of active athletes: {active_count}")
-        
-        # Debug: Check actual boolean values in database
-        debug_result = db.session.execute(text("SELECT id, name, is_active FROM athletes"))
-        for row in debug_result:
-            logger.info(f"Debug - Athlete {row[0]}: {row[1]}, is_active: {row[2]} (type: {type(row[2])})")
-        
-        if active_count == 0:
-            logger.info("No active athletes found - returning empty state")
-            return jsonify({
-                'kpis': {
-                    'totalAthletes': 0,
-                    'totalDistance': 0,
-                    'totalActivities': 0,
-                    'avgPace': 0
-                },
-                'leaderboard': [],
-                'trainingLoadDistribution': {'labels': [], 'data': []},
-                'communityTrends': {'labels': [], 'datasets': []},
-                'empty_state': True
-            })
-        
-        # Get athletes using ORM for data processing
+        # Get all active athletes
         athletes = ReplitAthlete.query.filter_by(is_active=True).all()
-        logger.info(f"Found {len(athletes)} active athletes via ORM")
         
         if not athletes:
-            logger.info("No active athletes found - returning empty state")
             return jsonify({
                 'kpis': {
                     'totalAthletes': 0,
@@ -894,8 +863,7 @@ def get_community_overview():
                 },
                 'leaderboard': [],
                 'trainingLoadDistribution': {'labels': [], 'data': []},
-                'communityTrends': {'labels': [], 'datasets': []},
-                'empty_state': True
+                'communityTrends': {'labels': [], 'datasets': []}
             })
         
         # Calculate community KPIs
@@ -906,22 +874,20 @@ def get_community_overview():
         start_date_30d = datetime.now() - timedelta(days=30)  # Last 30 days for KPIs
         start_date_7d = datetime.now() - timedelta(days=7)   # Last 7 days for leaderboard
         
-        # Get activities for 30-day KPIs - only from active athletes
-        all_activities_30d = Activity.query.join(ReplitAthlete).filter(
-            Activity.start_date >= start_date_30d,
-            ReplitAthlete.is_active == True
+        # Get all activities for 30-day KPIs
+        all_activities_30d = Activity.query.filter(
+            Activity.start_date >= start_date_30d
         ).all()
         
-        # Get activities for 7-day leaderboard - only from active athletes
-        all_activities_7d = Activity.query.join(ReplitAthlete).filter(
-            Activity.start_date >= start_date_7d,
-            ReplitAthlete.is_active == True
+        # Get activities for 7-day leaderboard
+        all_activities_7d = Activity.query.filter(
+            Activity.start_date >= start_date_7d
         ).all()
         
         # Safe calculation with null checks for 30-day KPIs
         total_distance = sum((a.distance or 0) for a in all_activities_30d if a.distance is not None) / 1000  # km
         total_activities = len(all_activities_30d)
-        active_athletes = len(athletes)  # Use the actual count of active athletes
+        active_athletes = len(set(a.athlete_id for a in all_activities_30d if a.athlete_id))
         
         # Calculate community average pace from 30-day data
         valid_activities = [a for a in all_activities_30d if a.distance and a.moving_time and a.distance > 0]
@@ -1135,17 +1101,6 @@ def get_community_activity_stream():
     """Get recent community activities and milestones"""
     try:
         logger.info("Fetching community activity stream")
-        
-        # Check if there are any active athletes first
-        active_athletes = ReplitAthlete.query.filter_by(is_active=True).count()
-        
-        if active_athletes == 0:
-            logger.info("No active athletes found - returning empty activity stream")
-            return jsonify({
-                'stream': [],
-                'total_activities': 0,
-                'empty_state': True
-            })
         
         # Get recent activities from all athletes
         seven_days_ago = datetime.now() - timedelta(days=7)
