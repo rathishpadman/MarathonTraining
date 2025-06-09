@@ -92,18 +92,26 @@ class AIRaceAdvisor:
             CALCULATION GUIDELINES:
             - For 10K race time: multiply pace by 10 (e.g., 7 min/km pace = 70 minutes for 10K)
             - For 5K race time: multiply pace by 5 (e.g., 7 min/km pace = 35 minutes for 5K)
+            - For Half Marathon: pace × 21.1 (consider 5-10% slower pace for longer distance)
             - Only suggest race times that are mathematically consistent with current pace data
             
+            PROGRESSION PHILOSOPHY:
+            - Encourage milestone progression: 5K → 10K → Half Marathon → Marathon
+            - If athlete can complete 10K comfortably, they can likely handle Half Marathon with proper training
+            - Be motivating but realistic about timeframes (2-3 months for next distance milestone)
+            - Consider current weekly volume vs race distance requirements
+            
             Provide 4-6 concise recommendations in this format:
-            1. Optimal race distance for next 4-6 weeks
-            2. Training focus areas
-            3. Predicted race times (5K, 10K, Half Marathon if appropriate) - VERIFY YOUR MATH
+            1. Optimal race distance for next 4-6 weeks (be encouraging about next milestone)
+            2. Training focus areas (specific to progression goals)
+            3. Predicted race times (5K, 10K, Half Marathon progression) - VERIFY YOUR MATH
             4. Recovery/injury prevention advice
-            5. Long-term goals (if marathon-ready, mention it)
+            5. Long-term goals (encourage ambitious but achievable milestones)
+            6. Next training phase recommendations
             
             Keep each recommendation to 1-2 sentences, actionable, and motivating.
             Use emojis strategically for visual appeal.
-            Focus on data-driven insights rather than generic advice.
+            Focus on data-driven insights and progressive milestone achievement.
             """
             
             # Log the prompt being sent to Gemini
