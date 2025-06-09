@@ -850,15 +850,38 @@ def get_community_overview():
     try:
         logger.info("Fetching community overview data")
         
-        # Get all active athletes with fresh session
+        # Get all active athletes using raw SQL to bypass ORM caching
         from app import db
-        db.session.rollback()  # Rollback any pending transactions
-        db.session.close()     # Close current session
-        db.session.commit()    # Commit to force sync
+        from sqlalchemy import text
+        
+        # Direct SQL query to get active athletes
+        result = db.session.execute(text("SELECT COUNT(*) FROM athletes WHERE is_active = true"))
+        active_count = result.scalar()
+        logger.info(f"Raw SQL count of active athletes: {active_count}")
+        
+        # Debug: Check actual boolean values in database
+        debug_result = db.session.execute(text("SELECT id, name, is_active FROM athletes"))
+        for row in debug_result:
+            logger.info(f"Debug - Athlete {row[0]}: {row[1]}, is_active: {row[2]} (type: {type(row[2])})")
+        
+        if active_count == 0:
+            logger.info("No active athletes found - returning empty state")
+            return jsonify({
+                'kpis': {
+                    'totalAthletes': 0,
+                    'totalDistance': 0,
+                    'totalActivities': 0,
+                    'avgPace': 0
+                },
+                'leaderboard': [],
+                'trainingLoadDistribution': {'labels': [], 'data': []},
+                'communityTrends': {'labels': [], 'datasets': []},
+                'empty_state': True
+            })
+        
+        # Get athletes using ORM for data processing
         athletes = ReplitAthlete.query.filter_by(is_active=True).all()
-        logger.info(f"Found {len(athletes)} active athletes")
-        for athlete in athletes:
-            logger.info(f"Athlete {athlete.id}: {athlete.name}, active: {athlete.is_active}")
+        logger.info(f"Found {len(athletes)} active athletes via ORM")
         
         if not athletes:
             logger.info("No active athletes found - returning empty state")
