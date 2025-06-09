@@ -8,7 +8,10 @@ import json
 import logging
 import hashlib
 from typing import Dict, List, Optional
-import google.genai as genai
+try:
+    import google.genai as genai  # type: ignore
+except ImportError:
+    genai = None
 from datetime import datetime, timedelta
 
 # Configure logging
