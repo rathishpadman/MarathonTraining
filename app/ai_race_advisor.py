@@ -8,7 +8,7 @@ import json
 import logging
 import hashlib
 from typing import Dict, List, Optional
-import google.generativeai as genai
+from google import genai
 from datetime import datetime, timedelta
 
 # Configure logging
@@ -22,15 +22,14 @@ class AIRaceAdvisor:
     def __init__(self):
         self.api_key = os.environ.get('GEMINI_API_KEY')
         if self.api_key:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.client = genai.Client(api_key=self.api_key)
         else:
             logger.warning("GEMINI_API_KEY not found, AI recommendations will use fallback logic")
-            self.model = None
+            self.client = None
         
         # Cache for AI recommendations to ensure consistency
         self._recommendation_cache = {}
-        self._cache_duration = timedelta(hours=6)  # Cache for 6 hours
+        self._cache_duration = timedelta(hours=24)  # Cache for 6 hours
     
     def _create_data_fingerprint(self, athlete_data: Dict, current_activity: Dict) -> str:
         """Create a hash fingerprint of the training data for cache key"""
@@ -83,7 +82,7 @@ class AIRaceAdvisor:
             
             logger.info(f"Generating new AI recommendations for athlete data")
             
-            if self.model:
+            if self.client:
                 # Try AI-powered recommendations first
                 recommendations = self._generate_ai_recommendations(athlete_data, current_activity)
                 if recommendations:
@@ -165,7 +164,10 @@ class AIRaceAdvisor:
             # Log the prompt being sent to Gemini
             logger.info(f"Sending prompt to Gemini API: {prompt[:200]}...")
             
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=prompt
+            )
             
             # Log the full response from Gemini
             logger.info(f"Gemini API Response: {response.text if response else 'No response'}")
