@@ -84,10 +84,17 @@ class AIRaceAdvisor:
             - Training load (TRIMP): {training_profile['training_load']:.0f}
             - Weekly average: {training_profile['weekly_avg_distance']:.1f} km/week
             
-            Current Activity:
+            Current Activity (Recent Longest Run):
             - Distance: {training_profile['current_activity']['distance_km']:.1f} km
             - Heart rate: {training_profile['current_activity']['heart_rate']:.0f} bpm
             - Estimated pace: {training_profile['current_activity']['estimated_pace']:.2f} min/km
+            
+            CAPABILITY ANALYSIS RULES:
+            - Since athlete completed {training_profile['current_activity']['distance_km']:.1f}km, they've proven this distance capability
+            - If recent longest run ≥ 10km: Recommend HALF MARATHON (21.1K) as next meaningful challenge
+            - If recent longest run 5-9.9km: Recommend 10K as next goal
+            - If recent longest run < 5km: Recommend 5K as next goal
+            - NEVER suggest races for distances already achieved - always aim for the next milestone up!
             
             CALCULATION GUIDELINES:
             - For 10K race time: multiply pace by 10 (e.g., 7 min/km pace = 70 minutes for 10K)
@@ -97,9 +104,12 @@ class AIRaceAdvisor:
             
             PROGRESSION PHILOSOPHY:
             - Encourage milestone progression: 5K → 10K → Half Marathon → Marathon
-            - If athlete can complete 10K comfortably, they can likely handle Half Marathon with proper training
+            - If athlete can already run 10K+ distance, recommend Half Marathon as next meaningful goal
+            - If athlete runs <5K regularly, suggest 10K as next milestone
+            - If athlete runs 15K+, they're ready for Half Marathon training
             - Be motivating but realistic about timeframes (2-3 months for next distance milestone)
             - Consider current weekly volume vs race distance requirements
+            - Don't suggest races for distances they already complete regularly
             
             Provide 4-6 concise recommendations in this format:
             1. Optimal race distance for next 4-6 weeks (be encouraging about next milestone)
