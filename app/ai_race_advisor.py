@@ -6,6 +6,7 @@ Provides intelligent race recommendations based on training data, performance me
 import os
 import json
 import logging
+import hashlib
 from typing import Dict, List, Optional
 import google.generativeai as genai
 from datetime import datetime, timedelta
@@ -26,7 +27,31 @@ class AIRaceAdvisor:
         else:
             logger.warning("GEMINI_API_KEY not found, AI recommendations will use fallback logic")
             self.model = None
+        
+        # Cache for AI recommendations to ensure consistency
+        self._recommendation_cache = {}
+        self._cache_duration = timedelta(hours=6)  # Cache for 6 hours
     
+    def _create_data_fingerprint(self, athlete_data: Dict, current_activity: Dict) -> str:
+        """Create a hash fingerprint of the training data for cache key"""
+        try:
+            # Create a simplified representation focusing on key metrics
+            cache_data = {
+                'total_distance': athlete_data.get('metrics', {}).get('total_distance', 0),
+                'total_activities': athlete_data.get('metrics', {}).get('total_activities', 0),
+                'avg_pace': athlete_data.get('metrics', {}).get('avg_pace', 0),
+                'avg_heart_rate': athlete_data.get('metrics', {}).get('avg_heart_rate', 0),
+                'current_distance': current_activity.get('distance', 0),
+                'current_pace': current_activity.get('pace', 0)
+            }
+            
+            # Create hash of the data
+            data_string = json.dumps(cache_data, sort_keys=True)
+            return hashlib.md5(data_string.encode()).hexdigest()
+        except Exception:
+            # If fingerprinting fails, return current timestamp to avoid cache hits
+            return str(datetime.now().timestamp())
+
     def generate_race_recommendations(self, athlete_data: Dict, current_activity: Dict) -> List[str]:
         """
         Generate AI-powered race recommendations based on athlete data and current activity
@@ -39,10 +64,47 @@ class AIRaceAdvisor:
             List of recommendation strings for tooltip display
         """
         try:
+            # Create cache key based on data fingerprint
+            data_fingerprint = self._create_data_fingerprint(athlete_data, current_activity)
+            cache_key = f"recommendations_{data_fingerprint}"
+            
+            # Check cache first
+            if cache_key in self._recommendation_cache:
+                cached_entry = self._recommendation_cache[cache_key]
+                cache_time = cached_entry['timestamp']
+                
+                # Check if cache is still valid
+                if datetime.now() - cache_time < self._cache_duration:
+                    logger.info("Returning cached AI recommendations")
+                    return cached_entry['recommendations']
+                else:
+                    # Cache expired, remove entry
+                    del self._recommendation_cache[cache_key]
+            
+            logger.info(f"Generating new AI recommendations for athlete data")
+            
             if self.model:
-                return self._generate_ai_recommendations(athlete_data, current_activity)
-            else:
-                return self._generate_fallback_recommendations(athlete_data, current_activity)
+                # Try AI-powered recommendations first
+                recommendations = self._generate_ai_recommendations(athlete_data, current_activity)
+                if recommendations:
+                    # Cache the successful AI recommendations
+                    self._recommendation_cache[cache_key] = {
+                        'recommendations': recommendations,
+                        'timestamp': datetime.now()
+                    }
+                    return recommendations
+            
+            # Fallback to rule-based recommendations
+            fallback_recommendations = self._generate_fallback_recommendations(athlete_data, current_activity)
+            
+            # Cache fallback recommendations with shorter duration
+            self._recommendation_cache[cache_key] = {
+                'recommendations': fallback_recommendations,
+                'timestamp': datetime.now()
+            }
+            
+            return fallback_recommendations
+            
         except Exception as e:
             logger.error(f"Error generating race recommendations: {str(e)}")
             return self._generate_fallback_recommendations(athlete_data, current_activity)
