@@ -114,7 +114,11 @@ class AIRaceAdvisor:
             Provide 4-6 concise recommendations in this format:
             1. Optimal race distance for next 4-6 weeks (be encouraging about next milestone)
             2. Training focus areas (specific to progression goals)
-            3. Predicted race times (5K, 10K, Half Marathon progression) - VERIFY YOUR MATH
+            3. Predicted race times with confidence levels:
+               - Optimistic scenario (best possible outcome, 85-90% confidence)
+               - Realistic scenario (most likely outcome, 70-80% confidence)
+               - Conservative scenario (safe estimate, 95% confidence)
+               Include math verification for each prediction
             4. Recovery/injury prevention advice
             5. Long-term goals (encourage ambitious but achievable milestones)
             6. Next training phase recommendations
