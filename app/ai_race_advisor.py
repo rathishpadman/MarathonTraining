@@ -74,10 +74,12 @@ class AIRaceAdvisor:
             prompt = f"""
             As an expert marathon coach and sports scientist, analyze this runner's training data and provide personalized race recommendations.
             
+            IMPORTANT: Pace is in minutes:seconds per kilometer format. For example, 7.00 min/km means 7 minutes per kilometer.
+            
             Training Profile:
             - Total distance (30 days): {training_profile['total_distance_30days']:.1f} km
             - Activities (30 days): {training_profile['total_activities_30days']}
-            - Average pace: {training_profile['avg_pace_min_per_km']:.2f} min/km
+            - Average pace: {training_profile['avg_pace_min_per_km']:.2f} min/km (this means {training_profile['avg_pace_min_per_km']:.0f} minutes per kilometer)
             - Average heart rate: {training_profile['avg_heart_rate']:.0f} bpm
             - Training load (TRIMP): {training_profile['training_load']:.0f}
             - Weekly average: {training_profile['weekly_avg_distance']:.1f} km/week
@@ -87,10 +89,15 @@ class AIRaceAdvisor:
             - Heart rate: {training_profile['current_activity']['heart_rate']:.0f} bpm
             - Estimated pace: {training_profile['current_activity']['estimated_pace']:.2f} min/km
             
+            CALCULATION GUIDELINES:
+            - For 10K race time: multiply pace by 10 (e.g., 7 min/km pace = 70 minutes for 10K)
+            - For 5K race time: multiply pace by 5 (e.g., 7 min/km pace = 35 minutes for 5K)
+            - Only suggest race times that are mathematically consistent with current pace data
+            
             Provide 4-6 concise recommendations in this format:
             1. Optimal race distance for next 4-6 weeks
             2. Training focus areas
-            3. Predicted race times (5K, 10K, Half Marathon if appropriate)
+            3. Predicted race times (5K, 10K, Half Marathon if appropriate) - VERIFY YOUR MATH
             4. Recovery/injury prevention advice
             5. Long-term goals (if marathon-ready, mention it)
             
