@@ -72,60 +72,32 @@ class AIRaceAdvisor:
             
             # Create AI prompt for race recommendations
             prompt = f"""
-            As an expert marathon coach and sports scientist, analyze this runner's training data and provide personalized race recommendations.
-            
-            IMPORTANT: Pace is in minutes:seconds per kilometer format. For example, 7.00 min/km means 7 minutes per kilometer.
+            As an enthusiastic marathon coach, analyze this runner's data and provide encouraging, personalized race recommendations.
             
             Training Profile:
             - Total distance (30 days): {training_profile['total_distance_30days']:.1f} km
             - Activities (30 days): {training_profile['total_activities_30days']}
-            - Average pace: {training_profile['avg_pace_min_per_km']:.2f} min/km (this means {training_profile['avg_pace_min_per_km']:.0f} minutes per kilometer)
+            - Average pace: {training_profile['avg_pace_min_per_km']:.2f} min/km
             - Average heart rate: {training_profile['avg_heart_rate']:.0f} bpm
-            - Training load (TRIMP): {training_profile['training_load']:.0f}
+            - Training load: {training_profile['training_load']:.0f}
             - Weekly average: {training_profile['weekly_avg_distance']:.1f} km/week
             
-            Current Activity (Recent Longest Run):
+            Current Activity:
             - Distance: {training_profile['current_activity']['distance_km']:.1f} km
             - Heart rate: {training_profile['current_activity']['heart_rate']:.0f} bpm
-            - Estimated pace: {training_profile['current_activity']['estimated_pace']:.2f} min/km
+            - Pace: {training_profile['current_activity']['estimated_pace']:.2f} min/km
             
-            CAPABILITY ANALYSIS RULES:
-            - Since athlete completed {training_profile['current_activity']['distance_km']:.1f}km, they've proven this distance capability
-            - If recent longest run ≥ 10km: Recommend HALF MARATHON (21.1K) as next meaningful challenge
-            - If recent longest run 5-9.9km: Recommend 10K as next goal
-            - If recent longest run < 5km: Recommend 5K as next goal
-            - NEVER suggest races for distances already achieved - always aim for the next milestone up!
-            
-            CALCULATION GUIDELINES:
-            - For 10K race time: multiply pace by 10 (e.g., 7 min/km pace = 70 minutes for 10K)
-            - For 5K race time: multiply pace by 5 (e.g., 7 min/km pace = 35 minutes for 5K)
-            - For Half Marathon: pace × 21.1 (consider 5-10% slower pace for longer distance)
-            - Only suggest race times that are mathematically consistent with current pace data
-            
-            PROGRESSION PHILOSOPHY:
-            - Encourage milestone progression: 5K → 10K → Half Marathon → Marathon
-            - If athlete can already run 10K+ distance, recommend Half Marathon as next meaningful goal
-            - If athlete runs <5K regularly, suggest 10K as next milestone
-            - If athlete runs 15K+, they're ready for Half Marathon training
-            - Be motivating but realistic about timeframes (2-3 months for next distance milestone)
-            - Consider current weekly volume vs race distance requirements
-            - Don't suggest races for distances they already complete regularly
-            
-            Provide 4-6 concise recommendations in this format:
-            1. Optimal race distance for next 4-6 weeks (be encouraging about next milestone)
-            2. Training focus areas (specific to progression goals)
-            3. Predicted race times with confidence levels:
-               - Optimistic scenario (best possible outcome, 85-90% confidence)
-               - Realistic scenario (most likely outcome, 70-80% confidence)
-               - Conservative scenario (safe estimate, 95% confidence)
-               Include math verification for each prediction
-            4. Recovery/injury prevention advice
-            5. Long-term goals (encourage ambitious but achievable milestones)
+            Provide 4-6 encouraging and specific recommendations:
+            1. Optimal race distance for next 4-6 weeks
+            2. Training focus areas  
+            3. Predicted race times (be encouraging but realistic)
+            4. Recovery and injury prevention advice
+            5. Long-term goals
             6. Next training phase recommendations
             
             Keep each recommendation to 1-2 sentences, actionable, and motivating.
             Use emojis strategically for visual appeal.
-            Focus on data-driven insights and progressive milestone achievement.
+            Be enthusiastic and supportive while staying data-driven.
             """
             
             # Log the prompt being sent to Gemini

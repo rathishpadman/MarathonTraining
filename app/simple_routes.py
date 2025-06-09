@@ -18,7 +18,18 @@ from app.ai_race_advisor import get_race_recommendations
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
 # Main routes blueprint
-main_bp = Blueprint('main', __name__)
+main_bp = Blueprint('simple_routes', __name__)
+
+@main_bp.route('/')
+def home():
+    """Home page redirect to community dashboard"""
+    try:
+        from flask import render_template
+        logger.info("Accessing home page")
+        return render_template('community_standalone.html')
+    except Exception as e:
+        logger.error(f"Error rendering home page: {str(e)}")
+        return f"<h1>Error loading home page: {str(e)}</h1>", 500
 
 @main_bp.route('/community')
 def community_dashboard():

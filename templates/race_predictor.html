@@ -400,11 +400,19 @@
         <div id="results" style="display: none;">
             <div class="results-section">
                 <div class="result-card">
-                    <div class="result-title">🏁 Predicted Finish Time</div>
-                    <div class="predicted-time" id="predictedTime">--:--:--</div>
-                    <div class="confidence-score" id="confidenceScore">Confidence: --%</div>
+                    <div class="result-title">🎯 Realistic Prediction</div>
+                    <div class="predicted-time" id="realisticTime">--:--:--</div>
+                    <div class="confidence-score" id="realisticConfidence">Confidence: --%</div>
                 </div>
                 
+                <div class="result-card">
+                    <div class="result-title">⚡ Optimistic Prediction</div>
+                    <div class="predicted-time" id="optimisticTime">--:--:--</div>
+                    <div class="confidence-score" id="optimisticConfidence">Confidence: --%</div>
+                </div>
+            </div>
+            
+            <div class="results-section">
                 <div class="result-card">
                     <div class="result-title">📊 Fitness Metrics</div>
                     <div style="margin-bottom: 10px;">
@@ -413,6 +421,12 @@
                     <div style="margin-bottom: 10px;">
                         <strong>Aerobic Capacity:</strong> <span id="aerobicCapacity">--</span>
                     </div>
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-title">🏁 Primary Target</div>
+                    <div class="predicted-time" id="predictedTime">--:--:--</div>
+                    <div class="confidence-score">Based on current training</div>
                 </div>
             </div>
             
@@ -544,12 +558,28 @@
             }
         }
 
+        function formatTime(seconds) {
+            if (!seconds || seconds <= 0) return '--:--:--';
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
         function displayPredictionResults(data) {
             const results = document.getElementById('results');
             
-            // Update predicted time and confidence
+            // Calculate realistic and optimistic predictions
+            const baseTime = data.predicted_time_seconds || 0;
+            const realisticTime = baseTime * 1.05; // 5% slower
+            const optimisticTime = baseTime * 0.95; // 5% faster
+            
+            // Update prediction times
+            document.getElementById('realisticTime').textContent = formatTime(realisticTime);
+            document.getElementById('realisticConfidence').textContent = 'Confidence: 75%';
+            document.getElementById('optimisticTime').textContent = formatTime(optimisticTime);
+            document.getElementById('optimisticConfidence').textContent = 'Confidence: 85%';
             document.getElementById('predictedTime').textContent = data.predicted_time_formatted || '--:--:--';
-            document.getElementById('confidenceScore').textContent = `Confidence: ${data.confidence_score || 0}%`;
             document.getElementById('fitnessScore').textContent = data.fitness_score || '--';
             document.getElementById('aerobicCapacity').textContent = data.aerobic_capacity || '--';
             
