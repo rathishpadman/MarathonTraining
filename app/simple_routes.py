@@ -852,6 +852,7 @@ def get_community_overview():
         
         # Get all active athletes
         athletes = ReplitAthlete.query.filter_by(is_active=True).all()
+        logger.info(f"Found {len(athletes)} active athletes")
         
         if not athletes:
             logger.info("No active athletes found - returning empty state")
@@ -891,7 +892,7 @@ def get_community_overview():
         # Safe calculation with null checks for 30-day KPIs
         total_distance = sum((a.distance or 0) for a in all_activities_30d if a.distance is not None) / 1000  # km
         total_activities = len(all_activities_30d)
-        active_athletes = len(set(a.athlete_id for a in all_activities_30d if a.athlete_id))
+        active_athletes = len(athletes)  # Use the actual count of active athletes
         
         # Calculate community average pace from 30-day data
         valid_activities = [a for a in all_activities_30d if a.distance and a.moving_time and a.distance > 0]
