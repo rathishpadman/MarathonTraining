@@ -580,109 +580,222 @@ class ReplitSecurity:
 - **Error Handling**: Graceful degradation when external services unavailable
 - **Authentic Data Priority**: Real-time Strava sync over cached data
 
-## 9. Background Processing
+## 9. Background Processing & Real-time Features
 
-### 9.1 Scheduled Tasks
-- **Daily Summary Generation**: Aggregate athlete data
-- **Activity Sync**: Fetch new Strava activities
-- **Notification Dispatch**: Send email alerts
-- **Data Cleanup**: Archive old processing logs
+### 9.1 APScheduler Integration (`app/__init__.py`)
+```python
+from apscheduler.schedulers.background import BackgroundScheduler
 
-### 9.2 Real-time Updates
-- WebSocket connections for live dashboard updates
-- Event-driven architecture for data changes
-- Efficient broadcasting to connected clients
+scheduler = BackgroundScheduler()
+scheduler.add_job(
+    func=send_athlete_update,
+    trigger="interval",
+    minutes=5,
+    id='athlete_updates'
+)
+scheduler.start()
+```
+
+### 9.2 Scheduled Tasks (Every 5 Minutes)
+- **Athlete Data Sync**: Fetch latest Strava activities for all active athletes
+- **Performance Processing**: Calculate daily metrics, training load, TRIMP scores
+- **Community Updates**: Refresh leaderboard and KPI calculations
+- **Token Maintenance**: Refresh expired Strava OAuth tokens automatically
+
+### 9.3 Real-time Dashboard Features
+- **Live Data Updates**: 30-second auto-refresh for community metrics
+- **Activity Stream**: Real-time feed of recent activities with achievements
+- **Performance Notifications**: Immediate display of new PRs and milestones
+- **Error Handling**: Graceful degradation when sync fails
+
+### 9.4 Background Processing Functions (`app/simple_routes.py`)
+```python
+def send_athlete_update():
+    """Process updates for all connected athletes"""
+    active_athletes = db.session.query(ReplitAthlete).filter_by(is_active=True).all()
+    for athlete in active_athletes:
+        update_data = get_lightweight_update(athlete.id)
+        # Process performance metrics and sync latest activities
+```
 
 ## 10. Error Handling & Monitoring
 
-### 10.1 Error Management
-- Comprehensive exception handling
-- User-friendly error messages
-- Fallback mechanisms for API failures
-- Graceful degradation for missing data
+### 10.1 Comprehensive Error Management
+- **API Failure Handling**: Graceful degradation when Strava or Gemini APIs unavailable
+- **Token Refresh**: Automatic handling of expired OAuth tokens with user notification
+- **Database Errors**: Transaction rollback and recovery for data integrity
+- **User-Friendly Messages**: Clear error communication without exposing system details
 
-### 10.2 Logging & Monitoring
-- Replit-optimized logging configuration
-- Structured logging with athlete ID context
-- Performance metric tracking
-- Error rate monitoring
+### 10.2 Replit-Optimized Logging (`app/config.py`)
+```python
+def configure_replit_logging(app):
+    """Configure logging optimized for Replit environment"""
+    def record_factory(*args, **kwargs):
+        record = old_factory(*args, **kwargs)
+        athlete_id = getattr(record, 'athlete_id', 'N/A')
+        record.msg = f"[{record.module}] [athlete_id:{athlete_id}] {record.msg}"
+        return record
+```
+
+### 10.3 Structured Logging Examples
+```
+2025-06-09 04:27:22,232 INFO [app.ai_race_advisor] [athlete_id:N/A] Sending prompt to Gemini API
+2025-06-09 04:27:24,960 INFO [app.ai_race_advisor] [athlete_id:N/A] Gemini API Response: Based on the provided data...
+2025-06-09 04:29:30,587 INFO [app.simple_routes] [athlete_id:N/A] Fetching community overview data
+```
+
+### 10.4 Error Recovery Mechanisms
+- **AI Fallback**: Rule-based recommendations when Gemini API fails
+- **Data Validation**: Input sanitization and type checking for all user inputs
+- **Rate Limit Handling**: Exponential backoff for Strava API rate limits
+- **Database Backup**: Automatic data persistence with transaction safety
 
 ## 11. Deployment Architecture
 
-### 11.1 Replit Configuration
-- Gunicorn WSGI server with auto-reload
-- Port binding on 0.0.0.0:5000
-- Environment variable management
-- Automatic dependency installation
+### 11.1 Replit Production Configuration
+```python
+# main.py - Application entry point
+from app import create_app
+app = create_app()
+
+# .replit - Deployment configuration
+run = "gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
+```
 
 ### 11.2 Environment Management
-- Development, staging, and production configurations
-- Feature flags for A/B testing
-- Database migration handling
-- Secret management through environment variables
+- **Production Database**: PostgreSQL via DATABASE_URL environment variable
+- **Secret Management**: Strava API keys, Gemini API key via Replit Secrets
+- **Auto-scaling**: Gunicorn worker processes with reuse-port optimization
+- **Health Monitoring**: Background scheduler status and API connectivity checks
 
-## 12. Testing Strategy
+### 11.3 Production Features
+- **Dependency Optimization**: 45 essential packages for faster deployment
+- **Error Logging**: Comprehensive monitoring with athlete context
+- **Token Security**: Encrypted OAuth tokens with automatic refresh
+- **API Rate Limiting**: Strava usage tracking to prevent service interruption
 
-### 12.1 Unit Testing
-- Model validation testing
-- API endpoint testing
-- Data processing algorithm testing
-- Utility function testing
+## 12. API Documentation & Routes
 
-### 12.2 Integration Testing
-- Strava API integration testing
-- Database operation testing
-- Email notification testing
-- WebSocket functionality testing
-
-## 13. Future Enhancements
-
-### 13.1 Planned Features
-- Mobile application development
-- Advanced ML models for performance prediction
-- Social features and athlete interactions
-- Training plan marketplace
-- Wearable device integrations
-
-### 13.2 Scalability Considerations
-- Database migration to PostgreSQL for production
-- Microservices architecture for large scale
-- CDN integration for static assets
-- Load balancing for high availability
-
-## 14. API Documentation
-
-### 14.1 Authentication Endpoints
+### 12.1 Authentication Endpoints
 ```
 GET /api/auth/strava/authorize
-- Returns Strava OAuth authorization URL
-- Response: {"authorization_url": "https://strava.com/oauth/..."}
+- Generates Strava OAuth authorization URL with proper scopes
+- Response: {"authorization_url": "https://www.strava.com/oauth/authorize?..."}
 
-GET /api/auth/strava/callback?code=...
-- Handles OAuth callback and creates athlete account
-- Redirects to success page with athlete information
+GET /api/auth/strava/callback?code={code}&scope={scope}
+- Processes OAuth callback, exchanges code for tokens, creates athlete account
+- Redirects to /auth/success with athlete information
+- Creates initial ReplitAthlete record with encrypted tokens
 ```
 
-### 14.2 Community Endpoints
+### 12.2 Community Dashboard Endpoints
 ```
+GET /
+- Main community dashboard with glassmorphism UI
+- Template: community_standalone.html
+
 GET /api/community/overview
-- Returns community-wide statistics and trends
-- Response: {kpis, leaderboard, trainingLoadDistribution, communityTrends}
+- Real-time community statistics from authentic Strava data
+- Response: {
+    kpis: {totalAthletes, totalDistance, totalActivities, avgPace},
+    leaderboard: [{id, name, distance, avg_pace, activities, avg_hr}],
+    trainingLoadDistribution: {data: [distance_by_sport], labels: [sport_types]},
+    communityTrends: {datasets: [daily_distance, daily_activities], labels: [dates]}
+  }
 
-GET /api/analytics/data?days=30
-- Returns analytics data for specified time period
-- Response: {heartRateZones, elevationAnalysis, paceAnalysis, period_days}
+GET /api/community/activity-stream
+- Live activity feed with achievements and milestones
+- Response: {stream: [{type, athlete_name, activity_name, distance_km, pace, relative_time}]}
 ```
 
-### 14.3 Athlete Endpoints
+### 12.3 AI & Prediction Endpoints
 ```
-GET /api/athletes
-- Returns list of all active athletes
-- Response: [{id, name, email, last_sync}, ...]
+GET /race_predictor?athlete_id={id}
+- AI-powered race prediction interface with Gemini integration
+- Template: race_predictor.html
+
+GET /api/athletes/{id}/ai-recommendations
+- Google Gemini AI personalized race recommendations
+- Response: {recommendations: [optimal_distance, training_focus, predicted_times, recovery_advice]}
+
+GET /api/athletes/{id}/race-prediction?distance={distance}
+- Scientific race prediction using VDOT, Jack Daniels, Riegel algorithms
+- Response: {predicted_time, confidence_score, training_paces, methodology}
+
+GET /api/athletes/{id}/race-optimization?distance={distance}
+- Advanced pacing strategy and training optimization
+- Response: {pacing_strategy, heart_rate_targets, splits, optimization_metrics}
+```
+
+### 12.4 Risk Analysis Endpoints
+```
+GET /risk_analyser?athlete_id={id}
+- ML-based injury risk assessment interface
+- Template: risk_analyser.html
+
+GET /api/athletes/{id}/injury-risk
+- Injury risk prediction from training load analysis
+- Response: {risk_score, risk_level, key_factors, confidence}
+
+GET /api/athletes/{id}/injury-prevention
+- Personalized injury prevention recommendations
+- Response: {prevention_plan, training_modifications, recovery_protocols}
+```
+
+### 12.5 Performance Analytics Endpoints
+```
+GET /dashboard?athlete_id={id}
+- Individual athlete performance dashboard
+- Template: dashboard.html
 
 GET /api/athletes/{id}/summary
-- Returns comprehensive athlete performance summary
-- Response: {athlete, activities, performance_metrics, insights}
+- Comprehensive athlete performance summary with authentic data
+- Response: {athlete, recent_activities, performance_metrics, training_trends}
+
+GET /api/analytics/data?athlete_id={id}&days={period}
+- Time-series analytics data for visualizations
+- Response: {heartRateZones, elevationAnalysis, paceAnalysis, trainingVolume}
 ```
 
-This solution design document provides a comprehensive overview of the Marathon Training Dashboard application architecture, covering all modules, technologies, and implementation details. The system is designed for scalability, maintainability, and extensibility while providing a rich user experience for marathon training analysis and community engagement.
+## 13. Current Production Status
+
+### 13.1 Live Implementation Features
+- **Community Dashboard**: Real-time metrics from 1 active athlete (104.7km total distance)
+- **AI Race Recommendations**: Google Gemini providing personalized advice (sub-40 minute 10K predictions)
+- **Authentic Strava Data**: 4 recent activities with actual pace analysis (7:13 min/km average)
+- **Performance Analytics**: Heart rate zones, training load, TRIMP calculations
+- **Injury Risk Assessment**: ML-based analysis of training patterns
+- **Background Sync**: 5-minute intervals for automatic data updates
+
+### 13.2 Production Metrics (Live Data)
+```
+Active Athletes: 1
+Total Distance: 104.7 km (30 days)
+Total Activities: 14
+Average Pace: 7:13 min/km
+Recent Performance: 10.05km at 7:00 min/km pace
+Training Load Distribution: 100% Running
+```
+
+### 13.3 Technical Architecture Status
+- **Dependencies**: Optimized from 113+ to 45 essential packages (60% reduction)
+- **Database**: PostgreSQL production with encrypted token storage
+- **APIs**: Strava OAuth 2.0 + Google Gemini AI integration active
+- **Security**: Token encryption, rate limiting, comprehensive error handling
+- **Monitoring**: Structured logging with athlete context and performance tracking
+
+## 14. Future Enhancements
+
+### 14.1 Immediate Roadmap
+- **Multi-athlete Scaling**: Support for larger training communities
+- **Advanced ML Models**: Enhanced injury prediction with more training data
+- **Mobile Optimization**: Progressive Web App (PWA) capabilities
+- **Social Features**: Athlete interactions, group challenges, training partnerships
+
+### 14.2 Long-term Vision
+- **Wearable Integration**: Garmin, Polar, Suunto device connectivity
+- **Coach Portal**: Training plan management and athlete monitoring tools
+- **Marketplace**: Training plans, nutrition guides, equipment recommendations
+- **Performance Insights**: Advanced analytics with predictive modeling
+
+This comprehensive solution design document reflects the current state of the Marathon Training Dashboard - a production-ready application with authentic Strava data integration, AI-powered insights, and modern glassmorphism UI design optimized for performance and scalability.
