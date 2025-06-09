@@ -850,9 +850,15 @@ def get_community_overview():
     try:
         logger.info("Fetching community overview data")
         
-        # Get all active athletes
+        # Get all active athletes with fresh session
+        from app import db
+        db.session.rollback()  # Rollback any pending transactions
+        db.session.close()     # Close current session
+        db.session.commit()    # Commit to force sync
         athletes = ReplitAthlete.query.filter_by(is_active=True).all()
         logger.info(f"Found {len(athletes)} active athletes")
+        for athlete in athletes:
+            logger.info(f"Athlete {athlete.id}: {athlete.name}, active: {athlete.is_active}")
         
         if not athletes:
             logger.info("No active athletes found - returning empty state")
