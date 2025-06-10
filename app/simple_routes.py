@@ -1306,19 +1306,29 @@ def get_community_activity_stream():
 
 def _get_relative_time(date):
     """Get human-readable relative time"""
-    now = datetime.now()
-    diff = now - date
+    from datetime import datetime, timezone
     
-    if diff.days > 0:
-        return f"{diff.days} day{'s' if diff.days != 1 else ''} ago"
-    elif diff.seconds > 3600:
-        hours = diff.seconds // 3600
-        return f"{hours} hour{'s' if hours != 1 else ''} ago"
-    elif diff.seconds > 60:
-        minutes = diff.seconds // 60
-        return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
-    else:
+    # Ensure we're working with timezone-aware datetime objects
+    now = datetime.now(timezone.utc)
+    
+    # Convert date to UTC if it's naive
+    if date.tzinfo is None:
+        date = date.replace(tzinfo=timezone.utc)
+    
+    diff = now - date
+    total_seconds = diff.total_seconds()
+    
+    if total_seconds < 60:
         return "Just now"
+    elif total_seconds < 3600:
+        minutes = int(total_seconds // 60)
+        return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+    elif total_seconds < 86400:  # 24 hours
+        hours = int(total_seconds // 3600)
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    else:
+        days = int(total_seconds // 86400)
+        return f"{days} day{'s' if days != 1 else ''} ago"
 
 @api_bp.route('/analytics/data')
 def get_analytics_data():
