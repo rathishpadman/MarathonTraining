@@ -559,7 +559,10 @@
                 }
                 
                 // Validate required fields - handle both response formats
-                if (!predictionData.race_prediction && !predictionData.predicted_time_formatted) {
+                const hasRacePrediction = predictionData.race_prediction && predictionData.race_prediction.predicted_time_formatted;
+                const hasDirectPrediction = predictionData.predicted_time_formatted;
+                
+                if (!hasRacePrediction && !hasDirectPrediction) {
                     throw new Error('Invalid prediction response: missing prediction data');
                 }
                 
