@@ -558,9 +558,9 @@
                     throw new Error(predictionData.error);
                 }
                 
-                // Validate required fields
-                if (!predictionData.predicted_time_formatted) {
-                    throw new Error('Invalid prediction response: missing predicted_time_formatted');
+                // Validate required fields - handle both response formats
+                if (!predictionData.race_prediction && !predictionData.predicted_time_formatted) {
+                    throw new Error('Invalid prediction response: missing prediction data');
                 }
                 
                 // Display periodized prediction results
@@ -597,38 +597,46 @@
             const results = document.getElementById('results');
             const raceDistance = document.getElementById('raceDistance').value;
             
-            // Display main prediction
-            document.getElementById('realisticTime').textContent = data.race_prediction.predicted_time_formatted;
-            document.getElementById('realisticConfidence').textContent = `Confidence: ${Math.round(data.race_prediction.confidence_score * 100)}%`;
+            // Handle both legacy and new response formats
+            const prediction = data.race_prediction || data;
+            const timeFormatted = prediction.predicted_time_formatted;
+            const confidence = prediction.confidence_score;
             
-            // Add improvement analysis section
-            const improvementSection = document.createElement('div');
-            improvementSection.className = 'result-card';
-            improvementSection.innerHTML = `
-                <div class="result-title">📈 Training Analysis</div>
-                <div style="text-align: left; margin-top: 15px;">
-                    <div class="metric-item">
-                        <span class="metric-label">Current Level:</span>
-                        <span class="metric-value">${data.current_baseline.athlete_level}</span>
+            // Display main prediction
+            document.getElementById('realisticTime').textContent = timeFormatted;
+            document.getElementById('realisticConfidence').textContent = `Confidence: ${Math.round(confidence * 100)}%`;
+            
+            // Add improvement analysis section (only for periodized predictions)
+            let improvementSection = null;
+            if (data.current_baseline && data.improvement_analysis) {
+                improvementSection = document.createElement('div');
+                improvementSection.className = 'result-card';
+                improvementSection.innerHTML = `
+                    <div class="result-title">📈 Training Analysis</div>
+                    <div style="text-align: left; margin-top: 15px;">
+                        <div class="metric-item">
+                            <span class="metric-label">Current Level:</span>
+                            <span class="metric-value">${data.current_baseline.athlete_level}</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Weekly Volume:</span>
+                            <span class="metric-value">${data.current_baseline.weekly_volume_km.toFixed(1)} km</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Current Pace:</span>
+                            <span class="metric-value">${data.current_baseline.avg_pace_per_km.toFixed(2)} min/km</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Expected Improvement:</span>
+                            <span class="metric-value">${data.improvement_analysis.total_improvement_percent.toFixed(1)}%</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Target Race Pace:</span>
+                            <span class="metric-value">${prediction.predicted_pace_per_km.toFixed(2)} min/km</span>
+                        </div>
                     </div>
-                    <div class="metric-item">
-                        <span class="metric-label">Weekly Volume:</span>
-                        <span class="metric-value">${data.current_baseline.weekly_volume_km.toFixed(1)} km</span>
-                    </div>
-                    <div class="metric-item">
-                        <span class="metric-label">Current Pace:</span>
-                        <span class="metric-value">${data.current_baseline.avg_pace_per_km.toFixed(2)} min/km</span>
-                    </div>
-                    <div class="metric-item">
-                        <span class="metric-label">Expected Improvement:</span>
-                        <span class="metric-value">${data.improvement_analysis.total_improvement_percent.toFixed(1)}%</span>
-                    </div>
-                    <div class="metric-item">
-                        <span class="metric-label">Target Race Pace:</span>
-                        <span class="metric-value">${data.race_prediction.predicted_pace_per_km.toFixed(2)} min/km</span>
-                    </div>
-                </div>
-            `;
+                `;
+            }
             
             // Add progressive milestones section
             if (data.progressive_milestones && data.progressive_milestones.length > 0) {
@@ -657,9 +665,11 @@
                 resultsSection.appendChild(milestonesSection);
             }
             
-            // Insert improvement analysis after confidence card
-            const confidenceCard = document.getElementById('realisticConfidence').closest('.result-card');
-            confidenceCard.parentNode.insertBefore(improvementSection, confidenceCard.nextSibling);
+            // Insert improvement analysis after confidence card (if available)
+            if (improvementSection) {
+                const confidenceCard = document.getElementById('realisticConfidence').closest('.result-card');
+                confidenceCard.parentNode.insertBefore(improvementSection, confidenceCard.nextSibling);
+            }
             
             results.style.display = 'block';
         }
