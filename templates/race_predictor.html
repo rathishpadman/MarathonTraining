@@ -634,15 +634,13 @@
             const optimisticPace = realisticPace * optimisticImprovement;
             const conservativePace = realisticPace * conservativeImprovement;
             
-            // Calculate race distances
-            const distanceMap = {'5K': 5, '10K': 10, 'Half Marathon': 21.0975, 'Marathon': 42.195};
-            const raceDistance = document.getElementById('raceDistance').value;
-            const distanceKm = distanceMap[raceDistance];
+            // Get race distance from form (already declared above)
+            const distanceKmForCalc = distanceMap[raceDistance];
             
             // Format times for each scenario
-            const optimisticTime = formatTime(optimisticPace * distanceKm);
+            const optimisticTime = formatTime(optimisticPace * distanceKmForCalc);
             const realisticTime = timeFormatted;
-            const conservativeTime = formatTime(conservativePace * distanceKm);
+            const conservativeTime = formatTime(conservativePace * distanceKmForCalc);
             
             // Display all predictions
             document.getElementById('optimisticTime').textContent = optimisticTime;
@@ -1243,10 +1241,9 @@
             return [{ distance: 'Full race', strategy: 'Steady effort', pace: formatPace(realisticPace) }];
         }
 
-        // Auto-predict on page load
+        // Auto-fetch AI recommendations on page load
         document.addEventListener('DOMContentLoaded', function() {
-            predictRaceTime();
-            // Also fetch AI recommendations - use hardcoded athlete ID since this page is for athlete 1
+            // Only fetch AI recommendations - don't auto-predict race time
             fetchAIRecommendations(1);
         });
     </script>
