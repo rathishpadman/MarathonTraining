@@ -798,37 +798,41 @@
                 return; // Don't show insights if data is unavailable
             }
 
-            // Display pacing strategy
-            if (data.pacing_strategy && data.pacing_strategy.splits) {
-                const pacingContainer = document.getElementById('pacingStrategy');
-                let pacingHtml = '<div class="pacing-table">';
-                pacingHtml += '<div class="pacing-header">';
-                pacingHtml += '<div class="header-cell">Distance</div>';
-                pacingHtml += '<div class="header-cell">Strategy</div>';
-                pacingHtml += '<div class="header-cell">Target Pace</div>';
+            // Generate pacing strategy based on realistic prediction
+            const pacingContainer = document.getElementById('pacingStrategy');
+            const realisticPace = prediction.predicted_pace_per_km;
+            
+            // Create race-specific pacing strategy aligned with realistic prediction
+            let pacingHtml = '<div class="pacing-table">';
+            pacingHtml += '<div class="pacing-header">';
+            pacingHtml += '<div class="header-cell">Distance</div>';
+            pacingHtml += '<div class="header-cell">Strategy</div>';
+            pacingHtml += '<div class="header-cell">Target Pace</div>';
+            pacingHtml += '</div>';
+            
+            // Generate race-specific splits based on distance
+            const raceDistance = document.getElementById('raceDistance').value;
+            const splits = generateRaceSplits(raceDistance, realisticPace);
+            
+            splits.forEach(split => {
+                pacingHtml += '<div class="pacing-row">';
+                pacingHtml += `<div class="pace-cell">${split.distance}</div>`;
+                pacingHtml += `<div class="pace-cell strategy-cell">${split.strategy}</div>`;
+                pacingHtml += `<div class="pace-cell pace-value">${split.pace}</div>`;
                 pacingHtml += '</div>';
-                
-                data.pacing_strategy.splits.forEach(split => {
-                    pacingHtml += '<div class="pacing-row">';
-                    pacingHtml += `<div class="pace-cell">${split.km || 'N/A'}</div>`;
-                    pacingHtml += `<div class="pace-cell strategy-cell">${split.strategy || 'N/A'}</div>`;
-                    pacingHtml += `<div class="pace-cell pace-value">${split.target_pace || 'N/A'}</div>`;
-                    pacingHtml += '</div>';
-                });
-                pacingHtml += '</div>';
-                
-                // Add heart rate targets if available
-                if (data.pacing_strategy.heart_rate_targets) {
-                    const hr = data.pacing_strategy.heart_rate_targets;
-                    pacingHtml += `<div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">`;
-                    pacingHtml += `<strong>Heart Rate Targets:</strong><br>`;
-                    pacingHtml += `Target HR: ${hr.target_hr} bpm (${hr.target_hr_range[0]}-${hr.target_hr_range[1]} range)<br>`;
-                    pacingHtml += `Max HR: ${hr.estimated_max_hr} bpm`;
-                    pacingHtml += `</div>`;
-                }
-                
-                pacingContainer.innerHTML = pacingHtml;
-            }
+            });
+            pacingHtml += '</div>';
+            
+            // Add realistic heart rate targets based on pace
+            const estimatedMaxHR = 220 - (data.current_baseline?.age || 30);
+            const targetHR = Math.round(estimatedMaxHR * 0.75); // 75% for marathon pace
+            pacingHtml += `<div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">`;
+            pacingHtml += `<strong>Heart Rate Targets:</strong><br>`;
+            pacingHtml += `Target HR: ${targetHR} bpm (${targetHR-5}-${targetHR+5} range)<br>`;
+            pacingHtml += `Max HR: ${estimatedMaxHR} bpm (estimated)`;
+            pacingHtml += `</div>`;
+            
+            pacingContainer.innerHTML = pacingHtml;
             
             // Show the insights container
             insightsContainer.style.display = 'block';
@@ -1199,6 +1203,44 @@
             const seconds = Math.floor((totalMinutes % 1) * 60);
             
             return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // Helper function to generate race splits based on distance and realistic pace
+        function generateRaceSplits(raceDistance, realisticPace) {
+            const formatPace = (pace) => {
+                const minutes = Math.floor(pace);
+                const seconds = Math.round((pace - minutes) * 60);
+                return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            };
+
+            if (raceDistance === 'Marathon') {
+                return [
+                    { distance: '0-10K', strategy: 'Conservative start', pace: formatPace(realisticPace * 1.08) },
+                    { distance: '10-21K', strategy: 'Settle into rhythm', pace: formatPace(realisticPace * 1.03) },
+                    { distance: '21-32K', strategy: 'Target pace', pace: formatPace(realisticPace) },
+                    { distance: '32-42K', strategy: 'Maintain effort', pace: formatPace(realisticPace * 1.05) }
+                ];
+            } else if (raceDistance === 'Half Marathon') {
+                return [
+                    { distance: '0-5K', strategy: 'Controlled start', pace: formatPace(realisticPace * 1.05) },
+                    { distance: '5-15K', strategy: 'Target pace', pace: formatPace(realisticPace) },
+                    { distance: '15-21K', strategy: 'Strong finish', pace: formatPace(realisticPace * 0.97) }
+                ];
+            } else if (raceDistance === '10K') {
+                return [
+                    { distance: '0-2K', strategy: 'Fast start', pace: formatPace(realisticPace * 0.95) },
+                    { distance: '2-8K', strategy: 'Target pace', pace: formatPace(realisticPace) },
+                    { distance: '8-10K', strategy: 'Final kick', pace: formatPace(realisticPace * 0.92) }
+                ];
+            } else if (raceDistance === '5K') {
+                return [
+                    { distance: '0-1K', strategy: 'Aggressive start', pace: formatPace(realisticPace * 0.92) },
+                    { distance: '1-4K', strategy: 'Target pace', pace: formatPace(realisticPace) },
+                    { distance: '4-5K', strategy: 'All-out finish', pace: formatPace(realisticPace * 0.88) }
+                ];
+            }
+            
+            return [{ distance: 'Full race', strategy: 'Steady effort', pace: formatPace(realisticPace) }];
         }
 
         // Auto-predict on page load
