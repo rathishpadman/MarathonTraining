@@ -1084,9 +1084,9 @@ def get_community_overview():
         else:
             avg_pace = 0
         
-        # Generate leaderboard from 7-day data (top performers by distance)
+        # Generate leaderboard from 30-day data (top performers by distance)
         athlete_stats = {}
-        for activity in all_activities_7d:
+        for activity in all_activities_30d:
             athlete_id = activity.athlete_id
             if athlete_id not in athlete_stats:
                 athlete = ReplitAthlete.query.get(athlete_id)
@@ -1103,9 +1103,9 @@ def get_community_overview():
             athlete_stats[athlete_id]['distance'] += (activity.distance or 0) / 1000
             athlete_stats[athlete_id]['activities'] += 1
         
-        # Calculate average pace and HR for each athlete using 7-day data
+        # Calculate average pace and HR for each athlete using 30-day data
         for athlete_id, stats in athlete_stats.items():
-            athlete_activities = [a for a in all_activities_7d if a.athlete_id == athlete_id]
+            athlete_activities = [a for a in all_activities_30d if a.athlete_id == athlete_id]
             if athlete_activities:
                 # Calculate average pace
                 valid_acts = [a for a in athlete_activities if a.distance and a.moving_time and a.distance > 0]
