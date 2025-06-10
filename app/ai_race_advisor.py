@@ -152,16 +152,20 @@ class AIRaceAdvisor:
             - Pace: {training_profile['current_activity']['estimated_pace']:.2f} min/km
             
             Provide 4-6 encouraging and specific recommendations:
-            1. Optimal race distance for next 4-6 weeks
-            2. Training focus areas  
-            3. Predicted race times (be encouraging but realistic)
+            1. Optimal race distance for next 4-6 weeks (based on current weekly volume)
+            2. Training focus areas for improvement
+            3. Realistic race time predictions (use current average pace {training_profile['avg_pace_min_per_km']:.2f} min/km as baseline - races are only 2-5% faster than training pace)
             4. Recovery and injury prevention advice
-            5. Long-term goals
+            5. Long-term goals based on progression
             6. Next training phase recommendations
+            
+            IMPORTANT: For race time predictions, be conservative and realistic. Current average pace is {training_profile['avg_pace_min_per_km']:.2f} min/km.
+            - 5K prediction should be around {training_profile['avg_pace_min_per_km'] * 0.97 * 5:.0f} minutes
+            - 10K prediction should be around {training_profile['avg_pace_min_per_km'] * 0.98 * 10:.0f} minutes
             
             Keep each recommendation to 1-2 sentences, actionable, and motivating.
             Use emojis strategically for visual appeal.
-            Be enthusiastic and supportive while staying data-driven.
+            Be enthusiastic and supportive while staying data-driven and realistic.
             """
             
             # Log the prompt being sent to Gemini
@@ -249,11 +253,20 @@ class AIRaceAdvisor:
     
     def _predict_race_time(self, distance_km: float, avg_pace_min_km: float) -> str:
         """Predict race time based on training pace and distance"""
-        # Apply race effort factor (races are typically faster than training pace)
-        race_factor = 1.0 - (0.02 * min(distance_km / 5, 4))  # Up to 8% faster for shorter races
-        race_pace = avg_pace_min_km * race_factor
+        # Conservative race pace prediction: races are typically 2-5% faster than training pace
+        # But never more optimistic than current best pace
+        if distance_km <= 5:
+            race_factor = 0.97  # 3% faster for 5K
+        elif distance_km <= 10:
+            race_factor = 0.98  # 2% faster for 10K
+        elif distance_km <= 21:
+            race_factor = 0.99  # 1% faster for half marathon
+        else:
+            race_factor = 1.02  # 2% slower for marathon (endurance challenge)
         
+        race_pace = avg_pace_min_km * race_factor
         total_minutes = race_pace * distance_km
+        
         hours = int(total_minutes // 60)
         minutes = int(total_minutes % 60)
         seconds = int((total_minutes % 1) * 60)
