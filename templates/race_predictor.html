@@ -392,8 +392,30 @@
                 </select>
             </div>
             
+            <div class="form-group">
+                <label for="weeksToRace">Training Duration:</label>
+                <select id="weeksToRace">
+                    <option value="4">4 weeks (Sprint prep)</option>
+                    <option value="8">8 weeks (Short training block)</option>
+                    <option value="12" selected>12 weeks (Standard training)</option>
+                    <option value="16">16 weeks (Extended prep)</option>
+                    <option value="20">20 weeks (Full periodization)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="targetImprovement">Target Improvement:</label>
+                <select id="targetImprovement">
+                    <option value="">Automatic (based on training analysis)</option>
+                    <option value="0.10">10% improvement</option>
+                    <option value="0.15">15% improvement</option>
+                    <option value="0.20" selected>20% improvement (3-month goal)</option>
+                    <option value="0.25">25% improvement (ambitious)</option>
+                </select>
+            </div>
+            
             <button class="predict-btn" onclick="predictRaceTime()">
-                Predict My Race Time
+                Get Periodized Prediction
             </button>
         </div>
         
@@ -494,6 +516,8 @@
     <script>
         async function predictRaceTime() {
             const raceDistance = document.getElementById('raceDistance').value;
+            const weeksToRace = document.getElementById('weeksToRace').value;
+            const targetImprovement = document.getElementById('targetImprovement').value;
             const predictBtn = document.querySelector('.predict-btn');
             const loadingMessage = document.getElementById('loadingMessage');
             const errorMessage = document.getElementById('errorMessage');
@@ -501,7 +525,7 @@
             
             // Show loading state
             predictBtn.disabled = true;
-            predictBtn.textContent = 'Predicting...';
+            predictBtn.textContent = 'Analyzing training progression...';
             loadingMessage.style.display = 'block';
             errorMessage.style.display = 'none';
             results.style.display = 'none';
@@ -509,14 +533,25 @@
             try {
                 // Get athlete ID from template variable or default to 1
                 const athleteId = {{ athlete_id | default(1) }};
-                const response = await fetch(`/api/athletes/${athleteId}/race-prediction?distance=${encodeURIComponent(raceDistance)}`);
+                
+                // Convert race distance to kilometers for API
+                const distanceMap = {'5K': 5, '10K': 10, 'Half Marathon': 21.0975, 'Marathon': 42.195};
+                const distanceKm = distanceMap[raceDistance];
+                
+                // Build API URL with periodization parameters
+                let apiUrl = `/api/race/periodized-prediction/${athleteId}?distance=${distanceKm}&weeks=${weeksToRace}`;
+                if (targetImprovement) {
+                    apiUrl += `&target_improvement=${targetImprovement}`;
+                }
+                
+                const response = await fetch(apiUrl);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
                 const predictionData = await response.json();
-                console.log('Prediction API Response:', predictionData);
+                console.log('Periodized Prediction Response:', predictionData);
                 
                 // Check if response contains error
                 if (predictionData.error) {
@@ -528,8 +563,8 @@
                     throw new Error('Invalid prediction response: missing predicted_time_formatted');
                 }
                 
-                // Display results
-                displayPredictionResults(predictionData);
+                // Display periodized prediction results
+                displayPeriodizedResults(predictionData);
                 
                 // Fetch and display optimization insights
                 await fetchOptimizationInsights(athleteId, raceDistance);
@@ -553,9 +588,80 @@
             } finally {
                 // Reset button state
                 predictBtn.disabled = false;
-                predictBtn.textContent = 'Predict My Race Time';
+                predictBtn.textContent = 'Get Periodized Prediction';
                 loadingMessage.style.display = 'none';
             }
+        }
+
+        function displayPeriodizedResults(data) {
+            const results = document.getElementById('results');
+            const raceDistance = document.getElementById('raceDistance').value;
+            
+            // Display main prediction
+            document.getElementById('realisticTime').textContent = data.race_prediction.predicted_time_formatted;
+            document.getElementById('realisticConfidence').textContent = `Confidence: ${Math.round(data.race_prediction.confidence_score * 100)}%`;
+            
+            // Add improvement analysis section
+            const improvementSection = document.createElement('div');
+            improvementSection.className = 'result-card';
+            improvementSection.innerHTML = `
+                <div class="result-title">📈 Training Analysis</div>
+                <div style="text-align: left; margin-top: 15px;">
+                    <div class="metric-item">
+                        <span class="metric-label">Current Level:</span>
+                        <span class="metric-value">${data.current_baseline.athlete_level}</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Weekly Volume:</span>
+                        <span class="metric-value">${data.current_baseline.weekly_volume_km.toFixed(1)} km</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Current Pace:</span>
+                        <span class="metric-value">${data.current_baseline.avg_pace_per_km.toFixed(2)} min/km</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Expected Improvement:</span>
+                        <span class="metric-value">${data.improvement_analysis.total_improvement_percent.toFixed(1)}%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Target Race Pace:</span>
+                        <span class="metric-value">${data.race_prediction.predicted_pace_per_km.toFixed(2)} min/km</span>
+                    </div>
+                </div>
+            `;
+            
+            // Add progressive milestones section
+            if (data.progressive_milestones && data.progressive_milestones.length > 0) {
+                const milestonesSection = document.createElement('div');
+                milestonesSection.className = 'pacing-strategy';
+                milestonesSection.innerHTML = `
+                    <div class="strategy-title">🎯 Progressive Training Milestones</div>
+                    <div class="pacing-table">
+                        <div class="pacing-header">
+                            <div>Week</div>
+                            <div>Target Threshold Pace</div>
+                            <div>Expected Improvement</div>
+                        </div>
+                        ${data.progressive_milestones.map(milestone => `
+                            <div class="pacing-row">
+                                <div class="pace-cell">Week ${milestone.week}</div>
+                                <div class="pace-cell pace-value">${milestone.target_threshold_pace.toFixed(2)} min/km</div>
+                                <div class="pace-cell">${milestone.expected_improvement}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                // Insert after the main results
+                const resultsSection = document.querySelector('.results-section');
+                resultsSection.appendChild(milestonesSection);
+            }
+            
+            // Insert improvement analysis after confidence card
+            const confidenceCard = document.getElementById('realisticConfidence').closest('.result-card');
+            confidenceCard.parentNode.insertBefore(improvementSection, confidenceCard.nextSibling);
+            
+            results.style.display = 'block';
         }
 
         function formatTime(seconds) {
