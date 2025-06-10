@@ -727,18 +727,22 @@ def sync_athlete_activities_internal(athlete_id):
             logger.warning(f"No valid tokens for athlete {athlete_id}")
             return {'error': 'No valid tokens', 'activities_synced': 0}
         
-        # Refresh access token if needed
-        if not athlete.access_token or (athlete.token_expires_at and athlete.token_expires_at < datetime.now()):
-            logger.info(f"Refreshing access token for athlete {athlete_id}")
+        # Refresh access token if needed (refresh 1 hour before expiry for safety)
+        refresh_threshold = athlete.token_expires_at - timedelta(hours=1) if athlete.token_expires_at else datetime.now()
+        if not athlete.access_token or datetime.now() >= refresh_threshold:
+            logger.info(f"Refreshing access token for athlete {athlete_id} (expires: {athlete.token_expires_at})")
             token_data = strava_client.refresh_access_token(athlete.refresh_token)
             if token_data:
                 athlete.access_token = token_data['access_token']
+                if token_data.get('refresh_token'):
+                    athlete.refresh_token = token_data['refresh_token']
                 athlete.token_expires_at = datetime.fromtimestamp(token_data['expires_at'])
+                athlete.updated_at = datetime.now()
                 db.session.commit()
-                logger.info(f"Successfully refreshed token for athlete {athlete_id}")
+                logger.info(f"Successfully refreshed token for athlete {athlete_id}, new expiry: {athlete.token_expires_at}")
             else:
-                logger.error(f"Failed to refresh token for athlete {athlete_id}")
-                return {'error': 'Token refresh failed', 'activities_synced': 0}
+                logger.error(f"Failed to refresh token for athlete {athlete_id} - may need re-authorization")
+                return {'error': 'Token refresh failed - re-authorization required', 'activities_synced': 0}
         
         # Fetch activities from Strava
         logger.info(f"Fetching activities from Strava for athlete {athlete_id}")
