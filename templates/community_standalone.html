@@ -807,7 +807,9 @@
                     g.appendChild(circle);
                     
                     // Add tooltip on hover with enhanced information
-                    circle.addEventListener('mouseenter', function() {
+                    circle.style.cursor = 'pointer';
+                    circle.addEventListener('mouseenter', function(event) {
+                        console.log('Chart point hovered:', value, dataset.label);
                         this.setAttribute('r', 6);
                         const date = labels[i];
                         const metric = dataset.label;
@@ -822,7 +824,7 @@
                         showEnhancedTooltip(x + margin.left, y + margin.top, tooltipText, metric);
                     });
                     
-                    circle.addEventListener('mouseleave', function() {
+                    circle.addEventListener('mouseleave', function(event) {
                         this.setAttribute('r', 4);
                         hideTooltip();
                     });
