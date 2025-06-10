@@ -225,6 +225,42 @@
             margin-bottom: 10px;
         }
 
+        .progression-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .milestone-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 15px;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #4A90E2;
+            align-items: center;
+        }
+
+        .milestone-week {
+            font-weight: bold;
+            color: #4A90E2;
+            min-width: 80px;
+        }
+
+        .milestone-pace {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .milestone-improvement {
+            color: #28a745;
+            font-weight: bold;
+            text-align: right;
+            min-width: 60px;
+        }
+
         .optimization-insights {
             margin-top: 2rem;
             padding: 1.5rem;
@@ -571,12 +607,10 @@
             document.getElementById('realisticTime').textContent = timeFormatted;
             document.getElementById('realisticConfidence').textContent = `Confidence: ${Math.round(confidence * 100)}%`;
             
-            // Add improvement analysis section (only for periodized predictions)
-            let improvementSection = null;
+            // Add or update training analysis section (only for periodized predictions)
             if (data.current_baseline && data.improvement_analysis) {
-                improvementSection = document.createElement('div');
-                improvementSection.className = 'result-card';
-                improvementSection.innerHTML = `
+                let existingAnalysis = document.querySelector('.training-analysis-card');
+                let analysisContent = `
                     <div class="result-title">📈 Training Analysis</div>
                     <div style="text-align: left; margin-top: 15px;">
                         <div class="metric-item">
@@ -601,14 +635,37 @@
                         </div>
                     </div>
                 `;
-            }
-            
-            // Progressive milestones will be displayed in the existing Training Analysis section
-            
-            // Insert improvement analysis after confidence card (if available)
-            if (improvementSection) {
-                const confidenceCard = document.getElementById('realisticConfidence').closest('.result-card');
-                confidenceCard.parentNode.insertBefore(improvementSection, confidenceCard.nextSibling);
+                
+                // Add progressive milestones if available
+                if (data.progressive_milestones && data.progressive_milestones.length > 0) {
+                    analysisContent += `
+                        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-weight: bold; margin-bottom: 10px;">🎯 Training Progression</div>
+                            <div class="progression-timeline">
+                                ${data.progressive_milestones.map(milestone => `
+                                    <div class="milestone-item">
+                                        <span class="milestone-week">Week ${milestone.week}</span>
+                                        <span class="milestone-pace">${milestone.target_threshold_pace.toFixed(2)} min/km</span>
+                                        <span class="milestone-improvement">${milestone.expected_improvement}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                if (existingAnalysis) {
+                    // Update existing card
+                    existingAnalysis.innerHTML = analysisContent;
+                } else {
+                    // Create new card
+                    const analysisSection = document.createElement('div');
+                    analysisSection.className = 'result-card training-analysis-card';
+                    analysisSection.innerHTML = analysisContent;
+                    
+                    const confidenceCard = document.getElementById('realisticConfidence').closest('.result-card');
+                    confidenceCard.parentNode.insertBefore(analysisSection, confidenceCard.nextSibling);
+                }
             }
             
             results.style.display = 'block';
