@@ -821,12 +821,10 @@
                             tooltipText = `${date}\n${metric}: ${value}\n${value > 1 ? value + ' workouts' : value === 1 ? '1 workout' : 'Rest day'}`;
                         }
                         
-                        // Get absolute position of the circle
+                        // Get viewport position of the circle for fixed positioning
                         const rect = this.getBoundingClientRect();
-                        const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
-                        const scrollY = window.pageYOffset || document.documentElement.scrollTop;
-                        const absoluteX = rect.left + scrollX + rect.width / 2;
-                        const absoluteY = rect.top + scrollY;
+                        const absoluteX = rect.left + rect.width / 2;
+                        const absoluteY = rect.top;
                         
                         console.log('Showing tooltip at:', absoluteX, absoluteY, tooltipText);
                         showEnhancedTooltip(absoluteX, absoluteY, tooltipText, metric);
