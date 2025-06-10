@@ -97,9 +97,15 @@
         
         .results-section {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr;
-            gap: 20px;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
             margin-bottom: 30px;
+        }
+        
+        .predictions-column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
         
         .result-card {
@@ -404,16 +410,14 @@
             border: 1px solid rgba(255, 107, 107, 0.3);
         }
         
-        @media (max-width: 1024px) {
-            .results-section {
-                grid-template-columns: 1fr 1fr;
-                gap: 15px;
-            }
-        }
-        
         @media (max-width: 768px) {
             .results-section {
                 grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .predictions-column {
+                gap: 10px;
             }
             
             .pace-splits {
@@ -475,24 +479,28 @@
         
         <div id="results" style="display: none;">
             <div class="results-section">
-                <div class="result-card">
-                    <div class="result-title">🚀 Optimistic Prediction</div>
-                    <div class="predicted-time" id="optimisticTime">--:--:--</div>
-                    <div class="prediction-label">Best case scenario</div>
+                <div class="predictions-column">
+                    <div class="result-card">
+                        <div class="result-title">🚀 Optimistic Prediction</div>
+                        <div class="predicted-time" id="optimisticTime">--:--:--</div>
+                        <div class="prediction-label">Best case scenario</div>
+                    </div>
+                    
+                    <div class="result-card primary-prediction">
+                        <div class="result-title">🎯 Realistic Prediction</div>
+                        <div class="predicted-time" id="realisticTime">--:--:--</div>
+                        <div class="confidence-score" id="realisticConfidence">Confidence: --%</div>
+                    </div>
+                    
+                    <div class="result-card">
+                        <div class="result-title">🛡️ Conservative Prediction</div>
+                        <div class="predicted-time" id="conservativeTime">--:--:--</div>
+                        <div class="prediction-label">Safe target time</div>
+                    </div>
                 </div>
                 
-                <div class="result-card primary-prediction">
-                    <div class="result-title">🎯 Realistic Prediction</div>
-                    <div class="predicted-time" id="realisticTime">--:--:--</div>
-                    <div class="confidence-score" id="realisticConfidence">Confidence: --%</div>
-                </div>
-                
-                <div class="result-card">
-                    <div class="result-title">🛡️ Conservative Prediction</div>
-                    <div class="predicted-time" id="conservativeTime">--:--:--</div>
-                    <div class="prediction-label">Safe target time</div>
-                </div>
-            </div>
+                <!-- Training Analysis Card will be inserted here by JavaScript -->
+            </div></div>
             
             <div class="ai-insights-section" id="aiInsightsSection" style="display: none;">
                 <div class="section-title">🤖 AI Coach Recommendations</div>
@@ -709,13 +717,14 @@
                     // Update existing card
                     existingAnalysis.innerHTML = analysisContent;
                 } else {
-                    // Create new card
+                    // Create new card as second column
                     const analysisSection = document.createElement('div');
                     analysisSection.className = 'result-card training-analysis-card';
                     analysisSection.innerHTML = analysisContent;
                     
-                    const confidenceCard = document.getElementById('realisticConfidence').closest('.result-card');
-                    confidenceCard.parentNode.insertBefore(analysisSection, confidenceCard.nextSibling);
+                    // Insert as second column in results-section
+                    const resultsSection = document.querySelector('.results-section');
+                    resultsSection.appendChild(analysisSection);
                 }
             }
             
