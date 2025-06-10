@@ -129,10 +129,19 @@ class PeriodizedRacePredictor:
         
         avg_pace_per_km = (total_time / 60) / total_distance if total_distance > 0 else 0
         
-        # Calculate weekly volume: total distance over number of weeks in the period
-        days_covered = (datetime.now() - cutoff_date).days
-        weeks_covered = max(1, days_covered / 7)
-        weekly_volume = total_distance / weeks_covered
+        # Calculate weekly volume: recent activities averaged over actual weeks
+        if len(activities) >= 4:  # Need at least 4 activities for reliable calculation
+            # Get the actual date range of activities
+            activity_dates = [a.start_date for a in activities if a.start_date]
+            if activity_dates:
+                earliest_date = min(activity_dates)
+                latest_date = max(activity_dates)
+                actual_weeks = max(1, (latest_date - earliest_date).days / 7)
+                weekly_volume = total_distance / actual_weeks
+            else:
+                weekly_volume = total_distance / 8.57  # Default to ~60 days / 7
+        else:
+            weekly_volume = total_distance / 8.57  # Default calculation
         
         # Analyze pace distribution for different distances
         short_runs = [a for a in activities if a.distance and a.distance < 8000]

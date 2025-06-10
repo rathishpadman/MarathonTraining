@@ -261,6 +261,17 @@
             min-width: 60px;
         }
 
+        .primary-prediction {
+            border: 2px solid #4A90E2;
+            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.3);
+        }
+
+        .prediction-label {
+            font-size: 0.9rem;
+            color: #ccc;
+            margin-top: 8px;
+        }
+
         .optimization-insights {
             margin-top: 2rem;
             padding: 1.5rem;
@@ -458,9 +469,21 @@
         <div id="results" style="display: none;">
             <div class="results-section">
                 <div class="result-card">
-                    <div class="result-title">🎯 Race Prediction</div>
+                    <div class="result-title">🚀 Optimistic Prediction</div>
+                    <div class="predicted-time" id="optimisticTime">--:--:--</div>
+                    <div class="prediction-label">Best case scenario</div>
+                </div>
+                
+                <div class="result-card primary-prediction">
+                    <div class="result-title">🎯 Realistic Prediction</div>
                     <div class="predicted-time" id="realisticTime">--:--:--</div>
                     <div class="confidence-score" id="realisticConfidence">Confidence: --%</div>
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-title">🛡️ Conservative Prediction</div>
+                    <div class="predicted-time" id="conservativeTime">--:--:--</div>
+                    <div class="prediction-label">Safe target time</div>
                 </div>
             </div>
             
@@ -603,8 +626,28 @@
             const timeFormatted = prediction.predicted_time_formatted;
             const confidence = prediction.confidence_score;
             
-            // Display main prediction
-            document.getElementById('realisticTime').textContent = timeFormatted;
+            // Calculate multiple prediction scenarios
+            const realisticPace = prediction.predicted_pace_per_km;
+            const optimisticImprovement = 0.92; // 8% faster than realistic
+            const conservativeImprovement = 1.10; // 10% slower than realistic
+            
+            const optimisticPace = realisticPace * optimisticImprovement;
+            const conservativePace = realisticPace * conservativeImprovement;
+            
+            // Calculate race distances
+            const distanceMap = {'5K': 5, '10K': 10, 'Half Marathon': 21.0975, 'Marathon': 42.195};
+            const raceDistance = document.getElementById('raceDistance').value;
+            const distanceKm = distanceMap[raceDistance];
+            
+            // Format times for each scenario
+            const optimisticTime = formatTime(optimisticPace * distanceKm);
+            const realisticTime = timeFormatted;
+            const conservativeTime = formatTime(conservativePace * distanceKm);
+            
+            // Display all predictions
+            document.getElementById('optimisticTime').textContent = optimisticTime;
+            document.getElementById('realisticTime').textContent = realisticTime;
+            document.getElementById('conservativeTime').textContent = conservativeTime;
             document.getElementById('realisticConfidence').textContent = `Confidence: ${Math.round(confidence * 100)}%`;
             
             // Add or update training analysis section (only for periodized predictions)
@@ -1147,6 +1190,15 @@
             
             // Show the section
             aiSection.style.display = 'block';
+        }
+
+        // Helper function to format time in minutes to HH:MM:SS
+        function formatTime(totalMinutes) {
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = Math.floor(totalMinutes % 60);
+            const seconds = Math.floor((totalMinutes % 1) * 60);
+            
+            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
 
         // Auto-predict on page load
