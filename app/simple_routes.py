@@ -674,7 +674,7 @@ def handle_disconnect():
 
 # Helper functions for real-time updates
 def send_athlete_update():
-    """Send updates to all connected athletes (called by scheduler)"""
+    """Sync activities from Strava for all connected athletes (called by scheduler)"""
     from app import create_app
     try:
         app = create_app()
@@ -682,21 +682,110 @@ def send_athlete_update():
             # Get all active athletes
             active_athletes = db.session.query(ReplitAthlete).filter_by(is_active=True).all()
             
-            logger.info(f"Processing updates for {len(active_athletes)} athletes")
+            logger.info(f"Processing Strava sync for {len(active_athletes)} athletes")
             
             for athlete in active_athletes:
                 try:
-                    # Get lightweight update for this athlete
-                    update_data = get_lightweight_update(athlete.id)
-                    logger.debug(f"Generated update for athlete {athlete.id}")
+                    # Actually sync activities from Strava
+                    sync_result = sync_athlete_activities_internal(athlete.id)
+                    logger.info(f"Synced activities for athlete {athlete.id}: {sync_result.get('activities_synced', 0)} new activities")
                     
                 except Exception as e:
-                    logger.error(f"Error sending update to athlete {athlete.id}: {str(e)}")
+                    logger.error(f"Error syncing activities for athlete {athlete.id}: {str(e)}")
             
-            logger.info(f"Completed updates for {len(active_athletes)} athletes")
+            logger.info(f"Completed Strava sync for {len(active_athletes)} athletes")
         
     except Exception as e:
         logger.error(f"Error in send_athlete_update: {str(e)}")
+
+def sync_athlete_activities_internal(athlete_id):
+    """Internal function to sync activities from Strava for a specific athlete"""
+    try:
+        # Get athlete from database
+        athlete = db.session.query(ReplitAthlete).filter_by(id=athlete_id).first()
+        if not athlete:
+            return {'error': 'Athlete not found', 'activities_synced': 0}
+        
+        # Check if we have valid tokens
+        if not athlete.access_token or not athlete.refresh_token:
+            logger.warning(f"No valid tokens for athlete {athlete_id}")
+            return {'error': 'No valid tokens', 'activities_synced': 0}
+        
+        # Refresh access token if needed
+        if not athlete.access_token or (athlete.token_expires_at and athlete.token_expires_at < datetime.now()):
+            logger.info(f"Refreshing access token for athlete {athlete_id}")
+            token_data = strava_client.refresh_access_token(athlete.refresh_token)
+            if token_data:
+                athlete.access_token = token_data['access_token']
+                athlete.token_expires_at = datetime.fromtimestamp(token_data['expires_at'])
+                db.session.commit()
+                logger.info(f"Successfully refreshed token for athlete {athlete_id}")
+            else:
+                logger.error(f"Failed to refresh token for athlete {athlete_id}")
+                return {'error': 'Token refresh failed', 'activities_synced': 0}
+        
+        # Fetch activities from Strava
+        logger.info(f"Fetching activities from Strava for athlete {athlete_id}")
+        activities_data = strava_client.get_activities(athlete.access_token, per_page=50)
+        
+        if not activities_data:
+            logger.info(f"No activities returned from Strava for athlete {athlete_id}")
+            return {'message': 'No activities found', 'activities_synced': 0}
+        
+        activities_synced = 0
+        for activity_data in activities_data:
+            try:
+                # Check if activity already exists
+                existing = db.session.query(Activity).filter_by(
+                    strava_activity_id=activity_data['id']
+                ).first()
+                
+                if not existing:
+                    # Parse the start date properly
+                    start_date_str = activity_data['start_date_local']
+                    if start_date_str.endswith('Z'):
+                        start_date_str = start_date_str.replace('Z', '+00:00')
+                    
+                    # Create new activity record
+                    activity = Activity()
+                    activity.strava_activity_id = activity_data['id']
+                    activity.athlete_id = athlete_id
+                    activity.name = activity_data['name']
+                    activity.sport_type = activity_data['sport_type']
+                    activity.start_date = datetime.fromisoformat(start_date_str)
+                    activity.distance = activity_data.get('distance')
+                    activity.moving_time = activity_data.get('moving_time')
+                    activity.elapsed_time = activity_data.get('elapsed_time')
+                    activity.total_elevation_gain = activity_data.get('total_elevation_gain')
+                    activity.average_speed = activity_data.get('average_speed')
+                    activity.max_speed = activity_data.get('max_speed')
+                    activity.average_cadence = activity_data.get('average_cadence')
+                    activity.average_heartrate = activity_data.get('average_heartrate')
+                    activity.max_heartrate = activity_data.get('max_heartrate')
+                    activity.calories = activity_data.get('calories')
+                    activity.created_at = datetime.now()
+                    
+                    db.session.add(activity)
+                    activities_synced += 1
+                    logger.info(f"Added new activity {activity_data['id']} for athlete {athlete_id}")
+                    
+            except Exception as e:
+                logger.error(f"Error processing activity {activity_data.get('id', 'unknown')}: {str(e)}")
+                continue
+        
+        if activities_synced > 0:
+            db.session.commit()
+            logger.info(f"Successfully synced {activities_synced} new activities for athlete {athlete_id}")
+        
+        return {
+            'message': f'Successfully synced {activities_synced} activities',
+            'activities_synced': activities_synced
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error in sync_athlete_activities_internal for athlete {athlete_id}: {str(e)}")
+        return {'error': str(e), 'activities_synced': 0}
 
 def get_lightweight_update(athlete_id):
     """Get lightweight data for real-time updates"""
