@@ -422,40 +422,9 @@
         <div id="results" style="display: none;">
             <div class="results-section">
                 <div class="result-card">
-                    <div class="result-title">🎯 Realistic Prediction</div>
+                    <div class="result-title">🎯 Race Prediction</div>
                     <div class="predicted-time" id="realisticTime">--:--:--</div>
                     <div class="confidence-score" id="realisticConfidence">Confidence: --%</div>
-                </div>
-                
-                <div class="result-card">
-                    <div class="result-title">⚡ Optimistic Prediction</div>
-                    <div class="predicted-time" id="optimisticTime">--:--:--</div>
-                    <div class="confidence-score" id="optimisticConfidence">Confidence: --%</div>
-                </div>
-            </div>
-            
-            <div class="results-section">
-                <div class="result-card">
-                    <div class="result-title">📊 Fitness Metrics</div>
-                    <div style="margin-bottom: 10px;">
-                        <strong>Fitness Score:</strong> <span id="fitnessScore">--</span>/100
-                    </div>
-                    <div style="margin-bottom: 10px;">
-                        <strong>Aerobic Capacity:</strong> <span id="aerobicCapacity">--</span>
-                    </div>
-                </div>
-                
-                <div class="result-card">
-                    <div class="result-title">🏁 Primary Target</div>
-                    <div class="predicted-time" id="predictedTime">--:--:--</div>
-                    <div class="confidence-score">Based on current training</div>
-                </div>
-            </div>
-            
-            <div class="pacing-strategy">
-                <div class="strategy-title">🎯 Recommended Pacing Strategy</div>
-                <div class="pace-splits" id="pacingSplits">
-                    <!-- Pacing splits will be populated here -->
                 </div>
             </div>
             
@@ -466,18 +435,11 @@
                 </div>
             </div>
             
-            <div class="recommendations">
-                <div class="recommendations-title">💡 Training Optimization</div>
-                <div id="recommendationsList">
-                    <!-- Recommendations will be populated here -->
-                </div>
-            </div>
-            
             <div class="optimization-insights" style="display: none;" id="optimizationInsights">
                 <div class="insight-section">
-                    <h3>📊 Training Analysis</h3>
-                    <div id="trainingAnalysis" class="analysis-content">
-                        <!-- Training analysis will be populated here -->
+                    <h3>📊 Pacing Strategy</h3>
+                    <div id="pacingStrategy" class="analysis-content">
+                        <!-- Pacing strategy will be populated here -->
                     </div>
                 </div>
                 
@@ -761,22 +723,37 @@
                 return; // Don't show insights if data is unavailable
             }
 
-            // Display strategic pacing table from optimization data
+            // Display pacing strategy
             if (data.pacing_strategy && data.pacing_strategy.splits) {
-                displayStrategicPacing(data.pacing_strategy.splits);
+                const pacingContainer = document.getElementById('pacingStrategy');
+                let pacingHtml = '<div class="pacing-table">';
+                pacingHtml += '<div class="pacing-header">';
+                pacingHtml += '<div class="header-cell">Distance</div>';
+                pacingHtml += '<div class="header-cell">Strategy</div>';
+                pacingHtml += '<div class="header-cell">Target Pace</div>';
+                pacingHtml += '</div>';
+                
+                data.pacing_strategy.splits.forEach(split => {
+                    pacingHtml += '<div class="pacing-row">';
+                    pacingHtml += `<div class="pace-cell">${split.km || 'N/A'}</div>`;
+                    pacingHtml += `<div class="pace-cell strategy-cell">${split.strategy || 'N/A'}</div>`;
+                    pacingHtml += `<div class="pace-cell pace-value">${split.target_pace || 'N/A'}</div>`;
+                    pacingHtml += '</div>';
+                });
+                pacingHtml += '</div>';
+                
+                // Add heart rate targets if available
+                if (data.pacing_strategy.heart_rate_targets) {
+                    const hr = data.pacing_strategy.heart_rate_targets;
+                    pacingHtml += `<div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">`;
+                    pacingHtml += `<strong>Heart Rate Targets:</strong><br>`;
+                    pacingHtml += `Target HR: ${hr.target_hr} bpm (${hr.target_hr_range[0]}-${hr.target_hr_range[1]} range)<br>`;
+                    pacingHtml += `Max HR: ${hr.estimated_max_hr} bpm`;
+                    pacingHtml += `</div>`;
+                }
+                
+                pacingContainer.innerHTML = pacingHtml;
             }
-
-            // Display training analysis using optimization metrics
-            displayTrainingAnalysisFromOptimization(data);
-            
-            // Display performance trends using optimization metrics
-            displayPerformanceTrendsFromOptimization(data);
-            
-            // Display strengths and weaknesses
-            displayStrengthsWeaknessesFromOptimization(data);
-            
-            // Display race day strategy
-            displayRaceDayStrategyFromOptimization(data);
             
             // Show the insights container
             insightsContainer.style.display = 'block';
