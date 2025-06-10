@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect to Strava - Marathon Training Dashboard</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            margin: 20px;
+        }
+        .strava-logo {
+            width: 100px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        .description {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+        .connect-btn {
+            background: #FC4C02;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .connect-btn:hover {
+            background: #E63900;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(252, 76, 2, 0.3);
+        }
+        .features {
+            text-align: left;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        .feature {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+        }
+        .feature::before {
+            content: "✓";
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .security-note {
+            font-size: 14px;
+            color: #888;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f8ff;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg class="strava-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100" height="100" rx="20" fill="#FC4C02"/>
+            <path d="M20 30 L50 70 L65 45 L80 70 L65 45 L50 20 L35 45 L20 30Z" fill="white"/>
+        </svg>
+        
+        <h1>Connect Your Strava Account</h1>
+        
+        <div class="description">
+            Sync your training data automatically to unlock personalized insights, 
+            AI-powered race recommendations, and injury risk analysis.
+        </div>
+        
+        <div class="features">
+            <div class="feature">Automatic activity synchronization every 5 minutes</div>
+            <div class="feature">AI-powered race recommendations using Gemini 2.0</div>
+            <div class="feature">ML-based injury risk prediction and prevention</div>
+            <div class="feature">Real-time performance analytics and trends</div>
+            <div class="feature">Community leaderboards and social features</div>
+        </div>
+        
+        <a href="{{ auth_url }}" class="connect-btn">
+            Connect with Strava
+        </a>
+        
+        <div class="security-note">
+            <strong>Secure Connection:</strong> Your Strava data is encrypted and only used 
+            for training analytics. Tokens are automatically refreshed every 3 hours to 
+            maintain continuous synchronization.
+        </div>
+    </div>
+</body>
+</html>

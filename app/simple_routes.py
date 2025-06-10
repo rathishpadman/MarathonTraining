@@ -78,6 +78,22 @@ def risk_analyser(athlete_id=1):
         logger.error(f"Error rendering risk analyser: {str(e)}")
         return f"<h1>Error loading risk analyser: {str(e)}</h1>", 500
 
+@main_bp.route('/connect/strava')
+def strava_connect():
+    """Strava connection page"""
+    try:
+        from flask import render_template, request
+        logger.info("Accessing Strava connection page")
+        
+        # Generate Strava authorization URL
+        redirect_uri = request.url_root.rstrip('/') + '/api/auth/strava/callback'
+        auth_url = strava_client.get_authorization_url(redirect_uri, scope="read,activity:read")
+        
+        return render_template('strava_connect.html', auth_url=auth_url)
+    except Exception as e:
+        logger.error(f"Error rendering Strava connect page: {str(e)}")
+        return f"<h1>Error loading Strava connection: {str(e)}</h1>", 500
+
 # Initialize components
 config = Config()
 security = ReplitSecurity()
