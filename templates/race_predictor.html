@@ -621,6 +621,9 @@
             const results = document.getElementById('results');
             const raceDistance = document.getElementById('raceDistance').value;
             
+            // Define distance mapping
+            const distanceMap = {'5K': 5, '10K': 10, 'Half Marathon': 21.0975, 'Marathon': 42.195};
+            
             // Handle both legacy and new response formats
             const prediction = data.race_prediction || data;
             const timeFormatted = prediction.predicted_time_formatted;
@@ -634,7 +637,7 @@
             const optimisticPace = realisticPace * optimisticImprovement;
             const conservativePace = realisticPace * conservativeImprovement;
             
-            // Get race distance from form (already declared above)
+            // Get race distance from form
             const distanceKmForCalc = distanceMap[raceDistance];
             
             // Format times for each scenario
