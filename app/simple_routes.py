@@ -280,6 +280,72 @@ def get_performance_insights(athlete_id):
         logger.error(f"Error getting performance insights: {str(e)}")
         return jsonify({'error': 'Failed to get performance insights'}), 500
 
+@main_bp.route('/api/race/periodized-prediction/<int:athlete_id>', methods=['GET'])
+def get_periodized_race_prediction(athlete_id):
+    """Get race prediction with training duration and progression analysis"""
+    try:
+        # Get parameters from request
+        race_distance_km = float(request.args.get('distance', 42.195))
+        weeks_to_race = int(request.args.get('weeks', 12))
+        target_improvement = request.args.get('target_improvement', type=float)
+        
+        logger.info(f"Generating periodized prediction for athlete {athlete_id}: {race_distance_km}km in {weeks_to_race} weeks")
+        
+        # Import and use periodized predictor
+        from app.periodized_race_predictor import periodized_predictor
+        
+        prediction = periodized_predictor.predict_race_performance_with_training_duration(
+            db.session, 
+            athlete_id, 
+            race_distance_km, 
+            weeks_to_race,
+            target_improvement
+        )
+        
+        # Format response for frontend
+        formatted_prediction = {
+            'athlete_id': athlete_id,
+            'race_distance_km': race_distance_km,
+            'weeks_to_race': weeks_to_race,
+            'current_baseline': {
+                'weekly_volume_km': prediction.get('baseline_fitness', {}).get('weekly_volume_km', 0),
+                'avg_pace_per_km': prediction.get('baseline_fitness', {}).get('avg_pace_per_km', 0),
+                'threshold_pace_per_km': prediction.get('baseline_fitness', {}).get('threshold_pace_per_km', 0),
+                'athlete_level': prediction.get('athlete_level', 'intermediate')
+            },
+            'race_prediction': {
+                'predicted_time_seconds': prediction['predicted_race_time_seconds'],
+                'predicted_time_formatted': format_seconds_to_time(prediction['predicted_race_time_seconds']),
+                'predicted_pace_per_km': prediction['predicted_race_pace_per_km'],
+                'confidence_score': prediction['confidence_score']
+            },
+            'improvement_analysis': {
+                'total_improvement_percent': prediction.get('improvement_potential', {}).get('final_improvement_percent', 0) * 100,
+                'athlete_level': prediction.get('improvement_potential', {}).get('athlete_level', 'intermediate'),
+                'form_factor': prediction.get('improvement_potential', {}).get('form_factor', 1.0),
+                'consistency_factor': prediction.get('improvement_potential', {}).get('consistency_factor', 1.0)
+            },
+            'training_adaptations': prediction.get('training_adaptation', {}),
+            'progressive_milestones': prediction.get('progressive_milestones', []),
+            'methodology': prediction['methodology']
+        }
+        
+        return jsonify(formatted_prediction)
+        
+    except Exception as e:
+        logger.error(f"Error generating periodized prediction: {str(e)}")
+        return jsonify({'error': 'Failed to generate prediction', 'details': str(e)}), 500
+
+def format_seconds_to_time(seconds):
+    """Helper function to format seconds into HH:MM:SS or MM:SS"""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    if hours > 0:
+        return f"{hours}:{minutes:02d}:{secs:02d}"
+    else:
+        return f"{minutes}:{secs:02d}"
+
 @main_bp.route('/api/athletes/<int:athlete_id>/recent-activities')
 def get_athlete_recent_activities(athlete_id):
     """Get recent activities for athlete"""
