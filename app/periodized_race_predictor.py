@@ -22,18 +22,18 @@ class PeriodizedRacePredictor:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         
-        # Global performance benchmarks (derived from running research)
+        # Global performance benchmarks (conservative, realistic rates)
         self.global_improvement_rates = {
-            'beginner': {'weekly': 0.015, 'monthly': 0.06, 'seasonal': 0.20},
-            'intermediate': {'weekly': 0.008, 'monthly': 0.03, 'seasonal': 0.12},
-            'advanced': {'weekly': 0.004, 'monthly': 0.015, 'seasonal': 0.06}
+            'beginner': {'weekly': 0.008, 'monthly': 0.03, 'seasonal': 0.12},
+            'intermediate': {'weekly': 0.005, 'monthly': 0.02, 'seasonal': 0.08},
+            'advanced': {'weekly': 0.003, 'monthly': 0.01, 'seasonal': 0.04}
         }
         
-        # Training adaptation curves (weeks to percentage improvement)
+        # Training adaptation curves (conservative, realistic improvements)
         self.adaptation_curves = {
-            'aerobic_base': {4: 0.05, 8: 0.12, 12: 0.18, 16: 0.22, 20: 0.25},
-            'lactate_threshold': {2: 0.03, 4: 0.08, 6: 0.12, 8: 0.15, 12: 0.18},
-            'vo2_max': {1: 0.02, 2: 0.05, 4: 0.08, 6: 0.10, 8: 0.12}
+            'aerobic_base': {4: 0.03, 8: 0.07, 12: 0.10, 16: 0.13, 20: 0.15},
+            'lactate_threshold': {2: 0.02, 4: 0.05, 6: 0.07, 8: 0.09, 12: 0.11},
+            'vo2_max': {1: 0.01, 2: 0.03, 4: 0.05, 6: 0.06, 8: 0.07}
         }
         
         # Race distance factors (based on McMillan/Daniels research)

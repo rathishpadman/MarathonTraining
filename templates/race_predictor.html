@@ -603,32 +603,7 @@
                 `;
             }
             
-            // Add progressive milestones section
-            if (data.progressive_milestones && data.progressive_milestones.length > 0) {
-                const milestonesSection = document.createElement('div');
-                milestonesSection.className = 'pacing-strategy';
-                milestonesSection.innerHTML = `
-                    <div class="strategy-title">🎯 Progressive Training Milestones</div>
-                    <div class="pacing-table">
-                        <div class="pacing-header">
-                            <div>Week</div>
-                            <div>Target Threshold Pace</div>
-                            <div>Expected Improvement</div>
-                        </div>
-                        ${data.progressive_milestones.map(milestone => `
-                            <div class="pacing-row">
-                                <div class="pace-cell">Week ${milestone.week}</div>
-                                <div class="pace-cell pace-value">${milestone.target_threshold_pace.toFixed(2)} min/km</div>
-                                <div class="pace-cell">${milestone.expected_improvement}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-                
-                // Insert after the main results
-                const resultsSection = document.querySelector('.results-section');
-                resultsSection.appendChild(milestonesSection);
-            }
+            // Progressive milestones will be displayed in the existing Training Analysis section
             
             // Insert improvement analysis after confidence card (if available)
             if (improvementSection) {
