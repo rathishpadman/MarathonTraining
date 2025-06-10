@@ -347,52 +347,83 @@ class InjuryRiskPredictor:
         if not activities:
             return {}
         
-        # Convert to DataFrame for easier processing
-        data = []
-        for activity in activities:
-            if activity.distance and activity.moving_time:
-                data.append({
-                    'distance': activity.distance / 1000,  # Convert to km
-                    'duration': activity.moving_time / 3600,  # Convert to hours
-                    'date': activity.start_date,
-                    'elevation': activity.total_elevation_gain or 0,
-                    'avg_hr': activity.average_heartrate or 0,
-                    'max_hr': activity.max_heartrate or 0,
-                    'pace': (activity.moving_time / 60) / (activity.distance / 1000) if activity.distance > 0 else 0
-                })
+        # Process activities directly without DataFrame to avoid issues
+        total_distance = 0
+        total_duration = 0
+        total_runs = len(activities)
+        weekly_distances = {}
+        pace_values = []
+        hr_values = []
+        high_intensity_count = 0
+        long_run_count = 0
         
-        if not data:
+        for activity in activities:
+            if activity.distance and activity.moving_time and activity.distance > 0:
+                distance_km = activity.distance / 1000
+                duration_hours = activity.moving_time / 3600
+                pace = (activity.moving_time / 60) / distance_km
+                
+                total_distance += distance_km
+                total_duration += duration_hours
+                pace_values.append(pace)
+                
+                # Track weekly distances for progression analysis
+                week_key = activity.start_date.isocalendar()[1]
+                if week_key not in weekly_distances:
+                    weekly_distances[week_key] = 0
+                weekly_distances[week_key] += distance_km
+                
+                # High intensity detection (HR or pace based)
+                if activity.average_heartrate and activity.average_heartrate > 160:
+                    high_intensity_count += 1
+                    hr_values.append(activity.average_heartrate)
+                
+                # Long run detection
+                if distance_km > 15:
+                    long_run_count += 1
+        
+        if total_runs == 0:
             return {}
         
-        df = pd.DataFrame(data)
+        # Calculate weekly average
+        days_span = max(1, (activities[0].start_date - activities[-1].start_date).days)
+        weeks_span = max(1, days_span / 7)
+        avg_weekly_distance = total_distance / weeks_span
         
-        # Training load metrics
-        total_distance = df['distance'].sum()
-        total_duration = df['duration'].sum()
-        avg_weekly_distance = total_distance * 7 / len(df) if len(df) > 0 else 0
+        # Training monotony calculation (simplified without DataFrame)
+        if len(pace_values) > 1:
+            pace_mean = sum(pace_values) / len(pace_values)
+            pace_std = (sum((p - pace_mean) ** 2 for p in pace_values) / len(pace_values)) ** 0.5
+            training_monotony = pace_mean / pace_std if pace_std > 0 else 0
+        else:
+            training_monotony = 0
         
-        # Intensity distribution
-        high_intensity_runs = len(df[df['avg_hr'] > 160]) if 'avg_hr' in df.columns else 0
-        long_runs = len(df[df['distance'] > 15])
+        # Weekly progression analysis
+        weekly_distances_list = list(weekly_distances.values())
+        max_weekly_distance = max(weekly_distances_list) if weekly_distances_list else 0
         
-        # Training monotony (Bannister)
-        daily_loads = df['distance'] * df['duration']
-        training_monotony = daily_loads.mean() / daily_loads.std() if daily_loads.std() > 0 else 0
-        
-        # Training strain
-        training_strain = daily_loads.sum() * training_monotony
+        # 10% rule violation check
+        violates_10_percent_rule = 0
+        if len(weekly_distances_list) > 1:
+            for i in range(1, len(weekly_distances_list)):
+                prev_week = weekly_distances_list[i-1]
+                curr_week = weekly_distances_list[i]
+                if prev_week > 0 and ((curr_week - prev_week) / prev_week) > 0.1:
+                    violates_10_percent_rule = 1
+                    break
         
         return {
             'total_distance_4w': total_distance,
             'avg_weekly_distance': avg_weekly_distance,
             'total_duration_4w': total_duration,
-            'training_frequency': len(df),
-            'high_intensity_ratio': high_intensity_runs / len(df) if len(df) > 0 else 0,
-            'long_run_ratio': long_runs / len(df) if len(df) > 0 else 0,
+            'training_frequency': total_runs,
+            'high_intensity_ratio': high_intensity_count / total_runs if total_runs > 0 else 0,
+            'long_run_ratio': long_run_count / total_runs if total_runs > 0 else 0,
             'training_monotony': training_monotony,
-            'training_strain': training_strain,
-            'avg_elevation_per_run': df['elevation'].mean(),
-            'max_weekly_distance': df.groupby(df['date'].dt.isocalendar().week)['distance'].sum().max() if len(df) > 0 else 0
+            'training_strain': total_distance * training_monotony,
+            'max_weekly_distance': max_weekly_distance,
+            'violates_10_percent_rule': violates_10_percent_rule,
+            'pace_variability': pace_std if len(pace_values) > 1 else 0
         }
     
     def _extract_biomechanical_features(self, activities: List[Activity]) -> Dict:
