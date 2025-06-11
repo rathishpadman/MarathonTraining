@@ -2253,7 +2253,7 @@ def get_training_heatmap_data(athlete_id):
             else:
                 current_streak = 0
         
-        # Clean up activity_list for response (rename to activities)
+        # Rename activity_list to activities for consistency
         for date_str in daily_data:
             daily_data[date_str]['activities'] = daily_data[date_str]['activity_list']
             del daily_data[date_str]['activity_list']
