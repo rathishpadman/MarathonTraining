@@ -821,31 +821,70 @@ async function loadActivityStream() {
         const streamContainer = document.getElementById('activityStream');
         
         if (activities && activities.length > 0) {
-            const activitiesHTML = activities.slice(0, 8).map(activity => `
-                <div class="activity-item">
-                    <div class="activity-header">
-                        <div class="activity-name">
-                            <i class="fas fa-running me-2"></i>
-                            ${activity.activity_name || activity.name || 'Running Activity'}
+            const activitiesHTML = activities.slice(0, 8).map(activity => {
+                // Handle milestones differently
+                if (activity.type === 'milestone') {
+                    return `
+                        <div class="activity-item milestone">
+                            <div class="activity-header">
+                                <div class="activity-name">
+                                    <i class="fas fa-trophy me-2" style="color: #ffd700;"></i>
+                                    ${activity.achievement}
+                                </div>
+                                <div class="activity-time">${activity.relative_time}</div>
+                            </div>
+                            <div class="activity-stats">
+                                <span class="stat-item">
+                                    <i class="fas fa-medal"></i>
+                                    ${activity.details}
+                                </span>
+                                <span class="stat-item">
+                                    <i class="fas fa-user"></i>
+                                    ${activity.athlete_name}
+                                </span>
+                            </div>
                         </div>
-                        <div class="activity-time">${activity.relative_time || formatActivityTime(activity.start_date)}</div>
+                    `;
+                }
+                
+                // Get sport-specific icon and display
+                const getSportIcon = (sportType) => {
+                    switch(sportType?.toLowerCase()) {
+                        case 'tennis': return 'fas fa-tennis-ball';
+                        case 'cycling': return 'fas fa-bicycle';
+                        case 'swimming': return 'fas fa-swimmer';
+                        case 'run': case 'running': return 'fas fa-running';
+                        case 'strength': case 'weight training': return 'fas fa-dumbbell';
+                        default: return 'fas fa-running';
+                    }
+                };
+                
+                return `
+                    <div class="activity-item">
+                        <div class="activity-header">
+                            <div class="activity-name">
+                                <i class="${getSportIcon(activity.sport_type)} me-2"></i>
+                                ${activity.activity_name || activity.name || 'Training Activity'}
+                            </div>
+                            <div class="activity-time">${activity.relative_time || formatActivityTime(activity.start_date)}</div>
+                        </div>
+                        <div class="activity-stats">
+                            <span class="stat-item">
+                                <i class="fas fa-chart-line"></i>
+                                ${activity.primary_metric || (activity.distance_km > 0 ? activity.distance_km + 'km' : activity.duration_minutes + 'min')}
+                            </span>
+                            <span class="stat-item">
+                                <i class="fas fa-clock"></i>
+                                ${activity.pace || (activity.duration_minutes > 0 ? activity.duration_minutes + 'min' : 'N/A')}
+                            </span>
+                            <span class="stat-item">
+                                <i class="fas fa-user"></i>
+                                ${activity.athlete_name}
+                            </span>
+                        </div>
                     </div>
-                    <div class="activity-stats">
-                        <span class="stat-item">
-                            <i class="fas fa-route"></i>
-                            ${activity.distance_km || (activity.distance / 1000).toFixed(1)}km
-                        </span>
-                        <span class="stat-item">
-                            <i class="fas fa-clock"></i>
-                            ${activity.pace || formatDuration(activity.moving_time)}
-                        </span>
-                        <span class="stat-item">
-                            <i class="fas fa-user"></i>
-                            ${activity.athlete_name}
-                        </span>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
             
             streamContainer.innerHTML = activitiesHTML;
         } else {
