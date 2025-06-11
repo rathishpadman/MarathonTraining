@@ -173,7 +173,7 @@ class SimpleRacePredictor:
                     'tooltip': 'Estimated VO2 Max (ml/kg/min) calculated from best recent pace performances across different distances'
                 },
                 'lactate_threshold_pace': {
-                    'value': self._format_pace(avg_pace * 1.05),
+                    'value': self._format_pace(self._estimate_threshold_pace(activities)),
                     'tooltip': 'Estimated lactate threshold pace - the fastest pace you can sustain for 60+ minutes'
                 },
                 'training_load': {
@@ -205,7 +205,7 @@ class SimpleRacePredictor:
         }
     
     def _calculate_fitness_score(self, activities: List[Activity]) -> float:
-        """Calculate fitness score (0-100) based on recent training"""
+        """Calculate fitness score (0-100) based on recent training using realistic benchmarks"""
         if not activities:
             return 0.0
         
@@ -216,29 +216,134 @@ class SimpleRacePredictor:
         if not recent_activities:
             return 0.0
         
-        # Volume component (distance)
+        # Volume component (weekly distance) - more realistic benchmarks
         total_distance = sum(a.distance or 0 for a in recent_activities) / 1000  # km
-        volume_score = min(100, total_distance * 2)  # 50km = 100 points
+        weekly_distance = total_distance / 4  # 4 weeks
         
-        # Frequency component
-        frequency_score = min(100, len(recent_activities) * 8)  # 12+ activities = 100 points
+        # Realistic volume scoring for recreational to competitive runners
+        if weekly_distance >= 80:  # Elite/competitive level
+            volume_score = 100
+        elif weekly_distance >= 60:  # Advanced runner
+            volume_score = 85 + (weekly_distance - 60) * 0.75
+        elif weekly_distance >= 40:  # Intermediate runner
+            volume_score = 65 + (weekly_distance - 40) * 1.0
+        elif weekly_distance >= 25:  # Beginner-intermediate
+            volume_score = 40 + (weekly_distance - 25) * 1.67
+        elif weekly_distance >= 15:  # Beginner
+            volume_score = 20 + (weekly_distance - 15) * 2.0
+        else:  # Very low volume
+            volume_score = weekly_distance * 1.33
         
-        # Intensity component (based on pace variation)
-        paces = []
-        for activity in recent_activities:
-            if activity.distance and activity.moving_time and activity.distance > 0:
-                pace = activity.moving_time / (activity.distance / 1000)  # seconds per km
-                if 200 < pace < 800:  # Reasonable pace range
-                    paces.append(pace)
+        # Frequency component - runs per week
+        runs_per_week = len(recent_activities) / 4
+        if runs_per_week >= 6:  # Daily+ running
+            frequency_score = 100
+        elif runs_per_week >= 5:  # 5-6 runs/week
+            frequency_score = 85 + (runs_per_week - 5) * 15
+        elif runs_per_week >= 4:  # 4-5 runs/week
+            frequency_score = 70 + (runs_per_week - 4) * 15
+        elif runs_per_week >= 3:  # 3-4 runs/week
+            frequency_score = 50 + (runs_per_week - 3) * 20
+        else:  # <3 runs/week
+            frequency_score = runs_per_week * 16.67
         
-        intensity_score = 50  # Default
-        if len(paces) >= 3:
-            pace_range = max(paces) - min(paces)
-            intensity_score = min(100, pace_range / 2)  # Variety in paces
+        # Intensity component - based on training variety and quality
+        intensity_score = self._calculate_intensity_score(recent_activities)
         
-        # Weighted average
-        fitness_score = volume_score * 0.5 + frequency_score * 0.3 + intensity_score * 0.2
+        # Consistency component - regularity of training
+        consistency_score = self._calculate_weekly_consistency(recent_activities)
+        
+        # Weighted fitness score emphasizing volume and consistency
+        fitness_score = (volume_score * 0.35 + frequency_score * 0.25 + 
+                        intensity_score * 0.25 + consistency_score * 0.15)
+        
         return max(0, min(100, fitness_score))
+    
+    def _calculate_intensity_score(self, activities: List[Activity]) -> float:
+        """Calculate training intensity variety score"""
+        paces = []
+        durations = []
+        
+        for activity in activities:
+            if activity.distance and activity.moving_time and activity.distance > 1000:
+                pace = activity.moving_time / (activity.distance / 1000)
+                duration = activity.moving_time / 60  # minutes
+                
+                if 200 <= pace <= 800:  # Reasonable pace range
+                    paces.append(pace)
+                    durations.append(duration)
+        
+        if len(paces) < 3:
+            return 30  # Low score for limited data
+        
+        # Analyze pace distribution for training variety
+        paces.sort()
+        pace_range = max(paces) - min(paces)
+        
+        # Check for different training zones
+        easy_paces = [p for p in paces if p > paces[-1] * 0.85]  # Slowest 15%
+        hard_paces = [p for p in paces if p < paces[0] * 1.15]   # Fastest 15%
+        
+        variety_score = min(100, pace_range / 3)  # Reward pace variety
+        
+        # Bonus for having both easy and hard efforts
+        if len(easy_paces) >= 1 and len(hard_paces) >= 1:
+            variety_score += 20
+        
+        # Check for long runs (quality volume)
+        long_runs = [d for d in durations if d >= 60]  # 60+ minute runs
+        if long_runs:
+            variety_score += min(20, len(long_runs) * 5)
+        
+        return min(100, variety_score)
+    
+    def _calculate_weekly_consistency(self, activities: List[Activity]) -> float:
+        """Calculate consistency of training across weeks"""
+        if not activities:
+            return 0
+        
+        # Group activities by week
+        weekly_counts = {}
+        weekly_distances = {}
+        
+        for activity in activities:
+            week_key = activity.start_date.isocalendar()[:2]  # (year, week)
+            weekly_counts[week_key] = weekly_counts.get(week_key, 0) + 1
+            
+            distance_km = (activity.distance or 0) / 1000
+            weekly_distances[week_key] = weekly_distances.get(week_key, 0) + distance_km
+        
+        if len(weekly_counts) < 2:
+            return 50  # Default for insufficient data
+        
+        # Calculate consistency of frequency
+        frequency_values = list(weekly_counts.values())
+        freq_consistency = self._calculate_coefficient_variation_score(frequency_values)
+        
+        # Calculate consistency of volume
+        distance_values = list(weekly_distances.values())
+        volume_consistency = self._calculate_coefficient_variation_score(distance_values)
+        
+        # Combined consistency score
+        return (freq_consistency + volume_consistency) / 2
+    
+    def _calculate_coefficient_variation_score(self, values: List[float]) -> float:
+        """Convert coefficient of variation to consistency score (0-100)"""
+        if not values or len(values) < 2:
+            return 50
+        
+        mean_val = sum(values) / len(values)
+        if mean_val == 0:
+            return 0
+        
+        # Calculate coefficient of variation
+        variance = sum((x - mean_val) ** 2 for x in values) / len(values)
+        std_dev = variance ** 0.5
+        cv = std_dev / mean_val
+        
+        # Convert to score: lower CV = higher consistency
+        consistency_score = max(0, 100 - cv * 60)  # CV of 1.67 = 0 points
+        return min(100, consistency_score)
     
     def _estimate_vo2_max(self, activities: List[Activity]) -> float:
         """Estimate VO2 max from best recent performances using scientifically validated methods"""
@@ -418,11 +523,11 @@ class SimpleRacePredictor:
         return min(100, consistency)
     
     def _calculate_training_stress_score(self, activities: List[Activity]) -> float:
-        """Calculate Training Stress Score (TSS) from actual activity data"""
+        """Calculate Training Stress Score (TSS) from actual activity data using accurate running TSS formula"""
         total_tss = 0.0
         
-        # Calculate athlete's threshold pace for intensity factor calculation
-        threshold_pace = self._calculate_average_pace(activities) * 1.05  # Conservative LT pace
+        # Calculate athlete's lactate threshold pace from tempo/threshold runs
+        threshold_pace = self._estimate_threshold_pace(activities)
         
         for activity in activities:
             if not (activity.distance and activity.moving_time and activity.distance > 1000):
@@ -435,18 +540,62 @@ class SimpleRacePredictor:
             if not (200 <= pace_per_km <= 800):
                 continue
             
-            # Calculate Intensity Factor (IF) - ratio of pace to threshold pace
-            # Note: Faster pace = lower seconds/km, so invert the ratio
-            intensity_factor = min(threshold_pace / pace_per_km, 1.2)  # Cap at 1.2
+            # Calculate rTSS (running TSS) using Grade Adjusted Pace formula
+            # Normalize Grade Adjusted Pace (NGP) - simplified without elevation
+            ngp = pace_per_km  # Would incorporate grade adjustment in full implementation
             
-            # Calculate Normalized Power equivalent for running
-            # TSS = (Training Time in hours × IF² × 100)
+            # Calculate Intensity Factor using accurate running formula
+            # IF = NGP / Threshold Pace (inverted for pace - faster pace = higher IF)
+            if threshold_pace > 0:
+                intensity_factor = min(threshold_pace / ngp, 1.5)  # Cap at 1.5 for sprints
+            else:
+                intensity_factor = 1.0
+            
+            # Running TSS formula: TSS = (duration_hours × IF² × 100)
             duration_hours = activity.moving_time / 3600
-            activity_tss = duration_hours * (intensity_factor ** 2) * 100
             
+            # Apply running-specific TSS scaling
+            if intensity_factor <= 0.85:  # Easy runs
+                tss_multiplier = 1.0
+            elif intensity_factor <= 1.0:  # Moderate runs
+                tss_multiplier = 1.1
+            elif intensity_factor <= 1.15:  # Threshold/Tempo
+                tss_multiplier = 1.3
+            else:  # VO2 max/intervals
+                tss_multiplier = 1.5
+            
+            activity_tss = duration_hours * (intensity_factor ** 2) * 100 * tss_multiplier
             total_tss += activity_tss
         
         return total_tss
+    
+    def _estimate_threshold_pace(self, activities: List[Activity]) -> float:
+        """Estimate lactate threshold pace from training data"""
+        # Look for tempo/threshold efforts (20-60 minute sustained efforts)
+        threshold_paces = []
+        
+        for activity in activities:
+            if not (activity.distance and activity.moving_time):
+                continue
+            
+            distance_km = activity.distance / 1000
+            duration_minutes = activity.moving_time / 60
+            pace_per_km = activity.moving_time / distance_km
+            
+            # Identify potential threshold efforts (20-60 min, 5-25km)
+            if (20 <= duration_minutes <= 60 and 5 <= distance_km <= 25 and 
+                250 <= pace_per_km <= 600):  # Reasonable pace range
+                threshold_paces.append(pace_per_km)
+        
+        if threshold_paces:
+            # Use median of threshold efforts for stability
+            threshold_paces.sort()
+            median_idx = len(threshold_paces) // 2
+            return threshold_paces[median_idx]
+        else:
+            # Fallback: estimate from average pace
+            avg_pace = self._calculate_average_pace(activities)
+            return avg_pace * 0.92  # Threshold typically 8% faster than easy pace
     
     def _predict_from_pace_analysis(self, activities: List[Activity], distance_km: float) -> Optional[float]:
         """Predict race time based on recent pace analysis"""
