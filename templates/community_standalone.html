@@ -616,9 +616,23 @@
 
         function updateKPIs(kpis) {
             document.getElementById('totalAthletes').textContent = kpis.totalAthletes || 0;
-            document.getElementById('totalDistance').textContent = `${(kpis.totalDistance || 0).toFixed(1)}km`;
+            document.getElementById('totalDistance').textContent = `${(kpis.totalDistance || 0).toFixed(1)} units`;
             document.getElementById('avgPace').textContent = formatPace(kpis.avgPace || 0);
             document.getElementById('totalActivities').textContent = kpis.totalActivities || 0;
+        }
+
+        function getSportIcon(sportType) {
+            const icons = {
+                'Run': '🏃‍♂️',
+                'Tennis': '🎾',
+                'Cycling': '🚴‍♂️',
+                'Swimming': '🏊‍♂️',
+                'Strength': '💪',
+                'Yoga': '🧘‍♀️',
+                'Walk': '🚶‍♂️',
+                'Hike': '🥾'
+            };
+            return icons[sportType] || '🏃‍♂️';
         }
 
         function renderLeaderboard(leaderboard) {
@@ -691,7 +705,7 @@
                                 <div class="activity-time">${activity.relative_time}</div>
                             </div>
                             <div class="activity-details">
-                                🏃 ${activity.distance_km}km • ⏱️ ${activity.pace} pace • 🏃‍♂️ ${activity.sport_type}
+                                ${getSportIcon(activity.sport_type)} ${activity.primary_metric} • ⏱️ ${activity.pace !== 'N/A' ? activity.pace + ' pace' : activity.duration_minutes + 'min'} • ${activity.sport_type}
                             </div>
                             <div class="activity-athlete">by ${activity.athlete_name}</div>
                         </div>
