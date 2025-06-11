@@ -413,10 +413,11 @@ def get_ai_race_recommendations(athlete_id):
             Activity.start_date.desc()
         ).limit(14).all()
         
-        # Calculate metrics
-        total_distance_km = sum(a.distance or 0 for a in recent_activities) / 1000
+        # Calculate metrics - only include distance-based activities for distance calculation
+        distance_activities = [a for a in recent_activities if a.distance and a.distance > 0]
+        total_distance_km = sum(a.distance or 0 for a in distance_activities) / 1000
         total_activities = len(recent_activities)
-        total_time = sum(a.moving_time or 0 for a in recent_activities)
+        total_time = sum(a.moving_time or 0 for a in distance_activities)
         
         avg_pace_min_km = 0
         if total_distance_km > 0 and total_time > 0:

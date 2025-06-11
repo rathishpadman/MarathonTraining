@@ -32,7 +32,12 @@ class AIRaceAdvisor:
         
         # Cache for AI recommendations to ensure consistency
         self._recommendation_cache = {}
-        self._cache_duration = timedelta(hours=24)  # Cache for 6 hours
+        self._cache_duration = timedelta(hours=6)  # Cache for 6 hours
+    
+    def clear_cache(self):
+        """Clear the recommendation cache to force fresh calculations"""
+        self._recommendation_cache.clear()
+        logger.info("AI recommendation cache cleared")
     
     def _create_data_fingerprint(self, athlete_data: Dict, current_activity: Dict) -> str:
         """Create a hash fingerprint of the training data for cache key"""
@@ -290,4 +295,6 @@ def get_race_recommendations(athlete_data: Dict, current_activity: Dict) -> List
     Returns:
         List of recommendation strings
     """
+    # Clear cache to ensure fresh calculations with updated distance filtering
+    ai_race_advisor.clear_cache()
     return ai_race_advisor.generate_race_recommendations(athlete_data, current_activity)
