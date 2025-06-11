@@ -705,7 +705,7 @@
                                 <div class="activity-time">${activity.relative_time}</div>
                             </div>
                             <div class="activity-details">
-                                ${getSportIcon(activity.sport_type)} ${activity.primary_metric} • ⏱️ ${activity.pace !== 'N/A' ? activity.pace + ' pace' : activity.duration_minutes + 'min'} • ${activity.sport_type}
+                                ${getSportIcon(activity.sport_type)} ${activity.primary_metric} • ⏱️ ${activity.pace !== 'N/A' ? activity.pace + ' pace' : 'Duration'} • ${activity.sport_type}
                             </div>
                             <div class="activity-athlete">by ${activity.athlete_name}</div>
                         </div>
