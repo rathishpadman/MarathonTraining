@@ -678,45 +678,54 @@ class InjuryRiskPredictor:
     def _rule_based_prediction(self, features: Dict) -> Dict:
         """
         Rule-based injury risk prediction when ML models are not available
+        Uses deterministic calculations for consistent results
         """
+        # Create a deterministic hash from features for consistent results
+        feature_hash = hash(str(sorted(features.items())))
+        
         risk_score = 0.0
         risk_factors = []
         recommendations = []
         
-        # Training load risks
+        # Training load risks (fixed thresholds for consistency)
         if features.get('violates_10_percent_rule', 0) > 0:
-            risk_score += 0.3
+            risk_score += 0.30
             risk_factors.append('Rapid training load increase')
             recommendations.append('Limit weekly mileage increases to 10%')
         
-        if features.get('training_monotony', 0) > 2.0:
-            risk_score += 0.2
+        training_monotony = round(features.get('training_monotony', 0), 2)
+        if training_monotony > 2.0:
+            risk_score += 0.20
             risk_factors.append('High training monotony')
             recommendations.append('Add variety to training intensities')
         
-        if features.get('max_consecutive_days', 0) > 6:
+        max_consecutive = features.get('max_consecutive_days', 0)
+        if max_consecutive > 6:
             risk_score += 0.25
             risk_factors.append('Insufficient recovery days')
             recommendations.append('Include at least one rest day per week')
         
-        # Biomechanical risks
-        if features.get('pace_variability', 0) > 0.3:
+        # Biomechanical risks (rounded for consistency)
+        pace_variability = round(features.get('pace_variability', 0), 3)
+        if pace_variability > 0.300:
             risk_score += 0.15
             risk_factors.append('High pace variability')
             recommendations.append('Focus on consistent pacing during runs')
         
-        if features.get('cadence_variability', 0) > 0.2:
-            risk_score += 0.1
+        cadence_variability = round(features.get('cadence_variability', 0), 3)
+        if cadence_variability > 0.200:
+            risk_score += 0.10
             risk_factors.append('Inconsistent running cadence')
             recommendations.append('Work on maintaining steady cadence around 180 steps/min')
         
         # Physiological risks
         if features.get('efficiency_decline', 0) > 0:
-            risk_score += 0.2
+            risk_score += 0.20
             risk_factors.append('Declining running efficiency')
             recommendations.append('Consider reducing training intensity for recovery')
         
-        if features.get('polarization_index', 0) < 0.8:
+        polarization_index = round(features.get('polarization_index', 0), 2)
+        if polarization_index < 0.80:
             risk_score += 0.15
             risk_factors.append('Inadequate easy running ratio')
             recommendations.append('Follow 80/20 rule: 80% easy, 20% hard training')
@@ -745,9 +754,13 @@ class InjuryRiskPredictor:
                 'Ensure adequate recovery between hard sessions'
             ]
         
+        # Ensure deterministic percentage calculation
+        final_risk_score = round(min(risk_score, 1.0), 3)
+        final_risk_percentage = round(final_risk_score * 100, 1)
+        
         return {
-            'overall_risk': min(risk_score, 1.0),
-            'risk_percentage': min(risk_score * 100, 100.0),  # Convert to percentage for consistency
+            'overall_risk': final_risk_score,
+            'risk_percentage': final_risk_percentage,  # Rounded for consistency
             'risk_level': risk_level,
             'risk_factors': risk_factors,
             'recommendations': recommendations,
