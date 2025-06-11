@@ -785,12 +785,21 @@
             
             let calendarHTML = '<div class="heatmap-calendar">';
             
-            // Add months header with proper positioning
+            // Add months header with proper positioning and gaps
             calendarHTML += '<div class="heatmap-months" style="display: grid; grid-template-columns: repeat(53, 12px); gap: 2px; margin-left: 40px;">';
+            let lastMonthWeek = -1;
             for (let week = 0; week < 53; week++) {
                 const monthForWeek = monthPositions.find(m => m.week === week);
                 const monthName = monthForWeek ? monthForWeek.name : '';
-                calendarHTML += `<div style="font-size: 9px; text-align: left;">${monthName}</div>`;
+                
+                // Add gap before new month (except first month)
+                let marginLeft = '';
+                if (monthForWeek && lastMonthWeek !== -1 && week > lastMonthWeek + 1) {
+                    marginLeft = 'margin-left: 8px;';
+                }
+                if (monthForWeek) lastMonthWeek = week;
+                
+                calendarHTML += `<div style="font-size: 9px; text-align: left; ${marginLeft}">${monthName}</div>`;
             }
             calendarHTML += '</div>';
             

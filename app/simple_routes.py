@@ -78,17 +78,7 @@ def risk_analyser(athlete_id=1):
         logger.error(f"Error rendering risk analyser: {str(e)}")
         return f"<h1>Error loading risk analyser: {str(e)}</h1>", 500
 
-@main_bp.route('/training-heatmap')
-@main_bp.route('/training-heatmap/<int:athlete_id>')
-def training_heatmap(athlete_id=1):
-    """Training heatmap visualization page"""
-    try:
-        from flask import render_template
-        logger.info(f"Accessing training heatmap for athlete {athlete_id}")
-        return render_template('training_heatmap.html', athlete_id=athlete_id)
-    except Exception as e:
-        logger.error(f"Error rendering training heatmap: {str(e)}")
-        return f"<h1>Error loading training heatmap: {str(e)}</h1>", 500
+
 
 @main_bp.route('/connect/strava')
 def strava_connect():
