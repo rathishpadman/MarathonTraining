@@ -767,17 +767,31 @@
             const firstDay = new Date(startDate);
             firstDay.setDate(firstDay.getDate() - firstDay.getDay());
             
-            // Create months header
+            // Calculate month positions based on actual weeks
+            const monthPositions = [];
             const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             
+            // Calculate which week each month starts in
+            for (let month = 0; month < 12; month++) {
+                const monthStart = new Date(year, month, 1);
+                const daysDiff = Math.floor((monthStart - firstDay) / (1000 * 60 * 60 * 24));
+                const weekPosition = Math.floor(daysDiff / 7);
+                monthPositions.push({
+                    name: months[month],
+                    week: Math.max(0, weekPosition)
+                });
+            }
+            
             let calendarHTML = '<div class="heatmap-calendar">';
             
-            // Add months header
-            calendarHTML += '<div class="heatmap-months">';
-            months.forEach(month => {
-                calendarHTML += `<div>${month}</div>`;
-            });
+            // Add months header with proper positioning
+            calendarHTML += '<div class="heatmap-months" style="display: grid; grid-template-columns: repeat(53, 12px); gap: 2px; margin-left: 40px;">';
+            for (let week = 0; week < 53; week++) {
+                const monthForWeek = monthPositions.find(m => m.week === week);
+                const monthName = monthForWeek ? monthForWeek.name : '';
+                calendarHTML += `<div style="font-size: 9px; text-align: left;">${monthName}</div>`;
+            }
             calendarHTML += '</div>';
             
             // Create container with day labels and weeks
