@@ -1123,19 +1123,37 @@ def get_community_overview():
         leaderboard = sorted(athlete_stats.values(), key=lambda x: x['distance'], reverse=True)
         
         # Training load distribution by activity type (30-day authentic data)
+        # Include all sports with their relevant metrics (distance, time, calories)
         activity_breakdown = {}
         for activity in all_activities_30d:
             sport = activity.sport_type or 'Other'
+            
+            # For distance-based sports (running, cycling, etc.)
             distance_km = (activity.distance or 0) / 1000
-            if distance_km > 0:  # Only include activities with distance
+            # For time-based sports (tennis, strength training, etc.)
+            duration_hours = (activity.moving_time or activity.elapsed_time or 0) / 3600
+            # For calorie-based sports
+            calories = activity.calories or 0
+            
+            # Include activity if it has any meaningful data
+            has_meaningful_data = distance_km > 0 or duration_hours > 0.1 or calories > 0
+            
+            if has_meaningful_data:
                 if sport not in activity_breakdown:
                     activity_breakdown[sport] = 0
-                activity_breakdown[sport] += distance_km
+                
+                # Use distance for distance-based activities, duration for others
+                if distance_km > 0:
+                    activity_breakdown[sport] += distance_km
+                else:
+                    # Convert duration to equivalent "training load" for comparison
+                    # 1 hour of non-distance activity = ~5km equivalent for display
+                    activity_breakdown[sport] += duration_hours * 5
         
         training_load_labels = list(activity_breakdown.keys())
         training_load_data = [round(distance, 1) for distance in activity_breakdown.values()]
         
-        # Community trends (last 7 days)
+        # Community trends (last 7 days) - include all activity types
         trend_labels = []
         distance_trend = []
         activity_trend = []
@@ -1145,10 +1163,26 @@ def get_community_overview():
             trend_labels.append(date.strftime('%m/%d'))
             
             day_activities = [a for a in all_activities_30d if a.start_date and a.start_date.date() == date.date()]
-            day_distance = sum(a.distance or 0 for a in day_activities) / 1000
-            day_count = len(day_activities)
             
-            distance_trend.append(round(day_distance, 1))
+            # Calculate total training load (distance + time-based activities)
+            day_training_load = 0
+            for activity in day_activities:
+                distance_km = (activity.distance or 0) / 1000
+                duration_hours = (activity.moving_time or activity.elapsed_time or 0) / 3600
+                
+                if distance_km > 0:
+                    day_training_load += distance_km
+                elif duration_hours > 0.1:  # At least 6 minutes
+                    # Convert time-based activities to equivalent load
+                    day_training_load += duration_hours * 5
+            
+            # Count all activities (not just distance-based)
+            day_count = len([a for a in day_activities if 
+                           (a.distance and a.distance > 0) or 
+                           (a.moving_time and a.moving_time > 360) or  # > 6 minutes
+                           (a.calories and a.calories > 0)])
+            
+            distance_trend.append(round(day_training_load, 1))
             activity_trend.append(day_count)
         
         return jsonify({
@@ -1303,26 +1337,38 @@ def get_community_activity_stream():
         
         for activity, athlete in recent_activities:
             distance_km = float(activity.distance or 0) / 1000
-            pace_min_km = 0
+            duration_minutes = (activity.moving_time or activity.elapsed_time or 0) / 60
+            calories = activity.calories or 0
             
-            if activity.moving_time and distance_km > 0:
-                pace_seconds = (activity.moving_time / distance_km)
+            # Calculate sport-specific display metrics
+            if distance_km > 0:
+                # Distance-based sports (running, cycling, etc.)
+                pace_seconds = (activity.moving_time / distance_km) if activity.moving_time else 0
                 pace_min_km = pace_seconds / 60
+                primary_metric = f"{distance_km:.1f}km"
+                secondary_metric = f"{int(pace_min_km)}:{int((pace_min_km % 1) * 60):02d}" if pace_min_km > 0 else "N/A"
+            else:
+                # Time-based sports (tennis, strength training, etc.)
+                primary_metric = f"{int(duration_minutes)}min" if duration_minutes > 0 else "N/A"
+                secondary_metric = f"{int(calories)} cal" if calories > 0 else "N/A"
             
-            # Format activity entry
+            # Format activity entry with sport-appropriate metrics
             activity_entry = {
                 'type': 'activity',
                 'athlete_name': athlete.name,
                 'activity_name': activity.name,
                 'sport_type': activity.sport_type,
-                'distance_km': round(distance_km, 2),
-                'pace': f"{int(pace_min_km)}:{int((pace_min_km % 1) * 60):02d}" if pace_min_km > 0 else "N/A",
+                'distance_km': round(distance_km, 2) if distance_km > 0 else 0,
+                'duration_minutes': round(duration_minutes, 0) if duration_minutes > 0 else 0,
+                'calories': int(calories) if calories > 0 else 0,
+                'pace': secondary_metric,
+                'primary_metric': primary_metric,
                 'start_date': activity.start_date.isoformat(),
                 'relative_time': _get_relative_time(activity.start_date)
             }
             activity_stream.append(activity_entry)
             
-            # Check for milestones
+            # Check for milestones - including non-distance achievements
             if distance_km >= 21.0975 and distance_km <= 21.5:  # Half marathon
                 milestones.append({
                     'type': 'milestone',
@@ -1347,6 +1393,25 @@ def get_community_activity_stream():
                     'athlete_name': athlete.name,
                     'achievement': '10K Distance',
                     'details': f'{distance_km:.2f}km',
+                    'date': activity.start_date.isoformat(),
+                    'relative_time': _get_relative_time(activity.start_date)
+                })
+            # Add milestones for non-distance sports
+            elif activity.sport_type == 'Tennis' and duration_minutes >= 60:
+                milestones.append({
+                    'type': 'milestone',
+                    'athlete_name': athlete.name,
+                    'achievement': 'Tennis Marathon',
+                    'details': f'{int(duration_minutes)}min session',
+                    'date': activity.start_date.isoformat(),
+                    'relative_time': _get_relative_time(activity.start_date)
+                })
+            elif calories >= 500:  # High calorie burn
+                milestones.append({
+                    'type': 'milestone',
+                    'athlete_name': athlete.name,
+                    'achievement': 'High Intensity Session',
+                    'details': f'{int(calories)} calories',
                     'date': activity.start_date.isoformat(),
                     'relative_time': _get_relative_time(activity.start_date)
                 })
