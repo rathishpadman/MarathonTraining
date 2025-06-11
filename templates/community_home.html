@@ -482,9 +482,9 @@
             <div class="kpi-label">Active Athletes</div>
         </div>
         <div class="kpi-card">
-            <div class="kpi-icon">🏃‍♂️</div>
+            <div class="kpi-icon">🏋️‍♂️</div>
             <div class="kpi-value" id="totalDistance">0 km</div>
-            <div class="kpi-label">Total Distance</div>
+            <div class="kpi-label">Training Volume</div>
         </div>
         <div class="kpi-card">
             <div class="kpi-icon">⚡</div>
@@ -494,7 +494,7 @@
         <div class="kpi-card">
             <div class="kpi-icon">⏱️</div>
             <div class="kpi-value" id="avgPace">0:00</div>
-            <div class="kpi-label">Avg Community Pace</div>
+            <div class="kpi-label">Avg Training Intensity</div>
         </div>
     </div>
 
@@ -595,9 +595,17 @@ async function loadCommunityData() {
 
 function updateKPIs(kpis) {
     document.getElementById('totalAthletes').textContent = kpis.totalAthletes || 0;
-    document.getElementById('totalDistance').textContent = `${(kpis.totalDistance || 0).toFixed(1)} km`;
+    // Display training volume as units instead of just km
+    const volume = kpis.totalDistance || 0;
+    document.getElementById('totalDistance').textContent = `${volume.toFixed(1)} units`;
     document.getElementById('totalActivities').textContent = kpis.totalActivities || 0;
-    document.getElementById('avgPace').textContent = formatPace(kpis.avgPace || 0);
+    // Show training intensity instead of just pace
+    const intensity = kpis.avgPace || 0;
+    if (intensity > 0) {
+        document.getElementById('avgPace').textContent = `${intensity.toFixed(1)} min/km`;
+    } else {
+        document.getElementById('avgPace').textContent = 'Mixed';
+    }
 }
 
 function renderLeaderboard(athletes) {

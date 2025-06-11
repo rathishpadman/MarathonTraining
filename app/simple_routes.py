@@ -1201,7 +1201,7 @@ def get_community_overview():
                 'labels': trend_labels,
                 'datasets': [
                     {
-                        'label': 'Daily Distance (km)',
+                        'label': 'Training Load',
                         'data': distance_trend,
                         'borderColor': 'rgb(75, 192, 192)',
                         'backgroundColor': 'rgba(75, 192, 192, 0.2)'
