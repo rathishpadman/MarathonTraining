@@ -212,10 +212,48 @@
         }
 
         .heatmap-calendar {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            font-size: 10px;
+            overflow-x: auto;
+            padding: 10px;
+        }
+
+        .heatmap-months {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .heatmap-weeks-container {
+            display: flex;
+            gap: 15px;
+        }
+
+        .heatmap-days-labels {
+            display: grid;
+            grid-template-rows: repeat(7, 12px);
+            gap: 2px;
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.7);
+            padding-right: 5px;
+        }
+
+        .heatmap-weeks {
             display: grid;
             grid-template-columns: repeat(53, 12px);
             gap: 2px;
-            font-size: 10px;
+        }
+
+        .heatmap-week {
+            display: grid;
+            grid-template-rows: repeat(7, 12px);
+            gap: 2px;
         }
 
         .heatmap-day {
@@ -717,45 +755,90 @@
         function renderTrainingHeatmap(dailyData, metric, year) {
             const container = document.getElementById('trainingHeatmap');
             
-            // Create year grid (53 weeks × 7 days)
-            const startDate = new Date(year, 0, 1);
-            const endDate = new Date(year, 11, 31);
-            
             // Get all metric values to calculate intensity levels
             const metricValues = Object.values(dailyData).map(day => day[metric] || 0);
             const maxValue = Math.max(...metricValues);
             
+            // Create proper calendar structure
+            const startDate = new Date(year, 0, 1);
+            const endDate = new Date(year, 11, 31);
+            
+            // Find the first Sunday of the year (or before if Jan 1 is not Sunday)
+            const firstDay = new Date(startDate);
+            firstDay.setDate(firstDay.getDate() - firstDay.getDay());
+            
+            // Create months header
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            
             let calendarHTML = '<div class="heatmap-calendar">';
             
-            // Generate calendar grid
-            const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+            // Add months header
+            calendarHTML += '<div class="heatmap-months">';
+            months.forEach(month => {
+                calendarHTML += `<div>${month}</div>`;
+            });
+            calendarHTML += '</div>';
             
-            for (let i = 0; i < totalDays; i++) {
-                const currentDate = new Date(startDate);
-                currentDate.setDate(startDate.getDate() + i);
-                const dateStr = currentDate.toISOString().split('T')[0];
+            // Create container with day labels and weeks
+            calendarHTML += '<div class="heatmap-weeks-container">';
+            
+            // Add day labels
+            calendarHTML += '<div class="heatmap-days-labels">';
+            const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayLabels.forEach((day, index) => {
+                // Only show Mon, Wed, Fri to avoid clutter
+                const label = (index === 1 || index === 3 || index === 5) ? day : '';
+                calendarHTML += `<div>${label}</div>`;
+            });
+            calendarHTML += '</div>';
+            
+            // Create weeks container
+            calendarHTML += '<div class="heatmap-weeks">';
+            
+            // Generate 53 weeks
+            for (let week = 0; week < 53; week++) {
+                calendarHTML += '<div class="heatmap-week">';
                 
-                const dayData = dailyData[dateStr];
-                const value = dayData ? (dayData[metric] || 0) : 0;
-                
-                // Calculate intensity level (0-4)
-                let level = 0;
-                if (value > 0) {
-                    level = Math.min(4, Math.ceil((value / maxValue) * 4));
+                // Generate 7 days for each week
+                for (let day = 0; day < 7; day++) {
+                    const currentDate = new Date(firstDay);
+                    currentDate.setDate(firstDay.getDate() + (week * 7) + day);
+                    
+                    const dateStr = currentDate.toISOString().split('T')[0];
+                    const isCurrentYear = currentDate.getFullYear() === parseInt(year);
+                    
+                    if (isCurrentYear) {
+                        const dayData = dailyData[dateStr];
+                        const value = dayData ? (dayData[metric] || 0) : 0;
+                        
+                        // Calculate intensity level (0-4)
+                        let level = 0;
+                        if (value > 0 && maxValue > 0) {
+                            level = Math.min(4, Math.ceil((value / maxValue) * 4));
+                        }
+                        
+                        const tooltip = createTooltip(dateStr, dayData, currentDate);
+                        
+                        calendarHTML += `
+                            <div class="heatmap-day level-${level}" 
+                                 data-date="${dateStr}" 
+                                 data-value="${value}"
+                                 title="${tooltip}">
+                            </div>
+                        `;
+                    } else {
+                        // Empty cell for days outside the year
+                        calendarHTML += '<div class="heatmap-day level-0" style="opacity: 0.1;"></div>';
+                    }
                 }
                 
-                const tooltip = createTooltip(dateStr, dayData, currentDate);
-                
-                calendarHTML += `
-                    <div class="heatmap-day level-${level}" 
-                         data-date="${dateStr}" 
-                         data-value="${value}"
-                         title="${tooltip}">
-                    </div>
-                `;
+                calendarHTML += '</div>'; // Close week
             }
             
-            calendarHTML += '</div>';
+            calendarHTML += '</div>'; // Close weeks container
+            calendarHTML += '</div>'; // Close weeks-container
+            calendarHTML += '</div>'; // Close calendar
             
             // Add legend
             calendarHTML += `
