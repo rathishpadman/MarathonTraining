@@ -78,6 +78,18 @@ def risk_analyser(athlete_id=1):
         logger.error(f"Error rendering risk analyser: {str(e)}")
         return f"<h1>Error loading risk analyser: {str(e)}</h1>", 500
 
+@main_bp.route('/training-heatmap')
+@main_bp.route('/training-heatmap/<int:athlete_id>')
+def training_heatmap(athlete_id=1):
+    """Training heatmap visualization page"""
+    try:
+        from flask import render_template
+        logger.info(f"Accessing training heatmap for athlete {athlete_id}")
+        return render_template('training_heatmap.html', athlete_id=athlete_id)
+    except Exception as e:
+        logger.error(f"Error rendering training heatmap: {str(e)}")
+        return f"<h1>Error loading training heatmap: {str(e)}</h1>", 500
+
 @main_bp.route('/connect/strava')
 def strava_connect():
     """Strava connection page"""
@@ -2159,6 +2171,107 @@ def get_athlete_training_optimization(athlete_id):
     except Exception as e:
         logger.error(f"Error generating training optimization for athlete {athlete_id}: {str(e)}")
         return jsonify({'error': 'Failed to generate training optimization'}), 500
+
+@api_bp.route('/training-heatmap/<int:athlete_id>', methods=['GET'])
+def get_training_heatmap_data(athlete_id):
+    """Get training heatmap data for visualization"""
+    try:
+        logger.info(f"Getting training heatmap data for athlete {athlete_id}")
+        
+        # Get query parameters
+        year = int(request.args.get('year', datetime.now().year))
+        
+        # Get athlete
+        athlete = ReplitAthlete.query.filter_by(id=athlete_id, is_active=True).first()
+        if not athlete:
+            return jsonify({'error': 'Athlete not found'}), 404
+        
+        # Get activities for the specified year
+        start_date = datetime(year, 1, 1)
+        end_date = datetime(year, 12, 31, 23, 59, 59)
+        
+        activities = Activity.query.filter(
+            Activity.athlete_id == athlete_id,
+            Activity.start_date >= start_date,
+            Activity.start_date <= end_date
+        ).order_by(Activity.start_date).all()
+        
+        # Process daily data
+        daily_data = {}
+        
+        for activity in activities:
+            date_str = activity.start_date.strftime('%Y-%m-%d')
+            
+            if date_str not in daily_data:
+                daily_data[date_str] = {
+                    'training_load': 0,
+                    'distance': 0,
+                    'duration': 0,
+                    'activities': 0,
+                    'activity_list': []
+                }
+            
+            # Calculate training load for this activity
+            activity_load = 0
+            if activity.moving_time and activity.average_heartrate:
+                duration_min = activity.moving_time / 60
+                avg_hr = activity.average_heartrate
+                hr_reserve_factor = max(0, (avg_hr - 60) / (190 - 60))
+                activity_load = duration_min * hr_reserve_factor * 1.92
+            elif activity.moving_time:
+                # Fallback calculation based on duration and intensity estimate
+                duration_min = activity.moving_time / 60
+                activity_load = duration_min * 0.5  # Moderate intensity estimate
+            
+            daily_data[date_str]['training_load'] += activity_load
+            daily_data[date_str]['distance'] += (activity.distance or 0) / 1000  # Convert to km
+            daily_data[date_str]['duration'] += (activity.moving_time or 0) / 60  # Convert to minutes
+            daily_data[date_str]['activities'] += 1
+            daily_data[date_str]['activity_list'].append({
+                'name': activity.name or 'Untitled Activity',
+                'sport_type': activity.sport_type or 'Unknown',
+                'distance': (activity.distance or 0) / 1000,
+                'duration': (activity.moving_time or 0) / 60
+            })
+        
+        # Calculate stats
+        total_activities = len(activities)
+        total_distance = sum((a.distance or 0) / 1000 for a in activities)
+        total_load = sum(day['training_load'] for day in daily_data.values())
+        avg_weekly_load = total_load / 52 if total_load > 0 else 0
+        
+        # Calculate longest streak
+        longest_streak = 0
+        current_streak = 0
+        
+        # Sort dates and check consecutive days
+        sorted_dates = sorted(daily_data.keys())
+        for i, date_str in enumerate(sorted_dates):
+            if daily_data[date_str]['activities'] > 0:
+                current_streak += 1
+                longest_streak = max(longest_streak, current_streak)
+            else:
+                current_streak = 0
+        
+        # Clean up activity_list for response (rename to activities)
+        for date_str in daily_data:
+            daily_data[date_str]['activities'] = daily_data[date_str]['activity_list']
+            del daily_data[date_str]['activity_list']
+        
+        return jsonify({
+            'daily_data': daily_data,
+            'stats': {
+                'total_activities': total_activities,
+                'total_distance': round(total_distance, 1),
+                'avg_weekly_load': round(avg_weekly_load, 1),
+                'longest_streak': longest_streak,
+                'year': year
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting training heatmap data: {str(e)}")
+        return jsonify({'error': 'Failed to get heatmap data'}), 500
 
 # Analytics endpoints are defined above in lines 117-362
 # All duplicate routes below this line have been removed to prevent Flask conflicts
