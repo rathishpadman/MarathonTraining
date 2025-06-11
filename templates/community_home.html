@@ -879,11 +879,11 @@ async function loadActivityStream() {
                         <div class="activity-stats">
                             <span class="stat-item">
                                 <i class="fas fa-chart-line"></i>
-                                ${activity.primary_metric || (activity.distance_km > 0 ? activity.distance_km + 'km' : activity.duration_minutes + 'min')}
+                                ${activity.primary_metric}
                             </span>
                             <span class="stat-item">
                                 <i class="fas fa-clock"></i>
-                                ${activity.pace || (activity.duration_minutes > 0 ? activity.duration_minutes + 'min' : 'N/A')}
+                                ${activity.pace !== 'N/A' ? activity.pace : Math.round(activity.duration_minutes) + 'min'}
                             </span>
                             <span class="stat-item">
                                 <i class="fas fa-user"></i>
