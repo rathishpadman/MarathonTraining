@@ -146,6 +146,130 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
+
+        .heatmap-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .heatmap-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .heatmap-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .heatmap-select option {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .heatmap-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .heatmap-stat {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .heatmap-stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .heatmap-stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .training-heatmap {
+            min-height: 200px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow-x: auto;
+        }
+
+        .heatmap-calendar {
+            display: grid;
+            grid-template-columns: repeat(53, 12px);
+            gap: 2px;
+            font-size: 10px;
+        }
+
+        .heatmap-day {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .heatmap-day:hover {
+            transform: scale(1.2);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .heatmap-day.level-0 { background: rgba(255, 255, 255, 0.1); }
+        .heatmap-day.level-1 { background: rgba(16, 185, 129, 0.3); }
+        .heatmap-day.level-2 { background: rgba(16, 185, 129, 0.5); }
+        .heatmap-day.level-3 { background: rgba(16, 185, 129, 0.7); }
+        .heatmap-day.level-4 { background: rgba(16, 185, 129, 0.9); }
+
+        .heatmap-legend {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+
+        .heatmap-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .heatmap-legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .heatmap-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 200px;
+        }
         
         .risk-indicator {
             display: inline-block;
@@ -275,6 +399,32 @@
             </div>
         </div>
         
+        <!-- Training Heatmap Section -->
+        <div class="heatmap-section">
+            <div class="chart-title">
+                🔥 Training Heatmap - Activity Pattern Analysis
+            </div>
+            <div class="heatmap-controls">
+                <select id="heatmapYear" class="heatmap-select">
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                </select>
+                <select id="heatmapMetric" class="heatmap-select">
+                    <option value="training_load">Training Load</option>
+                    <option value="distance">Distance</option>
+                    <option value="duration">Duration</option>
+                    <option value="activities">Activity Count</option>
+                </select>
+            </div>
+            <div class="heatmap-stats" id="heatmapStats">
+                <div class="loading">Loading heatmap statistics...</div>
+            </div>
+            <div id="trainingHeatmap" class="training-heatmap">
+                <div class="loading">Loading training heatmap...</div>
+            </div>
+        </div>
+        
         <!-- Insights Section -->
         <div class="insights-section">
             <div class="chart-title">
@@ -294,6 +444,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             setupFilterButtons();
             loadAthleteAnalytics();
+            setupHeatmapControls();
+            loadTrainingHeatmap();
         });
         
         function setupFilterButtons() {
@@ -506,6 +658,206 @@
                     <div class="error">${message}</div>
                 </div>
             `;
+        }
+
+        // Training Heatmap Functions
+        function setupHeatmapControls() {
+            const yearSelect = document.getElementById('heatmapYear');
+            const metricSelect = document.getElementById('heatmapMetric');
+            
+            if (yearSelect && metricSelect) {
+                yearSelect.addEventListener('change', loadTrainingHeatmap);
+                metricSelect.addEventListener('change', loadTrainingHeatmap);
+            }
+        }
+
+        async function loadTrainingHeatmap() {
+            const year = document.getElementById('heatmapYear')?.value || new Date().getFullYear();
+            const metric = document.getElementById('heatmapMetric')?.value || 'training_load';
+            
+            try {
+                const response = await fetch(`/api/training-heatmap/1?year=${year}`);
+                if (!response.ok) {
+                    throw new Error('Failed to load heatmap data');
+                }
+                
+                const data = await response.json();
+                renderHeatmapStats(data.stats);
+                renderTrainingHeatmap(data.daily_data, metric, year);
+                
+            } catch (error) {
+                console.error('Error loading heatmap:', error);
+                document.getElementById('trainingHeatmap').innerHTML = 
+                    '<div class="error">Failed to load training heatmap data</div>';
+            }
+        }
+
+        function renderHeatmapStats(stats) {
+            const container = document.getElementById('heatmapStats');
+            container.innerHTML = `
+                <div class="heatmap-stat">
+                    <div class="heatmap-stat-value">${stats.total_activities}</div>
+                    <div class="heatmap-stat-label">Total Activities</div>
+                </div>
+                <div class="heatmap-stat">
+                    <div class="heatmap-stat-value">${stats.total_distance}km</div>
+                    <div class="heatmap-stat-label">Total Distance</div>
+                </div>
+                <div class="heatmap-stat">
+                    <div class="heatmap-stat-value">${stats.avg_weekly_load}</div>
+                    <div class="heatmap-stat-label">Avg Weekly Load</div>
+                </div>
+                <div class="heatmap-stat">
+                    <div class="heatmap-stat-value">${stats.longest_streak}</div>
+                    <div class="heatmap-stat-label">Longest Streak</div>
+                </div>
+            `;
+        }
+
+        function renderTrainingHeatmap(dailyData, metric, year) {
+            const container = document.getElementById('trainingHeatmap');
+            
+            // Create year grid (53 weeks × 7 days)
+            const startDate = new Date(year, 0, 1);
+            const endDate = new Date(year, 11, 31);
+            
+            // Get all metric values to calculate intensity levels
+            const metricValues = Object.values(dailyData).map(day => day[metric] || 0);
+            const maxValue = Math.max(...metricValues);
+            
+            let calendarHTML = '<div class="heatmap-calendar">';
+            
+            // Generate calendar grid
+            const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+            
+            for (let i = 0; i < totalDays; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                const dateStr = currentDate.toISOString().split('T')[0];
+                
+                const dayData = dailyData[dateStr];
+                const value = dayData ? (dayData[metric] || 0) : 0;
+                
+                // Calculate intensity level (0-4)
+                let level = 0;
+                if (value > 0) {
+                    level = Math.min(4, Math.ceil((value / maxValue) * 4));
+                }
+                
+                const tooltip = createTooltip(dateStr, dayData, currentDate);
+                
+                calendarHTML += `
+                    <div class="heatmap-day level-${level}" 
+                         data-date="${dateStr}" 
+                         data-value="${value}"
+                         title="${tooltip}">
+                    </div>
+                `;
+            }
+            
+            calendarHTML += '</div>';
+            
+            // Add legend
+            calendarHTML += `
+                <div class="heatmap-legend">
+                    <span>Less</span>
+                    <div class="heatmap-legend-item">
+                        <div class="heatmap-legend-color level-0"></div>
+                    </div>
+                    <div class="heatmap-legend-item">
+                        <div class="heatmap-legend-color level-1"></div>
+                    </div>
+                    <div class="heatmap-legend-item">
+                        <div class="heatmap-legend-color level-2"></div>
+                    </div>
+                    <div class="heatmap-legend-item">
+                        <div class="heatmap-legend-color level-3"></div>
+                    </div>
+                    <div class="heatmap-legend-item">
+                        <div class="heatmap-legend-color level-4"></div>
+                    </div>
+                    <span>More</span>
+                </div>
+            `;
+            
+            container.innerHTML = calendarHTML;
+            
+            // Add hover tooltips
+            addHeatmapTooltips();
+        }
+
+        function createTooltip(dateStr, dayData, date) {
+            if (!dayData || !dayData.activities || dayData.activities.length === 0) {
+                return `${date.toLocaleDateString()}: No activities`;
+            }
+            
+            const activities = dayData.activities;
+            let tooltip = `${date.toLocaleDateString()}\n`;
+            tooltip += `${activities.length} activities\n`;
+            
+            if (dayData.distance > 0) {
+                tooltip += `Distance: ${dayData.distance.toFixed(1)}km\n`;
+            }
+            if (dayData.duration > 0) {
+                tooltip += `Duration: ${Math.round(dayData.duration)}min\n`;
+            }
+            if (dayData.training_load > 0) {
+                tooltip += `Training Load: ${Math.round(dayData.training_load)}\n`;
+            }
+            
+            // Add activity details
+            tooltip += '\nActivities:\n';
+            activities.forEach(activity => {
+                const sportIcon = getSportIcon(activity.sport_type);
+                if (activity.distance > 0) {
+                    tooltip += `${sportIcon} ${activity.name}: ${activity.distance.toFixed(1)}km\n`;
+                } else {
+                    tooltip += `${sportIcon} ${activity.name}: ${Math.round(activity.duration)}min\n`;
+                }
+            });
+            
+            return tooltip;
+        }
+
+        function getSportIcon(sportType) {
+            const icons = {
+                'Run': '🏃',
+                'Tennis': '🎾',
+                'Cycling': '🚴',
+                'Swimming': '🏊',
+                'Workout': '💪',
+                'Walk': '🚶'
+            };
+            return icons[sportType] || '🏃';
+        }
+
+        function addHeatmapTooltips() {
+            const days = document.querySelectorAll('.heatmap-day');
+            const tooltip = document.createElement('div');
+            tooltip.className = 'heatmap-tooltip';
+            tooltip.style.display = 'none';
+            document.body.appendChild(tooltip);
+            
+            days.forEach(day => {
+                day.addEventListener('mouseenter', (e) => {
+                    const title = e.target.getAttribute('title');
+                    if (title) {
+                        tooltip.innerHTML = title.replace(/\n/g, '<br>');
+                        tooltip.style.display = 'block';
+                        tooltip.style.left = e.pageX + 10 + 'px';
+                        tooltip.style.top = e.pageY + 10 + 'px';
+                    }
+                });
+                
+                day.addEventListener('mouseleave', () => {
+                    tooltip.style.display = 'none';
+                });
+                
+                day.addEventListener('mousemove', (e) => {
+                    tooltip.style.left = e.pageX + 10 + 'px';
+                    tooltip.style.top = e.pageY + 10 + 'px';
+                });
+            });
         }
 
 
