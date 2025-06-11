@@ -241,62 +241,140 @@ class SimpleRacePredictor:
         return max(0, min(100, fitness_score))
     
     def _estimate_vo2_max(self, activities: List[Activity]) -> float:
-        """Estimate VO2 max from best recent performances using Jack Daniels formula"""
+        """Estimate VO2 max from best recent performances using scientifically validated methods"""
         if not activities:
             return 40.0  # Conservative baseline
         
-        # Find best running performance for VO2 max estimation
-        best_vdot = 0
+        # Find best running performances for VO2 max estimation
+        best_vo2_estimates = []
         
         for activity in activities:
             if not (activity.distance and activity.moving_time and activity.distance > 1000):
                 continue
             
             distance_km = activity.distance / 1000
-            pace_per_km = activity.moving_time / distance_km  # seconds per km
+            time_minutes = activity.moving_time / 60.0
             
-            # Only use reasonable paces (3:20 to 13:20 per km)
-            if not (200 <= pace_per_km <= 800):
+            # Only use performances from reasonable race distances
+            if not (1.5 <= distance_km <= 42.195):
                 continue
             
-            # Convert to speed in m/min for Jack Daniels VDOT calculation
-            speed_mmin = 60000 / pace_per_km  # meters per minute
+            # Calculate speed in km/h
+            speed_kmh = distance_km / (time_minutes / 60.0)
             
-            # Jack Daniels VDOT formula based on distance and time
-            # VDOT = -4.6 + 0.182258 * speed + 0.000104 * speed^2
-            if 3.0 <= distance_km <= 42.2:  # Valid racing distances
-                percent_max = self._get_percent_max_for_distance(distance_km)
-                if percent_max > 0:
-                    vdot = (-4.6 + 0.182258 * speed_mmin + 0.000104 * speed_mmin * speed_mmin) / (percent_max / 100)
-                    if vdot > best_vdot:
-                        best_vdot = vdot
+            # Only use realistic running speeds (6-25 km/h)
+            if not (6.0 <= speed_kmh <= 25.0):
+                continue
+            
+            # Use different estimation methods based on distance
+            vo2_estimate = None
+            
+            if 1.5 <= distance_km <= 3.0:  # 1500m-3000m
+                # For shorter distances, use Cooper formula adaptation
+                vo2_estimate = self._estimate_vo2_from_short_distance(distance_km, time_minutes)
+            elif 3.0 < distance_km <= 10.0:  # 5K-10K
+                # Use Jack Daniels VDOT tables (simplified)
+                vo2_estimate = self._estimate_vo2_from_middle_distance(distance_km, time_minutes)
+            elif 10.0 < distance_km <= 42.195:  # 10K+ to Marathon
+                # Use physiological modeling for longer distances
+                vo2_estimate = self._estimate_vo2_from_long_distance(distance_km, time_minutes)
+            
+            if vo2_estimate and 25.0 <= vo2_estimate <= 85.0:  # Realistic range
+                best_vo2_estimates.append(vo2_estimate)
         
-        # Return realistic VO2 max range (30-70 ml/kg/min)
-        if best_vdot == 0:
+        if not best_vo2_estimates:
             return 40.0
         
-        return max(30.0, min(70.0, best_vdot))
+        # Use the best estimate (highest VO2 max from valid performances)
+        return max(best_vo2_estimates)
     
-    def _get_percent_max_for_distance(self, distance_km: float) -> float:
-        """Get percentage of VO2 max typically used for different distances"""
-        if distance_km <= 1.5:  # 1500m
-            return 100.0
-        elif distance_km <= 3.2:  # 3K
-            return 97.0
-        elif distance_km <= 5.0:  # 5K
-            return 95.0
-        elif distance_km <= 10.0:  # 10K
-            return 90.0
-        elif distance_km <= 15.0:  # 15K
-            return 85.0
-        elif distance_km <= 21.1:  # Half marathon
-            return 80.0
-        elif distance_km <= 30.0:  # 30K
-            return 75.0
-        elif distance_km <= 42.2:  # Marathon
-            return 70.0
-        else:
-            return 65.0
+    def _estimate_vo2_from_short_distance(self, distance_km: float, time_minutes: float) -> float:
+        """Estimate VO2 max from 1500m-3000m performances using Cooper-based formula"""
+        # Convert to meters and seconds for calculation
+        distance_m = distance_km * 1000
+        time_seconds = time_minutes * 60
+        
+        # Calculate speed in m/min
+        speed_m_per_min = distance_m / time_minutes
+        
+        # Modified Cooper formula for shorter distances
+        # VO2 max = 15.3 × (mile_time_in_minutes)^-1 - adjusted for metric
+        if distance_km >= 1.5:  # Minimum distance for reliable estimate
+            # Extrapolate to 1-mile equivalent performance
+            mile_equivalent_time = time_minutes * (1.609 / distance_km) * 1.05  # Slight pace drop for longer distance
+            vo2_estimate = (15.3 / mile_equivalent_time) * 60  # Convert to standard units
+            return min(vo2_estimate, 80.0)  # Cap at elite level
+        return 40.0
+    
+    def _estimate_vo2_from_middle_distance(self, distance_km: float, time_minutes: float) -> float:
+        """Estimate VO2 max from 5K-10K performances using Jack Daniels method"""
+        # Calculate pace per km in minutes
+        pace_per_km = time_minutes / distance_km
+        
+        # Jack Daniels VDOT approximation (simplified)
+        # Based on empirical data from Daniels' Running Formula
+        if distance_km >= 5.0:
+            if pace_per_km <= 3.0:  # Sub-3:00/km (very fast)
+                vo2_base = 70.0
+            elif pace_per_km <= 3.5:  # 3:00-3:30/km
+                vo2_base = 65.0
+            elif pace_per_km <= 4.0:  # 3:30-4:00/km
+                vo2_base = 60.0
+            elif pace_per_km <= 4.5:  # 4:00-4:30/km
+                vo2_base = 55.0
+            elif pace_per_km <= 5.0:  # 4:30-5:00/km
+                vo2_base = 50.0
+            elif pace_per_km <= 5.5:  # 5:00-5:30/km
+                vo2_base = 45.0
+            elif pace_per_km <= 6.0:  # 5:30-6:00/km
+                vo2_base = 42.0
+            elif pace_per_km <= 7.0:  # 6:00-7:00/km
+                vo2_base = 38.0
+            else:  # Slower than 7:00/km
+                vo2_base = 35.0
+            
+            # Adjust for distance (10K typically 2-3% slower than 5K pace)
+            if distance_km > 8.0:
+                vo2_base *= 0.98  # Slight adjustment for longer distance
+                
+            return vo2_base
+        return 40.0
+    
+    def _estimate_vo2_from_long_distance(self, distance_km: float, time_minutes: float) -> float:
+        """Estimate VO2 max from 10K+ performances using physiological modeling"""
+        pace_per_km = time_minutes / distance_km
+        
+        # For longer distances, use lactate threshold-based estimation
+        # Lactate threshold typically occurs at 85-90% of VO2 max for trained runners
+        if distance_km >= 21.1:  # Half marathon or longer
+            # Half marathon and marathon are typically run at 85-90% and 80-85% of LT respectively
+            lt_percentage = 0.87 if distance_km <= 25 else 0.83
+            vo2_percentage = lt_percentage * 0.88  # LT is ~88% of VO2 max for trained runners
+        else:  # 10K-20K range
+            vo2_percentage = 0.90  # 10-15K typically run at ~90% VO2 max
+        
+        # Estimate VO2 max from pace using empirical relationships
+        if pace_per_km <= 3.5:  # Elite level
+            estimated_vo2_at_pace = 65.0
+        elif pace_per_km <= 4.0:  # Sub-elite
+            estimated_vo2_at_pace = 58.0
+        elif pace_per_km <= 4.5:  # Competitive
+            estimated_vo2_at_pace = 52.0
+        elif pace_per_km <= 5.0:  # Good recreational
+            estimated_vo2_at_pace = 47.0
+        elif pace_per_km <= 5.5:  # Average recreational
+            estimated_vo2_at_pace = 43.0
+        elif pace_per_km <= 6.0:  # Beginner competitive
+            estimated_vo2_at_pace = 39.0
+        elif pace_per_km <= 7.0:  # Recreational
+            estimated_vo2_at_pace = 36.0
+        else:  # Beginner
+            estimated_vo2_at_pace = 32.0
+        
+        # Adjust for the percentage of VO2 max used at this distance
+        vo2_max_estimate = estimated_vo2_at_pace / vo2_percentage
+        
+        return min(vo2_max_estimate, 75.0)  # Reasonable upper limit
     
     def _calculate_average_pace(self, activities: List[Activity]) -> float:
         """Calculate average pace in seconds per km"""
