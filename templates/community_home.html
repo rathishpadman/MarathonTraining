@@ -814,7 +814,7 @@ function renderTrainingLoadChart(data) {
 
 async function loadActivityStream() {
     try {
-        const response = await fetch('/api/community/activity_stream');
+        const response = await fetch('/api/community/activity-stream');
         const data = await response.json();
         const activities = data.stream || [];
         
