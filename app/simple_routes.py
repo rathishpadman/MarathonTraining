@@ -2197,6 +2197,7 @@ def get_fitness_analytics(athlete_id):
         # Combine all analytics
         analytics_data = {
             'fitness_metrics': fitness_data.get('fitness_metrics', {}),
+            'race_predictions': fitness_data.get('race_predictions', race_predictions),
             'injury_risk': injury_risk,
             'activity_trends': activity_trends,
             'summary': fitness_data.get('summary', {}),

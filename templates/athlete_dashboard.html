@@ -510,6 +510,16 @@
             <div class="loading">Loading fitness metrics...</div>
         </div>
         
+        <!-- Race Predictions Section -->
+        <div class="chart-container" style="margin-bottom: 30px;">
+            <div class="chart-title">
+                🏁 Industry-Standard Race Predictions
+            </div>
+            <div id="racePredictions">
+                <div class="loading">Loading race predictions...</div>
+            </div>
+        </div>
+        
         <!-- Charts Section -->
         <div class="charts-section">
             <div class="chart-container">
@@ -615,6 +625,7 @@
                 const data = await response.json();
                 
                 renderFitnessMetrics(data.fitness_metrics);
+                renderRacePredictions(data.race_predictions);
                 renderActivityTrends(data.activity_trends);
                 renderInjuryRisk(data.injury_risk);
                 renderInsights(data);
@@ -717,6 +728,61 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        function renderRacePredictions(predictions) {
+            const container = document.getElementById('racePredictions');
+            
+            if (!predictions || Object.keys(predictions).length === 0) {
+                container.innerHTML = '<div class="no-data">No race prediction data available</div>';
+                return;
+            }
+            
+            const raceCards = Object.entries(predictions).map(([raceName, data]) => {
+                const confidenceColor = data.confidence_score >= 75 ? '#10b981' : 
+                                       data.confidence_score >= 50 ? '#f59e0b' : '#ef4444';
+                
+                return `
+                    <div class="race-prediction-card" style="
+                        background: rgba(255, 255, 255, 0.05); 
+                        border-radius: 12px; 
+                        padding: 20px; 
+                        text-align: center;
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        transition: transform 0.2s ease;
+                    ">
+                        <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: #e5e7eb;">
+                            ${raceName}
+                        </div>
+                        <div style="font-size: 2rem; font-weight: bold; margin-bottom: 8px; color: #ffffff;">
+                            ${data.predicted_time_formatted || 'N/A'}
+                        </div>
+                        <div style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 12px;">
+                            ${data.predicted_pace_per_km ? `${Math.floor(data.predicted_pace_per_km)}:${String(Math.round((data.predicted_pace_per_km % 1) * 60)).padStart(2, '0')}/km` : 'N/A'}
+                        </div>
+                        <div style="
+                            background: ${confidenceColor}20; 
+                            color: ${confidenceColor}; 
+                            padding: 4px 12px; 
+                            border-radius: 20px; 
+                            font-size: 0.8rem; 
+                            font-weight: 600;
+                            display: inline-block;
+                        ">
+                            ${data.confidence_score || 0}% confidence
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                    ${raceCards}
+                </div>
+                <div style="text-align: center; margin-top: 16px; font-size: 0.8rem; opacity: 0.7;">
+                    Predictions based on industry-standard sports science methodology
+                </div>
+            `;
         }
 
         function renderInjuryRisk(risk) {
