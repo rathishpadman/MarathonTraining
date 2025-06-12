@@ -511,11 +511,11 @@
         </div>
         
         <!-- Race Predictions Section -->
-        <div class="chart-container" style="margin-bottom: 30px;">
-            <div class="chart-title">
+        <div class="chart-container" style="margin-bottom: 30px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px;">
+            <div class="chart-title" style="color: #ffffff; font-size: 1.2rem; font-weight: 600; margin-bottom: 16px;">
                 🏁 Industry-Standard Race Predictions
             </div>
-            <div id="racePredictions">
+            <div id="racePredictions" style="min-height: 100px;">
                 <div class="loading">Loading race predictions...</div>
             </div>
         </div>
@@ -782,7 +782,7 @@
                 `;
             }).join('');
             
-            container.innerHTML = `
+            const finalHTML = `
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
                     ${raceCards}
                 </div>
@@ -790,6 +790,10 @@
                     Predictions based on industry-standard sports science methodology
                 </div>
             `;
+            
+            console.log('Final HTML to be inserted:', finalHTML);
+            container.innerHTML = finalHTML;
+            console.log('Race predictions rendered successfully');
         }
 
         function renderInjuryRisk(risk) {
