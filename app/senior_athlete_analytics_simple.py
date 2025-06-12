@@ -222,6 +222,8 @@ def analyze_senior_athlete_injury_prevention_simple(db_session: Session, athlete
         
         # Calculate weekly load progression
         weeks_data = {}
+        logger.info(f"Analyzing {len(activities)} activities for injury prevention assessment")
+        
         for activity in activities:
             week_key = activity.start_date.strftime('%Y-W%U')
             if week_key not in weeks_data:
@@ -231,6 +233,10 @@ def analyze_senior_athlete_injury_prevention_simple(db_session: Session, athlete
                 weeks_data[week_key]['distance'] += activity.distance / 1000  # Convert to km
             if activity.moving_time:
                 weeks_data[week_key]['time'] += activity.moving_time / 3600  # Convert to hours
+                
+            logger.info(f"Activity {activity.start_date.strftime('%Y-%m-%d')}: {activity.sport_type}, {activity.distance/1000 if activity.distance else 0:.1f}km, {activity.moving_time/60 if activity.moving_time else 0:.0f}min")
+        
+        logger.info(f"Weekly training loads: {weeks_data}")
         
         # Calculate weekly load increase
         weekly_loads = list(weeks_data.values())
@@ -240,8 +246,11 @@ def analyze_senior_athlete_injury_prevention_simple(db_session: Session, athlete
             recent_load = weekly_loads[-1]['distance'] + weekly_loads[-1]['time'] * 10  # Weight time
             previous_load = weekly_loads[-2]['distance'] + weekly_loads[-2]['time'] * 10
             
+            logger.info(f"Recent week load: {recent_load:.1f}, Previous week load: {previous_load:.1f}")
+            
             if previous_load > 0:
                 weekly_load_increase = ((recent_load - previous_load) / previous_load) * 100
+                logger.info(f"Weekly load increase: {weekly_load_increase:.1f}%")
         
         # Assess biomechanical stress based on consecutive training days
         consecutive_days = 0
@@ -263,10 +272,14 @@ def analyze_senior_athlete_injury_prevention_simple(db_session: Session, athlete
         # Calculate biomechanical stress score (0-100, lower is better)
         biomech_stress = 20  # Base stress
         
+        logger.info(f"Maximum consecutive training days: {max_consecutive}")
+        
         if max_consecutive > 5:
             biomech_stress += 30
         elif max_consecutive > 3:
             biomech_stress += 15
+            
+        logger.info(f"Biomechanical stress score: {biomech_stress}")
         
         # Calculate injury risk score
         injury_risk_score = 25  # Base risk
