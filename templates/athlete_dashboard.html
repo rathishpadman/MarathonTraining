@@ -731,9 +731,16 @@
         }
 
         function renderRacePredictions(predictions) {
+            console.log('renderRacePredictions called with:', predictions);
             const container = document.getElementById('racePredictions');
             
+            if (!container) {
+                console.error('Race predictions container not found');
+                return;
+            }
+            
             if (!predictions || Object.keys(predictions).length === 0) {
+                console.log('No race predictions data available');
                 container.innerHTML = '<div class="no-data">No race prediction data available</div>';
                 return;
             }
