@@ -421,6 +421,89 @@
             <button class="filter-btn active" data-days="90">90 Days</button>
         </div>
         
+        <!-- Advanced Training Load Metrics Section -->
+        <div class="training-load-metrics" style="margin-bottom: 30px;">
+            <div class="metrics-header">
+                <h3 style="margin: 0; color: white; font-size: 1.2rem;">
+                    <i class="fas fa-chart-line" style="margin-right: 8px;"></i>
+                    Advanced Training Load Metrics
+                </h3>
+                <div class="metrics-description" style="margin-top: 8px; color: rgba(255,255,255,0.7); font-size: 0.9rem;">
+                    CTL (Fitness), ATL (Fatigue), TSB (Form), and TSS (Training Stress)
+                </div>
+            </div>
+            
+            <!-- Current Metrics Cards -->
+            <div class="metrics-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px 0;">
+                <div class="metric-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="metric-icon" style="color: #10B981; font-size: 1.5rem; margin-bottom: 10px;">
+                        <i class="fas fa-dumbbell"></i>
+                    </div>
+                    <div class="metric-value" id="ctlValue" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
+                    <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 5px;">CTL (Fitness)</div>
+                    <div class="metric-trend" id="ctlTrend" style="font-size: 0.8rem; color: #10B981;">--</div>
+                </div>
+                
+                <div class="metric-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="metric-icon" style="color: #F59E0B; font-size: 1.5rem; margin-bottom: 10px;">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="metric-value" id="atlValue" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
+                    <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 5px;">ATL (Fatigue)</div>
+                    <div class="metric-trend" id="atlTrend" style="font-size: 0.8rem; color: #F59E0B;">--</div>
+                </div>
+                
+                <div class="metric-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="metric-icon" style="color: #3B82F6; font-size: 1.5rem; margin-bottom: 10px;">
+                        <i class="fas fa-balance-scale"></i>
+                    </div>
+                    <div class="metric-value" id="tsbValue" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
+                    <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 5px;">TSB (Form)</div>
+                    <div class="metric-trend" id="tsbTrend" style="font-size: 0.8rem; color: #3B82F6;">--</div>
+                </div>
+                
+                <div class="metric-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="metric-icon" style="color: #8B5CF6; font-size: 1.5rem; margin-bottom: 10px;">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                    <div class="metric-value" id="weeklyTssValue" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
+                    <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 5px;">Weekly TSS</div>
+                    <div class="metric-trend" id="tssTrend" style="font-size: 0.8rem; color: #8B5CF6;">--</div>
+                </div>
+            </div>
+            
+            <!-- Training Phase and Recommendations -->
+            <div class="training-insights" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                <div class="phase-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <h4 style="margin: 0 0 15px 0; color: white; font-size: 1.1rem;">
+                        <i class="fas fa-route" style="margin-right: 8px;"></i>
+                        Current Training Phase
+                    </h4>
+                    <div class="phase-status" id="trainingPhase" style="font-size: 1.1rem; font-weight: 600; color: #10B981; margin-bottom: 8px;">--</div>
+                    <div class="phase-description" id="phaseDescription" style="color: rgba(255,255,255,0.8); font-size: 0.9rem; line-height: 1.4;">--</div>
+                </div>
+                
+                <div class="recommendations-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <h4 style="margin: 0 0 15px 0; color: white; font-size: 1.1rem;">
+                        <i class="fas fa-lightbulb" style="margin-right: 8px;"></i>
+                        Training Recommendations
+                    </h4>
+                    <div id="trainingRecommendations" style="color: rgba(255,255,255,0.8); font-size: 0.9rem; line-height: 1.4;">
+                        <div style="color: rgba(255,255,255,0.6);">Loading recommendations...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Training Load Chart -->
+            <div class="chart-container" style="margin-top: 25px; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                <h4 style="margin: 0 0 20px 0; color: white; font-size: 1.1rem;">
+                    <i class="fas fa-chart-area" style="margin-right: 8px;"></i>
+                    Training Load Timeline (Last 30 Days)
+                </h4>
+                <canvas id="trainingLoadChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+        
         <!-- Fitness Metrics -->
         <div class="metrics-grid" id="metricsGrid">
             <div class="loading">Loading fitness metrics...</div>
@@ -990,11 +1073,11 @@
                     return;
                 }
                 
-                // Update current metrics
-                document.getElementById('ctlValue').textContent = data.current.ctl || '0';
-                document.getElementById('atlValue').textContent = data.current.atl || '0';
-                document.getElementById('tsbValue').textContent = data.current.tsb || '0';
-                document.getElementById('weeklyTssValue').textContent = data.current.weekly_tss || '0';
+                // Update current metrics with proper formatting
+                document.getElementById('ctlValue').textContent = Math.round(data.current.ctl || 0);
+                document.getElementById('atlValue').textContent = Math.round(data.current.atl || 0);
+                document.getElementById('tsbValue').textContent = Math.round(data.current.tsb || 0);
+                document.getElementById('weeklyTssValue').textContent = Math.round(data.current.weekly_tss || 0);
                 
                 // Update trends
                 if (data.trends && data.trends.status !== 'no_data') {
@@ -1106,88 +1189,5 @@
         });
 
     </script>
-    
-    <!-- Advanced Training Load Metrics Section -->
-    <div class="training-load-metrics" style="margin-top: 30px;">
-        <div class="metrics-header">
-            <h3 style="margin: 0; color: white; font-size: 1.2rem;">
-                <i class="fas fa-chart-line" style="margin-right: 8px;"></i>
-                Advanced Training Load Metrics
-            </h3>
-            <div class="metrics-description" style="margin-top: 8px; color: rgba(255,255,255,0.7); font-size: 0.9rem;">
-                CTL (Fitness), ATL (Fatigue), TSB (Form), and TSS (Training Stress)
-            </div>
-        </div>
-        
-        <!-- Current Metrics Cards -->
-        <div class="metrics-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px 0;">
-            <div class="metric-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
-                <div class="metric-icon" style="color: #10B981; font-size: 1.5rem; margin-bottom: 10px;">
-                    <i class="fas fa-dumbbell"></i>
-                </div>
-                <div class="metric-value" id="ctlValue" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
-                <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 5px;">CTL (Fitness)</div>
-                <div class="metric-trend" id="ctlTrend" style="font-size: 0.8rem; color: #10B981;">--</div>
-            </div>
-            
-            <div class="metric-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
-                <div class="metric-icon" style="color: #F59E0B; font-size: 1.5rem; margin-bottom: 10px;">
-                    <i class="fas fa-bolt"></i>
-                </div>
-                <div class="metric-value" id="atlValue" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
-                <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 5px;">ATL (Fatigue)</div>
-                <div class="metric-trend" id="atlTrend" style="font-size: 0.8rem; color: #F59E0B;">--</div>
-            </div>
-            
-            <div class="metric-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
-                <div class="metric-icon" style="color: #3B82F6; font-size: 1.5rem; margin-bottom: 10px;">
-                    <i class="fas fa-balance-scale"></i>
-                </div>
-                <div class="metric-value" id="tsbValue" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
-                <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 5px;">TSB (Form)</div>
-                <div class="metric-trend" id="tsbTrend" style="font-size: 0.8rem; color: #3B82F6;">--</div>
-            </div>
-            
-            <div class="metric-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
-                <div class="metric-icon" style="color: #8B5CF6; font-size: 1.5rem; margin-bottom: 10px;">
-                    <i class="fas fa-fire"></i>
-                </div>
-                <div class="metric-value" id="weeklyTssValue" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
-                <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 5px;">Weekly TSS</div>
-                <div class="metric-trend" id="tssTrend" style="font-size: 0.8rem; color: #8B5CF6;">--</div>
-            </div>
-        </div>
-        
-        <!-- Training Phase and Recommendations -->
-        <div class="training-insights" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
-            <div class="phase-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
-                <h4 style="margin: 0 0 15px 0; color: white; font-size: 1.1rem;">
-                    <i class="fas fa-route" style="margin-right: 8px;"></i>
-                    Current Training Phase
-                </h4>
-                <div class="phase-status" id="trainingPhase" style="font-size: 1.1rem; font-weight: 600; color: #10B981; margin-bottom: 8px;">--</div>
-                <div class="phase-description" id="phaseDescription" style="color: rgba(255,255,255,0.8); font-size: 0.9rem; line-height: 1.4;">--</div>
-            </div>
-            
-            <div class="recommendations-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
-                <h4 style="margin: 0 0 15px 0; color: white; font-size: 1.1rem;">
-                    <i class="fas fa-lightbulb" style="margin-right: 8px;"></i>
-                    Training Recommendations
-                </h4>
-                <div id="trainingRecommendations" style="color: rgba(255,255,255,0.8); font-size: 0.9rem; line-height: 1.4;">
-                    <div style="color: rgba(255,255,255,0.6);">Loading recommendations...</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Training Load Chart -->
-        <div class="chart-container" style="margin-top: 25px; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
-            <h4 style="margin: 0 0 20px 0; color: white; font-size: 1.1rem;">
-                <i class="fas fa-chart-area" style="margin-right: 8px;"></i>
-                Training Load Timeline (Last 30 Days)
-            </h4>
-            <canvas id="trainingLoadChart" width="400" height="200"></canvas>
-        </div>
-    </div>
 </body>
 </html>
