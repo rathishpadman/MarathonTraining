@@ -15,6 +15,11 @@ from app.strava_client import ReplitStravaClient
 from app.config import Config
 from app.ai_race_advisor import get_race_recommendations
 from app.training_load_calculator import get_training_load_metrics
+from app.senior_athlete_analytics import (
+    analyze_senior_athlete_recovery,
+    analyze_senior_athlete_cardiovascular,
+    analyze_senior_athlete_injury_prevention
+)
 
 # Create blueprint for API routes
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -393,6 +398,41 @@ def get_athlete_recent_activities(athlete_id):
     except Exception as e:
         logger.error(f"Error fetching recent activities for athlete {athlete_id}: {str(e)}")
         return jsonify({'error': 'Failed to fetch recent activities'}), 500
+
+@api_bp.route('/athletes/<int:athlete_id>/senior-analytics')
+def get_senior_athlete_analytics(athlete_id):
+    """Get advanced analytics for senior athletes (35+)"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        
+        # Get athlete to check if they exist
+        athlete = db.session.query(ReplitAthlete).filter_by(id=athlete_id).first()
+        if not athlete:
+            return jsonify({'error': 'Athlete not found'}), 404
+        
+        logger.info(f"Fetching senior athlete analytics for athlete {athlete_id} over {days} days")
+        
+        # Get recovery metrics
+        recovery_data = analyze_senior_athlete_recovery(db.session, athlete_id, days)
+        
+        # Get cardiovascular health metrics
+        cardiovascular_data = analyze_senior_athlete_cardiovascular(db.session, athlete_id, days)
+        
+        # Get injury prevention metrics
+        injury_prevention_data = analyze_senior_athlete_injury_prevention(db.session, athlete_id, days)
+        
+        return jsonify({
+            'athlete_id': athlete_id,
+            'analysis_period_days': days,
+            'recovery_metrics': recovery_data,
+            'cardiovascular_health': cardiovascular_data,
+            'injury_prevention': injury_prevention_data,
+            'generated_at': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching senior analytics for athlete {athlete_id}: {str(e)}")
+        return jsonify({'error': 'Failed to fetch senior analytics', 'details': str(e)}), 500
 
 # AI Race Recommendations endpoint
 @api_bp.route('/athletes/<int:athlete_id>/ai-race-recommendations', methods=['POST'])

@@ -541,6 +541,157 @@
             </div>
         </div>
         
+        <!-- Senior Athlete Analytics Sections (35+) -->
+        <!-- Recovery Analytics Section -->
+        <div class="senior-analytics-section" style="margin-bottom: 30px;">
+            <div class="analytics-header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background: rgba(16, 185, 129, 0.1); border-radius: 12px 12px 0 0; border: 1px solid rgba(16, 185, 129, 0.2); cursor: pointer;" onclick="toggleSection('recoverySection')">
+                <div>
+                    <h3 style="margin: 0; color: #10B981; font-size: 1.3rem; display: flex; align-items: center;">
+                        <i class="fas fa-bed" style="margin-right: 10px;"></i>
+                        Recovery Analytics
+                    </h3>
+                    <p style="margin: 5px 0 0 0; color: rgba(255,255,255,0.7); font-size: 0.9rem;">
+                        Rest patterns, stress balance, and recovery recommendations for senior athletes
+                    </p>
+                </div>
+                <i class="fas fa-chevron-down" id="recoveryChevron" style="color: #10B981; transition: transform 0.3s ease;"></i>
+            </div>
+            <div id="recoverySection" class="analytics-content" style="display: none; padding: 25px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-top: none; border-radius: 0 0 12px 12px;">
+                <div class="recovery-metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                    <div class="recovery-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="metric-icon" style="color: #10B981; font-size: 1.4rem; margin-bottom: 10px;">
+                            <i class="fas fa-heartbeat"></i>
+                        </div>
+                        <div class="metric-value" id="recoveryScore" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
+                        <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">Recovery Score</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="Composite score based on rest patterns, HR trends, and training stress (0-100, higher = better recovery)">Based on rest patterns & HR trends</div>
+                    </div>
+                    <div class="recovery-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="metric-icon" style="color: #3B82F6; font-size: 1.4rem; margin-bottom: 10px;">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="metric-value" id="restDayRatio" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
+                        <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">Rest Day Ratio</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="Percentage of rest days in training schedule. Senior athletes need 25-30% rest days">Percentage of complete rest days</div>
+                    </div>
+                    <div class="recovery-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="metric-icon" style="color: #F59E0B; font-size: 1.4rem; margin-bottom: 10px;">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="metric-value" id="avgRestBetweenHard" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
+                        <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">Days Between Hard</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="Average rest days between hard training sessions. 2+ days recommended for 35+ athletes">Average recovery between hard efforts</div>
+                    </div>
+                </div>
+                <div class="recovery-recommendations" style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 15px;">
+                    <h4 style="margin: 0 0 10px 0; color: white; font-size: 1rem;">Recovery Recommendations:</h4>
+                    <div id="recoveryRecommendations" style="color: rgba(255,255,255,0.8); font-size: 0.9rem; line-height: 1.5;">
+                        <div style="color: rgba(255,255,255,0.6);">Loading recovery analysis...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cardiovascular Health Section -->
+        <div class="senior-analytics-section" style="margin-bottom: 30px;">
+            <div class="analytics-header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background: rgba(239, 68, 68, 0.1); border-radius: 12px 12px 0 0; border: 1px solid rgba(239, 68, 68, 0.2); cursor: pointer;" onclick="toggleSection('cardiovascularSection')">
+                <div>
+                    <h3 style="margin: 0; color: #EF4444; font-size: 1.3rem; display: flex; align-items: center;">
+                        <i class="fas fa-heart" style="margin-right: 10px;"></i>
+                        Cardiovascular Health
+                    </h3>
+                    <p style="margin: 5px 0 0 0; color: rgba(255,255,255,0.7); font-size: 0.9rem;">
+                        Heart rate trends, efficiency metrics, and cardiovascular age assessment
+                    </p>
+                </div>
+                <i class="fas fa-chevron-down" id="cardiovascularChevron" style="color: #EF4444; transition: transform 0.3s ease;"></i>
+            </div>
+            <div id="cardiovascularSection" class="analytics-content" style="display: none; padding: 25px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-top: none; border-radius: 0 0 12px 12px;">
+                <div class="cardiovascular-metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                    <div class="cv-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="metric-icon" style="color: #EF4444; font-size: 1.4rem; margin-bottom: 10px;">
+                            <i class="fas fa-heartbeat"></i>
+                        </div>
+                        <div class="metric-value" id="currentRhr" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
+                        <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">Estimated RHR</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="Estimated resting heart rate from activity data. Lower values indicate better cardiovascular fitness">Estimated from exercise data</div>
+                    </div>
+                    <div class="cv-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="metric-icon" style="color: #8B5CF6; font-size: 1.4rem; margin-bottom: 10px;">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <div class="metric-value" id="hrEfficiency" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
+                        <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">HR Efficiency</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="How efficiently you run at different heart rates. Higher scores indicate better aerobic fitness">Pace efficiency per heart rate</div>
+                    </div>
+                    <div class="cv-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="metric-icon" style="color: #06B6D4; font-size: 1.4rem; margin-bottom: 10px;">
+                            <i class="fas fa-user-clock"></i>
+                        </div>
+                        <div class="metric-value" id="cardiovascularAge" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
+                        <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">CV Age</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="Cardiovascular age based on RHR, HR efficiency, and fitness trends. May be different from chronological age">Cardiovascular fitness age</div>
+                    </div>
+                </div>
+                <div class="cv-health-status" style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 15px;">
+                    <h4 style="margin: 0 0 10px 0; color: white; font-size: 1rem;">Cardiovascular Health Status:</h4>
+                    <div id="cvHealthStatus" style="color: rgba(255,255,255,0.8); font-size: 0.9rem; line-height: 1.5;">
+                        <div style="color: rgba(255,255,255,0.6);">Loading cardiovascular analysis...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Injury Prevention Section -->
+        <div class="senior-analytics-section" style="margin-bottom: 30px;">
+            <div class="analytics-header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background: rgba(245, 158, 11, 0.1); border-radius: 12px 12px 0 0; border: 1px solid rgba(245, 158, 11, 0.2); cursor: pointer;" onclick="toggleSection('injuryPreventionSection')">
+                <div>
+                    <h3 style="margin: 0; color: #F59E0B; font-size: 1.3rem; display: flex; align-items: center;">
+                        <i class="fas fa-shield-alt" style="margin-right: 10px;"></i>
+                        Injury Prevention
+                    </h3>
+                    <p style="margin: 5px 0 0 0; color: rgba(255,255,255,0.7); font-size: 0.9rem;">
+                        Load progression analysis, biomechanical stress assessment, and age-specific risk factors
+                    </p>
+                </div>
+                <i class="fas fa-chevron-down" id="injuryPreventionChevron" style="color: #F59E0B; transition: transform 0.3s ease;"></i>
+            </div>
+            <div id="injuryPreventionSection" class="analytics-content" style="display: none; padding: 25px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-top: none; border-radius: 0 0 12px 12px;">
+                <div class="injury-metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                    <div class="injury-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="metric-icon" style="color: #F59E0B; font-size: 1.4rem; margin-bottom: 10px;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="metric-value" id="injuryRiskScore" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
+                        <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">Injury Risk</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="Overall injury risk score (0-100). Considers training load progression, biomechanical stress, and age factors">ML-based risk assessment</div>
+                    </div>
+                    <div class="injury-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="metric-icon" style="color: #10B981; font-size: 1.4rem; margin-bottom: 10px;">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="metric-value" id="weeklyLoadIncrease" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
+                        <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">Load Increase</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="Average weekly training load increase. >10% increases injury risk significantly">Weekly training progression</div>
+                    </div>
+                    <div class="injury-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="metric-icon" style="color: #EF4444; font-size: 1.4rem; margin-bottom: 10px;">
+                            <i class="fas fa-running"></i>
+                        </div>
+                        <div class="metric-value" id="biomechanicalStress" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
+                        <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">Biomech Stress</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="Biomechanical stress from volume, intensity, and consecutive training days. Lower is better">Impact loading assessment</div>
+                    </div>
+                </div>
+                <div class="injury-prevention-plan" style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 15px;">
+                    <h4 style="margin: 0 0 10px 0; color: white; font-size: 1rem;">Prevention Recommendations:</h4>
+                    <div id="injuryPreventionPlan" style="color: rgba(255,255,255,0.8); font-size: 0.9rem; line-height: 1.5;">
+                        <div style="color: rgba(255,255,255,0.6);">Loading injury prevention analysis...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Training Heatmap Section -->
         <div class="heatmap-section">
             <div class="chart-title">
