@@ -24,6 +24,7 @@ class ReplitAthlete(db.Model):
     ftp = Column(Float)  # Functional Threshold Power
     lthr = Column(Integer)  # Lactate Threshold Heart Rate
     max_hr = Column(Integer)  # Maximum Heart Rate
+    age = Column(Integer)  # Athlete age for senior analytics
     
     # JSON fields stored as TEXT for SQLite compatibility
     training_zones = Column(Text)  # JSON string
