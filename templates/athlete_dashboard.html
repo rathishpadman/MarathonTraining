@@ -990,8 +990,115 @@
                 }
             ];
             
+            // Create comprehensive tooltips for each metric
+            const detailedTooltips = {
+                'Current Fitness': `
+                    <strong>Current Fitness Score</strong><br>
+                    Calculated from recent running pace performance and training consistency.<br><br>
+                    <strong>Calculation:</strong> 100 - (average_pace × 8)<br>
+                    Adjusted for training volume and frequency<br><br>
+                    <strong>Score ranges:</strong><br>
+                    • 80-100: Excellent fitness<br>
+                    • 60-79: Good fitness<br>
+                    • 40-59: Fair fitness<br>
+                    • Below 40: Building fitness<br><br>
+                    <strong>Improve by:</strong> Consistent training, tempo runs, base building
+                `,
+                'Aerobic Capacity': `
+                    <strong>VO₂ Max Estimate</strong><br>
+                    Maximum oxygen uptake capacity estimated from running performance.<br><br>
+                    <strong>Calculation:</strong> 70 - (average_pace × 4)<br>
+                    Based on pace-to-VO₂ correlation studies<br><br>
+                    <strong>Ranges by age (ml/kg/min):</strong><br>
+                    • 20-29: Excellent >51, Good 43-51<br>
+                    • 30-39: Excellent >48, Good 39-48<br>
+                    • 40-49: Excellent >45, Good 36-45<br>
+                    • 50+: Excellent >42, Good 33-42<br><br>
+                    <strong>Improve by:</strong> Interval training, threshold runs, long aerobic base
+                `,
+                'Training Load': `
+                    <strong>Weekly Training Stress Score</strong><br>
+                    Estimated total training stress based on volume and intensity.<br><br>
+                    <strong>Calculation:</strong> Weekly distance (km) × 2.8<br>
+                    Multiplier accounts for average running intensity<br><br>
+                    <strong>Weekly TSS targets:</strong><br>
+                    • Beginner: 150-300 TSS<br>
+                    • Recreational: 300-500 TSS<br>
+                    • Competitive: 500-800 TSS<br>
+                    • Elite: 800+ TSS<br><br>
+                    <strong>Manage by:</strong> Gradual 5-10% weekly increases, periodized training
+                `,
+                'Consistency Score': `
+                    <strong>Training Consistency Rating</strong><br>
+                    Measures regularity of training sessions over time.<br><br>
+                    <strong>Calculation:</strong> (Sessions per week × 25)<br>
+                    Based on frequency of recorded activities<br><br>
+                    <strong>Score interpretation:</strong><br>
+                    • 90-100: Highly consistent (4+ sessions/week)<br>
+                    • 70-89: Good consistency (3-4 sessions/week)<br>
+                    • 50-69: Moderate consistency (2-3 sessions/week)<br>
+                    • Below 50: Inconsistent training<br><br>
+                    <strong>Benefits:</strong> Consistent training > sporadic high-intensity sessions
+                `,
+                'Injury Risk': `
+                    <strong>ML-Based Injury Risk Assessment</strong><br>
+                    Machine learning model analyzing multiple injury risk factors.<br><br>
+                    <strong>Factors analyzed:</strong><br>
+                    • Training load progression<br>
+                    • Recovery patterns<br>
+                    • Biomechanical stress indicators<br>
+                    • Historical injury patterns<br><br>
+                    <strong>Risk levels:</strong><br>
+                    • 0-25%: Low risk (green)<br>
+                    • 26-50%: Moderate risk (yellow)<br>
+                    • 51-75%: High risk (orange)<br>
+                    • 76-100%: Very high risk (red)<br><br>
+                    <strong>Reduce risk:</strong> Gradual progression, adequate recovery, cross-training
+                `,
+                'SpO2 Level': `
+                    <strong>Blood Oxygen Saturation</strong><br>
+                    Percentage of oxygen-saturated hemoglobin in blood.<br><br>
+                    <strong>Normal ranges:</strong><br>
+                    • 95-100%: Normal<br>
+                    • 90-94%: Low (may indicate issues)<br>
+                    • Below 90%: Very low (seek medical attention)<br><br>
+                    <strong>For athletes:</strong><br>
+                    • 98-100%: Optimal oxygen transport<br>
+                    • Altitude affects readings<br>
+                    • Monitor trends over time<br><br>
+                    <strong>Note:</strong> This is a simulated value - use pulse oximeter for accurate readings
+                `,
+                'Avg Heart Rate': `
+                    <strong>Average Exercise Heart Rate</strong><br>
+                    Mean heart rate across all recorded training sessions.<br><br>
+                    <strong>Calculation:</strong> Sum of all session avg HR ÷ number of sessions<br><br>
+                    <strong>Training zones (% of max HR):</strong><br>
+                    • Zone 1: 50-60% (Recovery)<br>
+                    • Zone 2: 60-70% (Aerobic base)<br>
+                    • Zone 3: 70-80% (Tempo)<br>
+                    • Zone 4: 80-90% (Threshold)<br>
+                    • Zone 5: 90-100% (VO₂ max)<br><br>
+                    <strong>Target distribution:</strong> 80% easy (Z1-Z2), 20% hard (Z3-Z5)
+                `,
+                'LT Pace': `
+                    <strong>Lactate Threshold Pace</strong><br>
+                    Estimated pace you can sustain for 1 hour all-out effort.<br><br>
+                    <strong>Calculation:</strong> Current pace × 0.9<br>
+                    Assumes LT pace is ~10% faster than aerobic pace<br><br>
+                    <strong>Training applications:</strong><br>
+                    • Tempo runs: LT pace for 20-40 minutes<br>
+                    • Threshold intervals: 3-8 minute repeats<br>
+                    • Half marathon race pace indicator<br><br>
+                    <strong>Testing:</strong> 30-minute time trial or lab testing for accuracy<br><br>
+                    <strong>Improve by:</strong> Tempo runs, threshold intervals, progressive long runs
+                `
+            };
+
             container.innerHTML = metricsData.map(metric => `
-                <div class="metric-card" ${metric.tooltip ? `title="${metric.tooltip}"` : ''}>
+                <div class="metric-card tooltip">
+                    <div class="tooltip-text">
+                        ${detailedTooltips[metric.title] || metric.tooltip || 'No detailed information available'}
+                    </div>
                     <div class="metric-title">${metric.title}</div>
                     <div class="metric-value">${metric.value}</div>
                     <div class="metric-unit">${metric.unit}</div>
