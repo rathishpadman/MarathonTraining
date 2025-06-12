@@ -2182,6 +2182,10 @@ def get_fitness_analytics(athlete_id):
             Activity.sport_type.in_(['Run', 'VirtualRun'])
         ).order_by(Activity.start_date.desc()).all()
         
+        # Calculate heart rate metrics from recent activities
+        hr_activities = [a for a in recent_activities if a.average_heartrate and a.average_heartrate > 0]
+        avg_heart_rate = sum(a.average_heartrate for a in hr_activities) / len(hr_activities) if hr_activities else 0
+        
         # Create activity trend data
         activity_trends = []
         for activity in recent_activities[:10]:  # Last 10 activities
@@ -2194,9 +2198,12 @@ def get_fitness_analytics(athlete_id):
                     'name': activity.name
                 })
         
-        # Combine all analytics
+        # Combine all analytics and add heart rate data
+        fitness_metrics = fitness_data.get('fitness_metrics', {})
+        fitness_metrics['avg_heart_rate'] = round(avg_heart_rate, 1) if avg_heart_rate > 0 else 0
+        
         analytics_data = {
-            'fitness_metrics': fitness_data.get('fitness_metrics', {}),
+            'fitness_metrics': fitness_metrics,
             'race_predictions': fitness_data.get('race_predictions', race_predictions),
             'injury_risk': injury_risk,
             'activity_trends': activity_trends,
