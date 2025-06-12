@@ -27,6 +27,9 @@ api_bp = Blueprint('api', __name__, url_prefix='/api')
 # Main routes blueprint
 main_bp = Blueprint('simple_routes', __name__)
 
+# Configure logger
+logger = logging.getLogger(__name__)
+
 @main_bp.route('/')
 def home():
     """Home page redirect to community dashboard"""
@@ -51,6 +54,7 @@ def community_dashboard():
 
 @main_bp.route('/dashboard')
 @main_bp.route('/dashboard/<int:athlete_id>')
+@main_bp.route('/athlete/<int:athlete_id>')
 def athlete_dashboard(athlete_id=1):
     """Individual athlete analytics dashboard"""
     try:

@@ -1483,6 +1483,330 @@
             console.log('Training load chart created successfully');
         }
 
+        // Senior Athlete Analytics Functions
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            const chevron = document.getElementById(sectionId.replace('Section', 'Chevron'));
+            
+            if (section.style.display === 'none' || section.style.display === '') {
+                section.style.display = 'block';
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
+                
+                // Load data when section is opened
+                if (sectionId === 'recoverySection' || sectionId === 'cardiovascularSection' || sectionId === 'injuryPreventionSection') {
+                    loadSeniorAthleteAnalytics();
+                }
+            } else {
+                section.style.display = 'none';
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Load senior athlete analytics data
+        async function loadSeniorAthleteAnalytics() {
+            try {
+                console.log('Loading senior athlete analytics for athlete:', athleteId);
+                const response = await fetch(`/api/athletes/${athleteId}/senior-analytics?days=${currentDays}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Senior analytics data received:', data);
+                
+                if (data.error) {
+                    console.error('Error loading senior analytics:', data.error);
+                    return;
+                }
+                
+                // Update recovery metrics
+                if (data.recovery_metrics) {
+                    updateRecoveryMetrics(data.recovery_metrics);
+                }
+                
+                // Update cardiovascular health metrics
+                if (data.cardiovascular_health) {
+                    updateCardiovascularMetrics(data.cardiovascular_health);
+                }
+                
+                // Update injury prevention metrics
+                if (data.injury_prevention) {
+                    updateInjuryPreventionMetrics(data.injury_prevention);
+                }
+                
+            } catch (error) {
+                console.error('Error loading senior athlete analytics:', error);
+                displayAnalyticsError('Unable to load senior athlete analytics. Please try again.');
+            }
+        }
+
+        function updateRecoveryMetrics(recoveryData) {
+            if (!recoveryData) {
+                displayRecoveryError();
+                return;
+            }
+            
+            // Update recovery score
+            const recoveryScoreEl = document.getElementById('recoveryScore');
+            if (recoveryScoreEl) {
+                recoveryScoreEl.textContent = recoveryData.recovery_score || '--';
+                recoveryScoreEl.style.color = getRecoveryScoreColor(recoveryData.recovery_score);
+            }
+            
+            // Update rest day ratio
+            const restDayRatioEl = document.getElementById('restDayRatio');
+            if (restDayRatioEl) {
+                const ratio = recoveryData.rest_day_ratio || 0;
+                restDayRatioEl.textContent = `${Math.round(ratio * 100)}%`;
+                restDayRatioEl.style.color = getRestRatioColor(ratio);
+            }
+            
+            // Update average rest between hard efforts
+            const avgRestEl = document.getElementById('avgRestBetweenHard');
+            if (avgRestEl) {
+                const avgRest = recoveryData.avg_rest_between_hard || 0;
+                avgRestEl.textContent = `${avgRest.toFixed(1)}d`;
+                avgRestEl.style.color = getRestDaysColor(avgRest);
+            }
+            
+            // Update recommendations
+            const recommendationsEl = document.getElementById('recoveryRecommendations');
+            if (recommendationsEl && recoveryData.recommendations) {
+                recommendationsEl.innerHTML = recoveryData.recommendations.map(rec => 
+                    `<div style="margin-bottom: 8px; padding: 5px 0;">• ${rec}</div>`
+                ).join('');
+            }
+        }
+
+        function updateCardiovascularMetrics(cvData) {
+            if (!cvData) {
+                displayCardiovascularError();
+                return;
+            }
+            
+            // Update estimated RHR
+            const rhrEl = document.getElementById('currentRhr');
+            if (rhrEl) {
+                const rhr = cvData.current_rhr || 0;
+                rhrEl.textContent = rhr > 0 ? `${Math.round(rhr)}` : '--';
+                rhrEl.style.color = getRhrColor(rhr);
+            }
+            
+            // Update HR efficiency
+            const hrEfficiencyEl = document.getElementById('hrEfficiency');
+            if (hrEfficiencyEl) {
+                const efficiency = cvData.hr_efficiency_score || 0;
+                hrEfficiencyEl.textContent = efficiency > 0 ? `${Math.round(efficiency)}` : '--';
+                hrEfficiencyEl.style.color = getEfficiencyColor(efficiency);
+            }
+            
+            // Update cardiovascular age
+            const cvAgeEl = document.getElementById('cardiovascularAge');
+            if (cvAgeEl) {
+                const cvAge = cvData.cardiovascular_age || 0;
+                cvAgeEl.textContent = cvAge > 0 ? `${cvAge}y` : '--';
+                cvAgeEl.style.color = getCvAgeColor(cvAge);
+            }
+            
+            // Update health status
+            const healthStatusEl = document.getElementById('cvHealthStatus');
+            if (healthStatusEl && cvData.health_status) {
+                const statusText = getHealthStatusText(cvData.health_status);
+                const statusColor = getHealthStatusColor(cvData.health_status);
+                healthStatusEl.innerHTML = `
+                    <div style="color: ${statusColor}; font-weight: 600; margin-bottom: 8px;">
+                        ${statusText}
+                    </div>
+                    <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7);">
+                        ${getHealthStatusDescription(cvData.health_status)}
+                    </div>
+                `;
+            }
+        }
+
+        function updateInjuryPreventionMetrics(injuryData) {
+            if (!injuryData) {
+                displayInjuryPreventionError();
+                return;
+            }
+            
+            // Update injury risk score
+            const riskScoreEl = document.getElementById('injuryRiskScore');
+            if (riskScoreEl) {
+                const riskScore = injuryData.injury_risk_score || 0;
+                riskScoreEl.textContent = riskScore > 0 ? `${Math.round(riskScore)}` : '--';
+                riskScoreEl.style.color = getRiskScoreColor(riskScore);
+            }
+            
+            // Update weekly load increase
+            const loadIncreaseEl = document.getElementById('weeklyLoadIncrease');
+            if (loadIncreaseEl) {
+                const increase = injuryData.weekly_load_increase || 0;
+                const sign = increase >= 0 ? '+' : '';
+                loadIncreaseEl.textContent = `${sign}${increase.toFixed(1)}%`;
+                loadIncreaseEl.style.color = getLoadIncreaseColor(increase);
+            }
+            
+            // Update biomechanical stress
+            const biomechStressEl = document.getElementById('biomechanicalStress');
+            if (biomechStressEl) {
+                const stress = injuryData.biomechanical_stress || 0;
+                biomechStressEl.textContent = stress > 0 ? `${Math.round(stress)}` : '--';
+                biomechStressEl.style.color = getBiomechStressColor(stress);
+            }
+            
+            // Update prevention recommendations
+            const preventionPlanEl = document.getElementById('injuryPreventionPlan');
+            if (preventionPlanEl && injuryData.prevention_recommendations) {
+                preventionPlanEl.innerHTML = injuryData.prevention_recommendations.map(rec => 
+                    `<div style="margin-bottom: 8px; padding: 5px 0;">• ${rec}</div>`
+                ).join('');
+            }
+        }
+
+        // Color coding functions for better visual feedback
+        function getRecoveryScoreColor(score) {
+            if (!score) return '#ffffff';
+            if (score >= 80) return '#10B981'; // Green - excellent
+            if (score >= 60) return '#F59E0B'; // Yellow - good
+            return '#EF4444'; // Red - needs attention
+        }
+
+        function getRestRatioColor(ratio) {
+            if (!ratio) return '#ffffff';
+            if (ratio >= 0.25) return '#10B981'; // Green - good rest ratio
+            if (ratio >= 0.15) return '#F59E0B'; // Yellow - moderate
+            return '#EF4444'; // Red - insufficient rest
+        }
+
+        function getRestDaysColor(days) {
+            if (!days) return '#ffffff';
+            if (days >= 2) return '#10B981'; // Green - good recovery
+            if (days >= 1) return '#F59E0B'; // Yellow - moderate
+            return '#EF4444'; // Red - insufficient recovery
+        }
+
+        function getRhrColor(rhr) {
+            if (!rhr) return '#ffffff';
+            if (rhr <= 60) return '#10B981'; // Green - excellent
+            if (rhr <= 75) return '#F59E0B'; // Yellow - good
+            return '#EF4444'; // Red - high
+        }
+
+        function getEfficiencyColor(efficiency) {
+            if (!efficiency) return '#ffffff';
+            if (efficiency >= 70) return '#10B981'; // Green - excellent
+            if (efficiency >= 50) return '#F59E0B'; // Yellow - good
+            return '#EF4444'; // Red - needs improvement
+        }
+
+        function getCvAgeColor(cvAge) {
+            // Assume chronological age of 40 for comparison
+            const chronAge = 40;
+            if (!cvAge) return '#ffffff';
+            if (cvAge <= chronAge - 5) return '#10B981'; // Green - younger CV age
+            if (cvAge <= chronAge + 2) return '#F59E0B'; // Yellow - similar age
+            return '#EF4444'; // Red - older CV age
+        }
+
+        function getRiskScoreColor(score) {
+            if (!score) return '#ffffff';
+            if (score <= 30) return '#10B981'; // Green - low risk
+            if (score <= 60) return '#F59E0B'; // Yellow - moderate risk
+            return '#EF4444'; // Red - high risk
+        }
+
+        function getLoadIncreaseColor(increase) {
+            if (increase <= 5) return '#10B981'; // Green - safe increase
+            if (increase <= 15) return '#F59E0B'; // Yellow - moderate increase
+            return '#EF4444'; // Red - high increase (risky)
+        }
+
+        function getBiomechStressColor(stress) {
+            if (!stress) return '#ffffff';
+            if (stress <= 30) return '#10B981'; // Green - low stress
+            if (stress <= 60) return '#F59E0B'; // Yellow - moderate stress
+            return '#EF4444'; // Red - high stress
+        }
+
+        function getHealthStatusText(status) {
+            const statusMap = {
+                'excellent': 'Excellent Cardiovascular Health',
+                'good': 'Good Cardiovascular Health',
+                'fair': 'Fair Cardiovascular Health',
+                'needs_attention': 'Cardiovascular Health Needs Attention'
+            };
+            return statusMap[status] || 'Health Status Unknown';
+        }
+
+        function getHealthStatusColor(status) {
+            const colorMap = {
+                'excellent': '#10B981',
+                'good': '#3B82F6',
+                'fair': '#F59E0B',
+                'needs_attention': '#EF4444'
+            };
+            return colorMap[status] || '#ffffff';
+        }
+
+        function getHealthStatusDescription(status) {
+            const descMap = {
+                'excellent': 'Your cardiovascular metrics indicate outstanding fitness for your age group.',
+                'good': 'Your cardiovascular health is in good condition with room for improvement.',
+                'fair': 'Consider focusing on aerobic training and monitoring heart rate trends.',
+                'needs_attention': 'Recommend consulting with a healthcare provider about cardiovascular health.'
+            };
+            return descMap[status] || 'Unable to assess cardiovascular health status.';
+        }
+
+        // Error display functions
+        function displayRecoveryError() {
+            const elements = ['recoveryScore', 'restDayRatio', 'avgRestBetweenHard'];
+            elements.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = 'N/A';
+            });
+            
+            const recommendationsEl = document.getElementById('recoveryRecommendations');
+            if (recommendationsEl) {
+                recommendationsEl.innerHTML = '<div style="color: rgba(255,255,255,0.6);">Insufficient data for recovery analysis</div>';
+            }
+        }
+
+        function displayCardiovascularError() {
+            const elements = ['currentRhr', 'hrEfficiency', 'cardiovascularAge'];
+            elements.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = 'N/A';
+            });
+            
+            const statusEl = document.getElementById('cvHealthStatus');
+            if (statusEl) {
+                statusEl.innerHTML = '<div style="color: rgba(255,255,255,0.6);">Insufficient data for cardiovascular analysis</div>';
+            }
+        }
+
+        function displayInjuryPreventionError() {
+            const elements = ['injuryRiskScore', 'weeklyLoadIncrease', 'biomechanicalStress'];
+            elements.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = 'N/A';
+            });
+            
+            const planEl = document.getElementById('injuryPreventionPlan');
+            if (planEl) {
+                planEl.innerHTML = '<div style="color: rgba(255,255,255,0.6);">Insufficient data for injury risk analysis</div>';
+            }
+        }
+
+        function displayAnalyticsError(message) {
+            console.error('Senior analytics error:', message);
+            displayRecoveryError();
+            displayCardiovascularError();
+            displayInjuryPreventionError();
+        }
+
     </script>
 </body>
 </html>
