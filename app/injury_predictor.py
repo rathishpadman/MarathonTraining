@@ -687,52 +687,52 @@ class InjuryRiskPredictor:
         risk_factors = []
         recommendations = []
         
-        # Training load risks (fixed thresholds for consistency)
+        # Training load risks (reduced impact for more realistic scoring)
         if features.get('violates_10_percent_rule', 0) > 0:
-            risk_score += 0.30
+            risk_score += 0.15
             risk_factors.append('Rapid training load increase')
             recommendations.append('Limit weekly mileage increases to 10%')
         
         training_monotony = round(features.get('training_monotony', 0), 2)
         if training_monotony > 2.0:
-            risk_score += 0.20
+            risk_score += 0.08
             risk_factors.append('High training monotony')
             recommendations.append('Add variety to training intensities')
         
         max_consecutive = features.get('max_consecutive_days', 0)
         if max_consecutive > 6:
-            risk_score += 0.25
+            risk_score += 0.12
             risk_factors.append('Insufficient recovery days')
             recommendations.append('Include at least one rest day per week')
         
-        # Biomechanical risks (rounded for consistency)
+        # Biomechanical risks (reduced for realism)
         pace_variability = round(features.get('pace_variability', 0), 3)
         if pace_variability > 0.300:
-            risk_score += 0.15
+            risk_score += 0.05
             risk_factors.append('High pace variability')
             recommendations.append('Focus on consistent pacing during runs')
         
         cadence_variability = round(features.get('cadence_variability', 0), 3)
         if cadence_variability > 0.200:
-            risk_score += 0.10
+            risk_score += 0.03
             risk_factors.append('Inconsistent running cadence')
             recommendations.append('Work on maintaining steady cadence around 180 steps/min')
         
-        # Physiological risks
+        # Physiological risks (reduced)
         if features.get('efficiency_decline', 0) > 0:
-            risk_score += 0.20
+            risk_score += 0.08
             risk_factors.append('Declining running efficiency')
             recommendations.append('Consider reducing training intensity for recovery')
         
         polarization_index = round(features.get('polarization_index', 0), 2)
         if polarization_index < 0.80:
-            risk_score += 0.15
+            risk_score += 0.06
             risk_factors.append('Inadequate easy running ratio')
             recommendations.append('Follow 80/20 rule: 80% easy, 20% hard training')
         
-        # Recovery risks
+        # Recovery risks (reduced)
         if features.get('recovery_run_ratio', 0) < 0.3:
-            risk_score += 0.1
+            risk_score += 0.04
             risk_factors.append('Insufficient recovery runs')
             recommendations.append('Include more easy recovery runs in training')
         
