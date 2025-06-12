@@ -1049,6 +1049,47 @@
             }
         }
 
+        // Animation utilities for smooth counter transitions
+        function animateValue(element, start, end, duration = 800, suffix = '') {
+            if (start === end) {
+                element.textContent = end + suffix;
+                return;
+            }
+            
+            const range = end - start;
+            const increment = range / (duration / 16);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                element.textContent = Math.round(current) + suffix;
+            }, 16);
+        }
+        
+        function animateDecimalValue(element, start, end, duration = 800, decimals = 1, suffix = '') {
+            if (start === end) {
+                element.textContent = end.toFixed(decimals) + suffix;
+                return;
+            }
+            
+            const range = end - start;
+            const increment = range / (duration / 16);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                element.textContent = current.toFixed(decimals) + suffix;
+            }, 16);
+        }
+
         function renderFitnessMetrics(metrics, injuryRisk) {
             const container = document.getElementById('metricsGrid');
             
@@ -1237,16 +1278,34 @@
                 `
             };
 
-            container.innerHTML = metricsData.map(metric => `
+            container.innerHTML = metricsData.map((metric, index) => `
                 <div class="metric-card tooltip">
                     <div class="tooltip-text">
                         ${detailedTooltips[metric.title] || metric.tooltip || 'No detailed information available'}
                     </div>
                     <div class="metric-title">${metric.title}</div>
-                    <div class="metric-value">${metric.value}</div>
+                    <div class="metric-value" id="metric-value-${index}">0</div>
                     <div class="metric-unit">${metric.unit}</div>
                 </div>
             `).join('');
+            
+            // Animate the values after rendering with staggered timing for visual appeal
+            setTimeout(() => {
+                metricsData.forEach((metric, index) => {
+                    const valueElement = document.getElementById(`metric-value-${index}`);
+                    if (valueElement && typeof metric.value === 'number') {
+                        // Stagger the animations by 150ms each for a cascade effect
+                        setTimeout(() => {
+                            animateValue(valueElement, 0, metric.value, 800, '');
+                        }, index * 150);
+                    } else if (valueElement) {
+                        // For non-numeric values, still show them with a delay
+                        setTimeout(() => {
+                            valueElement.textContent = metric.value;
+                        }, index * 150);
+                    }
+                });
+            }, 200);
         }
 
         function renderActivityTrends(trends) {
@@ -1699,17 +1758,26 @@
                     return;
                 }
                 
-                // Update current metrics with proper formatting
+                // Update current metrics with smooth animations
                 if (data.current) {
                     const ctlElement = document.getElementById('ctlValue');
                     const atlElement = document.getElementById('atlValue');
                     const tsbElement = document.getElementById('tsbValue');
                     const weeklyTssElement = document.getElementById('weeklyTssValue');
                     
-                    if (ctlElement) ctlElement.textContent = Math.round(data.current.ctl || 0);
-                    if (atlElement) atlElement.textContent = Math.round(data.current.atl || 0);
-                    if (tsbElement) tsbElement.textContent = Math.round(data.current.tsb || 0);
-                    if (weeklyTssElement) weeklyTssElement.textContent = Math.round(data.current.weekly_tss || 0);
+                    // Animate the Training Load metrics with staggered timing
+                    if (ctlElement) {
+                        setTimeout(() => animateValue(ctlElement, 0, Math.round(data.current.ctl || 0), 800, ''), 0);
+                    }
+                    if (atlElement) {
+                        setTimeout(() => animateValue(atlElement, 0, Math.round(data.current.atl || 0), 800, ''), 200);
+                    }
+                    if (tsbElement) {
+                        setTimeout(() => animateValue(tsbElement, 0, Math.round(data.current.tsb || 0), 800, ''), 400);
+                    }
+                    if (weeklyTssElement) {
+                        setTimeout(() => animateValue(weeklyTssElement, 0, Math.round(data.current.weekly_tss || 0), 800, ''), 600);
+                    }
                     
                     console.log('Updated metric values:', {
                         ctl: Math.round(data.current.ctl || 0),
