@@ -13,6 +13,7 @@ from app.security import ReplitSecurity
 from app.strava_client import ReplitStravaClient
 from app.config import Config
 from app.ai_race_advisor import get_race_recommendations
+from app.training_load_calculator import get_training_load_metrics
 
 # Create blueprint for API routes
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -1812,6 +1813,22 @@ def get_heart_rate_zones(athlete_id):
     except Exception as e:
         logger.error(f"Error fetching heart rate zones: {str(e)}")
         return jsonify({'zones': {}}), 500
+
+@api_bp.route('/athletes/<int:athlete_id>/training-load-metrics')
+def get_training_load_metrics_api(athlete_id):
+    """Get advanced training load metrics (CTL, ATL, TSB, TSS)"""
+    try:
+        days = int(request.args.get('days', 90))
+        logger.info(f"Fetching training load metrics for athlete {athlete_id} over {days} days")
+        
+        # Get advanced training load metrics
+        metrics = get_training_load_metrics(athlete_id, days)
+        
+        return jsonify(metrics)
+        
+    except Exception as e:
+        logger.error(f"Error getting training load metrics: {str(e)}")
+        return jsonify({'error': 'Failed to get training load metrics'}), 500
 
 @api_bp.route('/athletes/<int:athlete_id>/training-load')
 def get_training_load(athlete_id):
