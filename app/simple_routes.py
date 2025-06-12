@@ -15,11 +15,7 @@ from app.strava_client import ReplitStravaClient
 from app.config import Config
 from app.ai_race_advisor import get_race_recommendations
 from app.training_load_calculator import get_training_load_metrics
-from app.senior_athlete_analytics import (
-    analyze_senior_athlete_recovery,
-    analyze_senior_athlete_cardiovascular,
-    analyze_senior_athlete_injury_prevention
-)
+from app.senior_athlete_analytics_simple import get_senior_athlete_analytics_simple
 
 # Create blueprint for API routes
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -409,30 +405,16 @@ def get_senior_athlete_analytics(athlete_id):
     try:
         days = request.args.get('days', 30, type=int)
         
-        # Get athlete to check if they exist
-        athlete = db.session.query(ReplitAthlete).filter_by(id=athlete_id).first()
-        if not athlete:
-            return jsonify({'error': 'Athlete not found'}), 404
-        
         logger.info(f"Fetching senior athlete analytics for athlete {athlete_id} over {days} days")
         
-        # Get recovery metrics
-        recovery_data = analyze_senior_athlete_recovery(db.session, athlete_id, days)
-        
-        # Get cardiovascular health metrics
-        cardiovascular_data = analyze_senior_athlete_cardiovascular(db.session, athlete_id, days)
-        
-        # Get injury prevention metrics
-        injury_prevention_data = analyze_senior_athlete_injury_prevention(db.session, athlete_id, days)
-        
-        return jsonify({
-            'athlete_id': athlete_id,
-            'analysis_period_days': days,
-            'recovery_metrics': recovery_data,
-            'cardiovascular_health': cardiovascular_data,
-            'injury_prevention': injury_prevention_data,
-            'generated_at': datetime.now().isoformat()
-        })
+        with db_session_scope() as db_session:
+            # Use simplified analytics that work with existing SQLite database
+            analytics_data = get_senior_athlete_analytics_simple(db_session, athlete_id, days)
+            
+            if 'error' in analytics_data:
+                return jsonify(analytics_data), 500
+            
+            return jsonify(analytics_data)
         
     except Exception as e:
         logger.error(f"Error fetching senior analytics for athlete {athlete_id}: {str(e)}")
