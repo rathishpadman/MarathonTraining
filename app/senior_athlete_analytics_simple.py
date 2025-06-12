@@ -121,6 +121,9 @@ def analyze_senior_athlete_cardiovascular_simple(db_session: Session, athlete_id
         avg_hr_values = [a.average_heartrate for a in activities if a.average_heartrate]
         max_hr_values = [a.max_heartrate for a in activities if a.max_heartrate]
         
+        logger.info(f"Found {len(activities)} activities with HR data for athlete {athlete_id}")
+        logger.info(f"Average HR values: {avg_hr_values}")
+        
         if not avg_hr_values:
             return None
         
@@ -130,6 +133,9 @@ def analyze_senior_athlete_cardiovascular_simple(db_session: Session, athlete_id
         
         if easy_activities:
             estimated_rhr = min(a.average_heartrate for a in easy_activities) * 0.75
+            logger.info(f"Estimated RHR from easy activities: {estimated_rhr}")
+        else:
+            logger.info(f"Estimated RHR from all activities: {estimated_rhr}")
         
         # Calculate HR efficiency (pace per heart rate for running activities)
         hr_efficiency_score = 50  # Base score
@@ -142,9 +148,11 @@ def analyze_senior_athlete_cardiovascular_simple(db_session: Session, athlete_id
                     pace_per_km = (activity.moving_time / 60) / (activity.distance / 1000)  # min/km
                     hr_efficiency = activity.average_heartrate / pace_per_km if pace_per_km > 0 else 0
                     pace_hr_ratios.append(hr_efficiency)
+                    logger.info(f"Activity: {activity.distance/1000:.1f}km in {activity.moving_time/60:.1f}min, pace: {pace_per_km:.2f}min/km, avg HR: {activity.average_heartrate}, efficiency: {hr_efficiency:.2f}")
             
             if pace_hr_ratios:
                 avg_efficiency = sum(pace_hr_ratios) / len(pace_hr_ratios)
+                logger.info(f"Average HR efficiency: {avg_efficiency:.2f}")
                 # Score based on efficiency (lower HR for same pace is better)
                 if avg_efficiency < 20:
                     hr_efficiency_score = 85
@@ -154,6 +162,7 @@ def analyze_senior_athlete_cardiovascular_simple(db_session: Session, athlete_id
                     hr_efficiency_score = 55
                 else:
                     hr_efficiency_score = 40
+                logger.info(f"HR efficiency score: {hr_efficiency_score}")
         
         # Estimate cardiovascular age based on metrics
         chronological_age = 42  # Default assumption for senior athlete
