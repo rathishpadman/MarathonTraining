@@ -407,14 +407,13 @@ def get_senior_athlete_analytics(athlete_id):
         
         logger.info(f"Fetching senior athlete analytics for athlete {athlete_id} over {days} days")
         
-        with db_session_scope() as db_session:
-            # Use simplified analytics that work with existing SQLite database
-            analytics_data = get_senior_athlete_analytics_simple(db_session, athlete_id, days)
-            
-            if 'error' in analytics_data:
-                return jsonify(analytics_data), 500
-            
-            return jsonify(analytics_data)
+        # Use simplified analytics that work with existing SQLite database
+        analytics_data = get_senior_athlete_analytics_simple(db.session, athlete_id, days)
+        
+        if 'error' in analytics_data:
+            return jsonify(analytics_data), 500
+        
+        return jsonify(analytics_data)
         
     except Exception as e:
         logger.error(f"Error fetching senior analytics for athlete {athlete_id}: {str(e)}")
