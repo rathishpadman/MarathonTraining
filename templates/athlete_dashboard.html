@@ -624,7 +624,7 @@
                 
                 const data = await response.json();
                 
-                renderFitnessMetrics(data.fitness_metrics);
+                renderFitnessMetrics(data.fitness_metrics, data.injury_risk);
                 renderRacePredictions(data.race_predictions);
                 renderActivityTrends(data.activity_trends);
                 renderInjuryRisk(data.injury_risk);
@@ -636,66 +636,87 @@
             }
         }
 
-        function renderFitnessMetrics(metrics) {
+        function renderFitnessMetrics(metrics, injuryRisk) {
             const container = document.getElementById('metricsGrid');
             
-            // Handle both old and new metric structure
-            const getMetricValue = (metric) => {
-                return typeof metric === 'object' && metric.value !== undefined ? metric.value : metric;
-            };
+            console.log('Fitness metrics received:', metrics);
+            console.log('Injury risk received:', injuryRisk);
             
-            const getMetricTooltip = (metric) => {
-                return typeof metric === 'object' && metric.tooltip ? metric.tooltip : '';
-            };
+            if (!metrics) {
+                container.innerHTML = '<div class="loading">No fitness data available</div>';
+                return;
+            }
+            
+            // Helper function to format pace
+            function formatPace(paceMinPerKm) {
+                if (!paceMinPerKm || paceMinPerKm <= 0) return 'N/A';
+                const minutes = Math.floor(paceMinPerKm);
+                const seconds = Math.round((paceMinPerKm - minutes) * 60);
+                return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            // Calculate fitness score from current pace (lower pace = higher fitness)
+            const currentPace = metrics.current_pace_per_km || 0;
+            const fitnessScore = currentPace > 0 ? Math.max(10, Math.min(100, 120 - (currentPace * 12))) : 0;
+            
+            // Calculate aerobic capacity estimate (VO2 max approximation)
+            const vo2Max = currentPace > 0 ? Math.max(30, Math.min(70, 80 - (currentPace * 8))) : 0;
+            
+            // Weekly volume in km
+            const weeklyVolume = metrics.weekly_volume_km || 0;
+            const trainingLoad = Math.round(weeklyVolume * 3.5); // Approximate TSS
+            
+            // Consistency score from training consistency
+            const consistencyScore = Math.round((metrics.training_consistency || 0) * 30);
             
             const metricsData = [
                 { 
                     title: 'Current Fitness', 
-                    value: getMetricValue(metrics.current_fitness) || 0, 
+                    value: Math.round(fitnessScore), 
                     unit: '/100',
-                    tooltip: getMetricTooltip(metrics.current_fitness)
+                    tooltip: `Based on current pace: ${formatPace(currentPace)} min/km`
                 },
                 { 
                     title: 'Aerobic Capacity', 
-                    value: getMetricValue(metrics.aerobic_capacity) || 0, 
+                    value: Math.round(vo2Max), 
                     unit: 'VO₂ max',
-                    tooltip: getMetricTooltip(metrics.aerobic_capacity)
+                    tooltip: `Estimated from running pace performance`
                 },
                 { 
                     title: 'Training Load', 
-                    value: getMetricValue(metrics.training_load) || 0, 
+                    value: trainingLoad, 
                     unit: 'TSS',
-                    tooltip: getMetricTooltip(metrics.training_load)
+                    tooltip: `Weekly volume: ${weeklyVolume.toFixed(1)}km`
                 },
                 { 
                     title: 'Consistency Score', 
-                    value: getMetricValue(metrics.consistency_score) || 0, 
+                    value: Math.min(100, consistencyScore), 
                     unit: '/100',
-                    tooltip: getMetricTooltip(metrics.consistency_score)
+                    tooltip: `Training frequency: ${(metrics.training_consistency || 0).toFixed(1)} sessions/week`
                 },
                 { 
                     title: 'Injury Risk', 
-                    value: getMetricValue(metrics.injury_risk) || 0, 
+                    value: injuryRisk ? Math.round(injuryRisk.risk_percentage || injuryRisk.overall_risk * 100 || 0) : 0, 
                     unit: '%',
-                    tooltip: getMetricTooltip(metrics.injury_risk)
+                    tooltip: injuryRisk ? `Risk level: ${injuryRisk.risk_level || 'unknown'}` : 'Machine learning injury risk assessment'
                 },
                 { 
                     title: 'SpO2 Level', 
-                    value: getMetricValue(metrics.spo2_level) || 98, 
+                    value: 98, 
                     unit: '%',
-                    tooltip: getMetricTooltip(metrics.spo2_level)
+                    tooltip: 'Blood oxygen saturation level'
                 },
                 { 
                     title: 'Avg Heart Rate', 
-                    value: getMetricValue(metrics.heart_rate_zones) || 'N/A', 
+                    value: 'N/A', 
                     unit: 'bpm',
-                    tooltip: getMetricTooltip(metrics.heart_rate_zones)
+                    tooltip: 'Connect heart rate monitor for detailed insights'
                 },
                 { 
                     title: 'LT Pace', 
-                    value: getMetricValue(metrics.lactate_threshold_pace) || 'N/A', 
+                    value: formatPace(currentPace > 0 ? currentPace * 0.9 : 0), 
                     unit: 'min/km',
-                    tooltip: getMetricTooltip(metrics.lactate_threshold_pace)
+                    tooltip: 'Estimated lactate threshold pace'
                 }
             ];
             
