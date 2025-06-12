@@ -94,6 +94,82 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        /* Tooltip Styles */
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+
+        .tooltip::before {
+            content: '?';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 16px;
+            height: 16px;
+            background: rgba(16, 185, 129, 0.8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            z-index: 10;
+        }
+
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 280px;
+            background: rgba(0, 0, 0, 0.95);
+            color: #fff;
+            text-align: left;
+            border-radius: 8px;
+            padding: 12px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            right: 0;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            line-height: 1.4;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .tooltip .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            right: 20px;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.95) transparent transparent transparent;
+        }
+
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .tooltip .tooltip-text {
+                width: 240px;
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+            }
+            
+            .tooltip .tooltip-text::after {
+                left: 50%;
+                right: auto;
+                margin-left: -5px;
+            }
         }
         
         .metric-title {
@@ -436,7 +512,17 @@
             
             <!-- Current Metrics Cards -->
             <div class="metrics-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px 0;">
-                <div class="metric-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                <div class="metric-card tooltip" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="tooltip-text">
+                        <strong>Chronic Training Load (CTL)</strong><br>
+                        42-day exponentially weighted average of daily Training Stress Score (TSS).<br><br>
+                        <strong>Calculation:</strong> CTL = (Previous CTL × 0.977) + (Today's TSS × 0.023)<br><br>
+                        <strong>What it means:</strong><br>
+                        • Your current fitness level<br>
+                        • Higher values = better aerobic fitness<br>
+                        • Typical range: 40-120 for recreational athletes<br>
+                        • Build gradually (5-8 points per week max)
+                    </div>
                     <div class="metric-icon" style="color: #10B981; font-size: 1.5rem; margin-bottom: 10px;">
                         <i class="fas fa-dumbbell"></i>
                     </div>
@@ -445,7 +531,17 @@
                     <div class="metric-trend" id="ctlTrend" style="font-size: 0.8rem; color: #10B981;">--</div>
                 </div>
                 
-                <div class="metric-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                <div class="metric-card tooltip" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="tooltip-text">
+                        <strong>Acute Training Load (ATL)</strong><br>
+                        7-day exponentially weighted average of daily Training Stress Score (TSS).<br><br>
+                        <strong>Calculation:</strong> ATL = (Previous ATL × 0.846) + (Today's TSS × 0.154)<br><br>
+                        <strong>What it means:</strong><br>
+                        • Your current fatigue level<br>
+                        • Higher values = more tired/stressed<br>
+                        • Responds quickly to training changes<br>
+                        • Should be managed to prevent burnout
+                    </div>
                     <div class="metric-icon" style="color: #F59E0B; font-size: 1.5rem; margin-bottom: 10px;">
                         <i class="fas fa-bolt"></i>
                     </div>
@@ -454,7 +550,18 @@
                     <div class="metric-trend" id="atlTrend" style="font-size: 0.8rem; color: #F59E0B;">--</div>
                 </div>
                 
-                <div class="metric-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                <div class="metric-card tooltip" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="tooltip-text">
+                        <strong>Training Stress Balance (TSB)</strong><br>
+                        Difference between fitness and fatigue (CTL - ATL).<br><br>
+                        <strong>Calculation:</strong> TSB = CTL - ATL<br><br>
+                        <strong>What it means:</strong><br>
+                        • Your readiness to perform<br>
+                        • Positive = fresh/ready to race<br>
+                        • Negative = fatigued/building fitness<br>
+                        • -20 to +5 = optimal training zone<br>
+                        • +15 to +25 = peak race readiness
+                    </div>
                     <div class="metric-icon" style="color: #3B82F6; font-size: 1.5rem; margin-bottom: 10px;">
                         <i class="fas fa-balance-scale"></i>
                     </div>
@@ -463,7 +570,19 @@
                     <div class="metric-trend" id="tsbTrend" style="font-size: 0.8rem; color: #3B82F6;">--</div>
                 </div>
                 
-                <div class="metric-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                <div class="metric-card tooltip" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="tooltip-text">
+                        <strong>Training Stress Score (TSS)</strong><br>
+                        Proprietary metric combining workout intensity and duration.<br><br>
+                        <strong>Calculation:</strong> TSS = (Duration × Intensity²) / 100<br>
+                        Where intensity = avg HR as % of threshold HR<br><br>
+                        <strong>What it means:</strong><br>
+                        • 100 TSS = 1 hour at threshold intensity<br>
+                        • Easy run: 40-60 TSS/hour<br>
+                        • Tempo run: 70-90 TSS/hour<br>
+                        • Hard intervals: 90-130 TSS/hour<br>
+                        • Weekly target: 300-800 TSS total
+                    </div>
                     <div class="metric-icon" style="color: #8B5CF6; font-size: 1.5rem; margin-bottom: 10px;">
                         <i class="fas fa-fire"></i>
                     </div>
