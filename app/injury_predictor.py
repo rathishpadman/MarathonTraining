@@ -103,6 +103,9 @@ class InjuryRiskPredictor:
     
     def _generate_training_data(self) -> List[Dict]:
         """Generate synthetic training data based on injury risk patterns"""
+        # Set fixed random seed for consistent training data
+        np.random.seed(42)
+        
         training_samples = []
         
         # Generate diverse training scenarios
@@ -680,9 +683,6 @@ class InjuryRiskPredictor:
         Rule-based injury risk prediction when ML models are not available
         Uses deterministic calculations for consistent results
         """
-        # Create a deterministic hash from features for consistent results
-        feature_hash = hash(str(sorted(features.items())))
-        
         risk_score = 0.0
         risk_factors = []
         recommendations = []
