@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Athlete Analytics Dashboard - Marathon Training</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             margin: 0;
@@ -1102,23 +1103,34 @@
                 
                 // Update trends
                 if (data.trends && data.trends.status !== 'no_data') {
-                    document.getElementById('ctlTrend').textContent = getTrendText(data.trends.fitness_trend);
-                    document.getElementById('atlTrend').textContent = getTrendText(data.trends.fatigue_trend);
-                    document.getElementById('tsbTrend').textContent = getTrendText(data.trends.form_trend);
+                    const ctlTrendElement = document.getElementById('ctlTrend');
+                    const atlTrendElement = document.getElementById('atlTrend');
+                    const tsbTrendElement = document.getElementById('tsbTrend');
                     
-                    document.getElementById('trainingPhase').textContent = formatPhase(data.trends.training_phase);
-                    document.getElementById('phaseDescription').textContent = data.trends.phase_description || 'No phase data available';
+                    if (ctlTrendElement) ctlTrendElement.textContent = getTrendText(data.trends.fitness_trend);
+                    if (atlTrendElement) atlTrendElement.textContent = getTrendText(data.trends.fatigue_trend);
+                    if (tsbTrendElement) tsbTrendElement.textContent = getTrendText(data.trends.form_trend);
+                    
+                    const phaseElement = document.getElementById('trainingPhase');
+                    const phaseDescElement = document.getElementById('phaseDescription');
+                    
+                    if (phaseElement) phaseElement.textContent = formatPhase(data.trends.training_phase);
+                    if (phaseDescElement) phaseDescElement.textContent = data.trends.phase_description || 'No phase data available';
                     
                     const recommendationsDiv = document.getElementById('trainingRecommendations');
-                    if (data.trends.recommendations && data.trends.recommendations.length > 0) {
+                    if (recommendationsDiv && data.trends.recommendations && data.trends.recommendations.length > 0) {
                         recommendationsDiv.innerHTML = data.trends.recommendations.map(rec => 
                             `<div style="margin-bottom: 8px;">• ${rec}</div>`
                         ).join('');
                     }
                 }
                 
+                // Render training load chart
                 if (data.timeline && data.timeline.length > 0) {
+                    console.log('Rendering chart with timeline data:', data.timeline.length, 'points');
                     renderTrainingLoadChart(data.timeline);
+                } else {
+                    console.log('No timeline data available for chart');
                 }
                 
             } catch (error) {
@@ -1148,14 +1160,30 @@
         }
 
         function renderTrainingLoadChart(timeline) {
-            const ctx = document.getElementById('trainingLoadChart').getContext('2d');
+            console.log('Rendering chart with timeline data:', timeline);
+            
+            const canvas = document.getElementById('trainingLoadChart');
+            if (!canvas) {
+                console.error('Chart canvas not found');
+                return;
+            }
+            
+            // Destroy existing chart if it exists
+            if (window.trainingChart) {
+                window.trainingChart.destroy();
+            }
+            
+            const ctx = canvas.getContext('2d');
             
             const dates = timeline.map(day => {
                 const date = new Date(day.date);
                 return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             });
             
-            new Chart(ctx, {
+            console.log('Chart dates:', dates);
+            console.log('CTL values:', timeline.map(day => day.ctl));
+            
+            window.trainingChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: dates,
@@ -1202,6 +1230,8 @@
                     }
                 }
             });
+            
+            console.log('Training load chart created successfully');
         }
 
     </script>
