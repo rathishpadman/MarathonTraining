@@ -39,9 +39,9 @@ class SeniorAthleteAnalyzer:
             
             activities = db_session.query(Activity).filter(
                 Activity.athlete_id == athlete_id,
-                Activity.start_date_local >= start_date,
-                Activity.start_date_local <= end_date
-            ).order_by(Activity.start_date_local).all()
+                Activity.start_date >= start_date,
+                Activity.start_date <= end_date
+            ).order_by(Activity.start_date).all()
             
             if len(activities) < 5:  # Need minimum data
                 return None
@@ -87,11 +87,11 @@ class SeniorAthleteAnalyzer:
             
             activities = db_session.query(Activity).filter(
                 Activity.athlete_id == athlete_id,
-                Activity.start_date_local >= start_date,
-                Activity.start_date_local <= end_date,
+                Activity.start_date >= start_date,
+                Activity.start_date <= end_date,
                 Activity.average_heartrate.isnot(None),
                 Activity.average_heartrate > 100  # Valid HR data
-            ).order_by(Activity.start_date_local).all()
+            ).order_by(Activity.start_date).all()
             
             if len(activities) < 5:  # Need minimum data
                 return None
@@ -139,9 +139,9 @@ class SeniorAthleteAnalyzer:
             
             activities = db_session.query(Activity).filter(
                 Activity.athlete_id == athlete_id,
-                Activity.start_date_local >= start_date,
-                Activity.start_date_local <= end_date
-            ).order_by(Activity.start_date_local).all()
+                Activity.start_date >= start_date,
+                Activity.start_date <= end_date
+            ).order_by(Activity.start_date).all()
             
             if len(activities) < 5:  # Need minimum data
                 return None
@@ -189,13 +189,13 @@ class SeniorAthleteAnalyzer:
         # Create daily activity map
         daily_activities = {}
         for activity in activities:
-            date_key = activity.start_date_local.date()
+            date_key = activity.start_date.date()
             if date_key not in daily_activities:
                 daily_activities[date_key] = []
             daily_activities[date_key].append(activity)
         
         # Calculate rest days
-        total_days = (activities[-1].start_date_local.date() - activities[0].start_date_local.date()).days + 1
+        total_days = (activities[-1].start_date.date() - activities[0].start_date.date()).days + 1
         active_days = len(daily_activities)
         rest_days = total_days - active_days
         rest_ratio = rest_days / total_days if total_days > 0 else 0
@@ -209,7 +209,7 @@ class SeniorAthleteAnalyzer:
                 (activity.distance and activity.distance > 15000)  # Long distance (>15km)
             )
             if is_hard:
-                hard_efforts.append(activity.start_date_local.date())
+                hard_efforts.append(activity.start_date.date())
         
         # Calculate average rest between hard efforts
         avg_rest_between_hard = 0
@@ -526,7 +526,7 @@ class SeniorAthleteAnalyzer:
         # Calculate weekly loads
         weekly_loads = {}
         for activity in activities:
-            week_start = activity.start_date_local.date() - timedelta(days=activity.start_date_local.weekday())
+            week_start = activity.start_date.date() - timedelta(days=activity.start_date.weekday())
             if week_start not in weekly_loads:
                 weekly_loads[week_start] = 0
             
@@ -599,7 +599,7 @@ class SeniorAthleteAnalyzer:
             stress_score += 20
         
         # Back-to-back stress
-        activity_dates = [a.start_date_local.date() for a in running_activities]
+        activity_dates = [a.start_date.date() for a in running_activities]
         consecutive_days = 0
         max_consecutive = 0
         
@@ -623,7 +623,7 @@ class SeniorAthleteAnalyzer:
         
         # Calculate rest periods between activities
         rest_periods = []
-        activity_dates = sorted([a.start_date_local.date() for a in activities])
+        activity_dates = sorted([a.start_date.date() for a in activities])
         
         for i in range(1, len(activity_dates)):
             days_between = (activity_dates[i] - activity_dates[i-1]).days
