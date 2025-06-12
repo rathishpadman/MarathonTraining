@@ -571,12 +571,14 @@
 
     <script>
         let currentDays = 90; // Default to 90 days
+        const athleteId = {{ athlete_id | default(1) }}; // Global athlete ID
         
         document.addEventListener('DOMContentLoaded', function() {
             setupFilterButtons();
             loadAthleteAnalytics();
             setupHeatmapControls();
             loadTrainingHeatmap();
+            loadTrainingLoadMetrics(); // Load training load metrics on page load
         });
         
         function setupFilterButtons() {
@@ -603,8 +605,6 @@
 
         async function loadAthleteAnalytics() {
             try {
-                // Get athlete ID from template variable or default to 1
-                const athleteId = {{ athlete_id | default(1) }};
                 const response = await fetch(`/api/athletes/${athleteId}/fitness-analytics?days=${currentDays}`);
                 
                 if (!response.ok) {
@@ -1065,8 +1065,15 @@
         // Load training load metrics
         async function loadTrainingLoadMetrics() {
             try {
+                console.log('Loading training load metrics for athlete:', athleteId);
                 const response = await fetch(`/api/athletes/${athleteId}/training-load-metrics?days=90`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('Training load data received:', data);
                 
                 if (data.error) {
                     console.error('Error loading training load metrics:', data.error);
@@ -1074,10 +1081,24 @@
                 }
                 
                 // Update current metrics with proper formatting
-                document.getElementById('ctlValue').textContent = Math.round(data.current.ctl || 0);
-                document.getElementById('atlValue').textContent = Math.round(data.current.atl || 0);
-                document.getElementById('tsbValue').textContent = Math.round(data.current.tsb || 0);
-                document.getElementById('weeklyTssValue').textContent = Math.round(data.current.weekly_tss || 0);
+                if (data.current) {
+                    const ctlElement = document.getElementById('ctlValue');
+                    const atlElement = document.getElementById('atlValue');
+                    const tsbElement = document.getElementById('tsbValue');
+                    const weeklyTssElement = document.getElementById('weeklyTssValue');
+                    
+                    if (ctlElement) ctlElement.textContent = Math.round(data.current.ctl || 0);
+                    if (atlElement) atlElement.textContent = Math.round(data.current.atl || 0);
+                    if (tsbElement) tsbElement.textContent = Math.round(data.current.tsb || 0);
+                    if (weeklyTssElement) weeklyTssElement.textContent = Math.round(data.current.weekly_tss || 0);
+                    
+                    console.log('Updated metric values:', {
+                        ctl: Math.round(data.current.ctl || 0),
+                        atl: Math.round(data.current.atl || 0),
+                        tsb: Math.round(data.current.tsb || 0),
+                        weekly_tss: Math.round(data.current.weekly_tss || 0)
+                    });
+                }
                 
                 // Update trends
                 if (data.trends && data.trends.status !== 'no_data') {
@@ -1182,11 +1203,6 @@
                 }
             });
         }
-
-        // Load training load metrics when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            loadTrainingLoadMetrics();
-        });
 
     </script>
 </body>
