@@ -920,13 +920,29 @@
                         <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">Load Increase</div>
                         <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Weekly training progression</div>
                     </div>
-                    <div class="injury-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="injury-card tooltip" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="tooltip-text">
+                            <strong>Biomechanical Stress Index</strong><br>
+                            Assesses cumulative stress on muscles, joints, and connective tissues from training load.<br><br>
+                            <strong>Calculation factors:</strong><br>
+                            • Training volume (distance and duration)<br>
+                            • Intensity distribution<br>
+                            • Consecutive training days<br>
+                            • Surface type and terrain<br>
+                            • Recovery between sessions<br><br>
+                            <strong>Stress levels:</strong><br>
+                            • 0-25: Low stress (green)<br>
+                            • 26-50: Moderate stress (yellow)<br>
+                            • 51-75: High stress (orange)<br>
+                            • 76-100: Very high stress (red)<br><br>
+                            <strong>Manage stress:</strong> Vary training surfaces, include rest days, progressive loading, strength training
+                        </div>
                         <div class="metric-icon" style="color: #EF4444; font-size: 1.4rem; margin-bottom: 10px;">
                             <i class="fas fa-running"></i>
                         </div>
                         <div class="metric-value" id="biomechanicalStress" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
                         <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">Biomech Stress</div>
-                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="Biomechanical stress from volume, intensity, and consecutive training days. Lower is better">Impact loading assessment</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Impact loading assessment</div>
                     </div>
                 </div>
                 <div class="injury-prevention-plan" style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 15px;">
