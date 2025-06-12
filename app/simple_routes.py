@@ -2141,6 +2141,11 @@ def get_fitness_analytics(athlete_id):
         days = request.args.get('days', 90, type=int)
         logger.info(f"Generating fitness analytics for athlete {athlete_id} with {days} days of data")
         
+        # Get athlete information
+        athlete = db.session.query(ReplitAthlete).filter_by(id=athlete_id).first()
+        if not athlete:
+            return jsonify({'error': 'Athlete not found'}), 404
+        
         # Helper function to format time
         def format_time(seconds):
             hours = int(seconds // 3600)
@@ -2233,7 +2238,12 @@ def get_fitness_analytics(athlete_id):
             'injury_risk': injury_risk,
             'activity_trends': activity_trends,
             'summary': fitness_data.get('summary', {}),
-            'athlete_id': athlete_id
+            'athlete_id': athlete_id,
+            'athlete_info': {
+                'id': athlete.id,
+                'name': athlete.name,
+                'email': athlete.email
+            }
         }
         
         return jsonify(analytics_data)

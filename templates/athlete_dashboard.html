@@ -486,7 +486,7 @@
     
     <div class="container">
         <div class="header">
-            <h1>🏃‍♂️ Athlete Analytics Dashboard</h1>
+            <h1>🏃‍♂️ <span id="athleteName">Athlete</span> - Training Analytics</h1>
             <p>Comprehensive fitness insights powered by machine learning</p>
             <div class="period-info" id="periodInfo">Analysis Period: Last 90 days of activity data</div>
         </div>
@@ -1036,6 +1036,11 @@
                 }
                 
                 const data = await response.json();
+                
+                // Update athlete name in header
+                if (data.athlete_info && data.athlete_info.name) {
+                    document.getElementById('athleteName').textContent = data.athlete_info.name;
+                }
                 
                 renderFitnessMetrics(data.fitness_metrics, data.injury_risk);
                 renderRacePredictions(data.race_predictions);
