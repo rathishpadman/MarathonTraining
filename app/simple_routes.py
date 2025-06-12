@@ -2116,11 +2116,60 @@ def get_fitness_analytics(athlete_id):
         days = request.args.get('days', 90, type=int)
         logger.info(f"Generating fitness analytics for athlete {athlete_id} with {days} days of data")
         
-        # Initialize race predictor for fitness analysis
-        race_predictor = SimpleRacePredictor()
+        # Helper function to format time
+        def format_time(seconds):
+            hours = int(seconds // 3600)
+            minutes = int((seconds % 3600) // 60)
+            secs = int(seconds % 60)
+            if hours > 0:
+                return f"{hours}:{minutes:02d}:{secs:02d}"
+            else:
+                return f"{minutes}:{secs:02d}"
         
-        # Get fitness analysis with dynamic days
-        fitness_data = race_predictor.analyze_fitness(db.session, athlete_id, days=days)
+        # Get industry-standard race predictions for key distances
+        race_predictions = {}
+        race_distances = {'5K': 5.0, '10K': 10.0, 'Half Marathon': 21.0975, 'Marathon': 42.195}
+        
+        for race_name, distance_km in race_distances.items():
+            try:
+                prediction = predict_race_time_industry_standard(
+                    db.session, athlete_id, distance_km, weeks_to_race=12
+                )
+                race_predictions[race_name] = {
+                    'predicted_time_seconds': prediction['predicted_time_seconds'],
+                    'predicted_time_formatted': format_time(prediction['predicted_time_seconds']),
+                    'predicted_pace_per_km': prediction['predicted_pace_per_km'],
+                    'confidence_score': round(prediction['confidence_score'] * 100, 1),
+                    'methodology': prediction['methodology']
+                }
+            except Exception as e:
+                logger.warning(f"Failed to predict {race_name} for athlete {athlete_id}: {str(e)}")
+                race_predictions[race_name] = {
+                    'error': 'Insufficient data for prediction',
+                    'predicted_time_formatted': 'N/A',
+                    'confidence_score': 0
+                }
+        
+        # Get fitness analysis using industry-standard current fitness data
+        try:
+            current_fitness = predict_race_time_industry_standard(
+                db.session, athlete_id, 21.0975, weeks_to_race=12
+            )['current_fitness']
+            
+            fitness_data = {
+                'fitness_metrics': {
+                    'current_pace_per_km': current_fitness['current_pace_per_km'],
+                    'weekly_volume_km': current_fitness['weekly_volume_km'],
+                    'pace_trend': current_fitness['pace_trend'],
+                    'training_consistency': current_fitness['training_consistency'],
+                    'longest_recent_run_km': current_fitness['longest_recent_run_km']
+                },
+                'race_predictions': race_predictions
+            }
+        except Exception as e:
+            logger.error(f"Error getting industry-standard fitness data: {str(e)}")
+            # Fallback to basic fitness analysis
+            fitness_data = {'fitness_metrics': {}, 'race_predictions': race_predictions}
         
         # Get injury risk assessment
         injury_risk = predict_injury_risk(athlete_id)
