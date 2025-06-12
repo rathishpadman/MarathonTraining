@@ -677,29 +677,75 @@
             </div>
             <div id="recoverySection" class="analytics-content" style="display: none; padding: 25px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-top: none; border-radius: 0 0 12px 12px;">
                 <div class="recovery-metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px;">
-                    <div class="recovery-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="recovery-card tooltip" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="tooltip-text">
+                            <strong>Recovery Score</strong><br>
+                            Composite metric analyzing rest patterns, heart rate trends, and training stress balance.<br><br>
+                            <strong>Calculation factors:</strong><br>
+                            • Rest day frequency and timing<br>
+                            • Heart rate variability trends<br>
+                            • Training stress balance (TSB)<br>
+                            • Sleep quality indicators<br><br>
+                            <strong>Score interpretation:</strong><br>
+                            • 80-100: Excellent recovery<br>
+                            • 60-79: Good recovery<br>
+                            • 40-59: Fair recovery<br>
+                            • Below 40: Poor recovery<br><br>
+                            <strong>For seniors (35+):</strong> Recovery becomes increasingly important with age
+                        </div>
                         <div class="metric-icon" style="color: #10B981; font-size: 1.4rem; margin-bottom: 10px;">
                             <i class="fas fa-heartbeat"></i>
                         </div>
                         <div class="metric-value" id="recoveryScore" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
                         <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">Recovery Score</div>
-                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="Composite score based on rest patterns, HR trends, and training stress (0-100, higher = better recovery)">Based on rest patterns & HR trends</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Based on rest patterns & HR trends</div>
                     </div>
-                    <div class="recovery-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="recovery-card tooltip" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="tooltip-text">
+                            <strong>Rest Day Ratio</strong><br>
+                            Percentage of complete rest days in your training schedule.<br><br>
+                            <strong>Calculation:</strong> (Rest days ÷ Total days) × 100<br>
+                            Only days with zero recorded activity count as rest<br><br>
+                            <strong>Optimal ratios:</strong><br>
+                            • Age 20-30: 15-20% rest days<br>
+                            • Age 30-40: 20-25% rest days<br>
+                            • Age 40-50: 25-30% rest days<br>
+                            • Age 50+: 30-35% rest days<br><br>
+                            <strong>Benefits of adequate rest:</strong><br>
+                            • Muscle repair and adaptation<br>
+                            • Glycogen replenishment<br>
+                            • Mental recovery<br>
+                            • Injury prevention
+                        </div>
                         <div class="metric-icon" style="color: #3B82F6; font-size: 1.4rem; margin-bottom: 10px;">
                             <i class="fas fa-calendar-check"></i>
                         </div>
                         <div class="metric-value" id="restDayRatio" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
                         <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">Rest Day Ratio</div>
-                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="Percentage of rest days in training schedule. Senior athletes need 25-30% rest days">Percentage of complete rest days</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Percentage of complete rest days</div>
                     </div>
-                    <div class="recovery-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="recovery-card tooltip" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="tooltip-text">
+                            <strong>Rest Between Hard Sessions</strong><br>
+                            Average number of rest or easy days between high-intensity training sessions.<br><br>
+                            <strong>Calculation:</strong> Days between sessions with effort level >80%<br>
+                            Includes both complete rest and easy recovery days<br><br>
+                            <strong>Optimal recovery periods:</strong><br>
+                            • After VO₂ max sessions: 2-3 days<br>
+                            • After threshold sessions: 1-2 days<br>
+                            • After long runs: 1-2 days<br>
+                            • After races: 1 day per mile raced<br><br>
+                            <strong>Age considerations:</strong><br>
+                            • 35+: Add 1 extra recovery day<br>
+                            • 45+: Add 2 extra recovery days<br>
+                            • 55+: Consider 48-72 hours minimum
+                        </div>
                         <div class="metric-icon" style="color: #F59E0B; font-size: 1.4rem; margin-bottom: 10px;">
                             <i class="fas fa-clock"></i>
                         </div>
                         <div class="metric-value" id="avgRestBetweenHard" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
                         <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">Days Between Hard</div>
-                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="Average rest days between hard training sessions. 2+ days recommended for 35+ athletes">Average recovery between hard efforts</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Average recovery between hard efforts</div>
                     </div>
                 </div>
                 <div class="recovery-recommendations" style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 15px;">
@@ -727,29 +773,79 @@
             </div>
             <div id="cardiovascularSection" class="analytics-content" style="display: none; padding: 25px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-top: none; border-radius: 0 0 12px 12px;">
                 <div class="cardiovascular-metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px;">
-                    <div class="cv-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="cv-card tooltip" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="tooltip-text">
+                            <strong>Estimated Resting Heart Rate</strong><br>
+                            Calculated from your exercise heart rate data and recovery patterns.<br><br>
+                            <strong>Calculation method:</strong><br>
+                            • Analyzes lowest recorded HR during activities<br>
+                            • Factors in post-exercise recovery rates<br>
+                            • Uses age and fitness level adjustments<br><br>
+                            <strong>Normal ranges by age:</strong><br>
+                            • 20-29: 54-76 bpm<br>
+                            • 30-39: 56-78 bpm<br>
+                            • 40-49: 57-80 bpm<br>
+                            • 50+: 58-82 bpm<br><br>
+                            <strong>Athletes typically:</strong> 40-60 bpm<br>
+                            <strong>Note:</strong> For accuracy, measure RHR upon waking before getting out of bed
+                        </div>
                         <div class="metric-icon" style="color: #EF4444; font-size: 1.4rem; margin-bottom: 10px;">
                             <i class="fas fa-heartbeat"></i>
                         </div>
                         <div class="metric-value" id="currentRhr" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
                         <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">Estimated RHR</div>
-                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="Estimated resting heart rate from activity data. Lower values indicate better cardiovascular fitness">Estimated from exercise data</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Estimated from exercise data</div>
                     </div>
-                    <div class="cv-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="cv-card tooltip" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="tooltip-text">
+                            <strong>Heart Rate Efficiency Score</strong><br>
+                            Measures how efficiently you run at different heart rates - your pace relative to effort.<br><br>
+                            <strong>Calculation:</strong><br>
+                            • Analyzes pace vs heart rate relationship<br>
+                            • Compares to age-adjusted baselines<br>
+                            • Tracks improvement trends over time<br><br>
+                            <strong>Score interpretation:</strong><br>
+                            • 80-100: Excellent efficiency<br>
+                            • 65-79: Good efficiency<br>
+                            • 50-64: Fair efficiency<br>
+                            • Below 50: Room for improvement<br><br>
+                            <strong>Improve efficiency:</strong><br>
+                            • Consistent aerobic base training<br>
+                            • Heart rate zone discipline<br>
+                            • Regular tempo/threshold work
+                        </div>
                         <div class="metric-icon" style="color: #8B5CF6; font-size: 1.4rem; margin-bottom: 10px;">
                             <i class="fas fa-tachometer-alt"></i>
                         </div>
                         <div class="metric-value" id="hrEfficiency" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
                         <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">HR Efficiency</div>
-                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="How efficiently you run at different heart rates. Higher scores indicate better aerobic fitness">Pace efficiency per heart rate</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Pace efficiency per heart rate</div>
                     </div>
-                    <div class="cv-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="cv-card tooltip" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="tooltip-text">
+                            <strong>Cardiovascular Age</strong><br>
+                            Estimated biological age of your cardiovascular system based on fitness indicators.<br><br>
+                            <strong>Calculation factors:</strong><br>
+                            • Resting heart rate vs age norms<br>
+                            • Heart rate efficiency trends<br>
+                            • VO₂ max estimates<br>
+                            • Recovery rate patterns<br><br>
+                            <strong>Age comparison:</strong><br>
+                            • CV Age < Chronological: Excellent fitness<br>
+                            • CV Age = Chronological: Good fitness<br>
+                            • CV Age > Chronological: Room for improvement<br><br>
+                            <strong>Improve CV age:</strong><br>
+                            • Consistent aerobic training<br>
+                            • Progressive intensity work<br>
+                            • Proper recovery protocols<br>
+                            • Heart rate variability training
+                        </div>
                         <div class="metric-icon" style="color: #06B6D4; font-size: 1.4rem; margin-bottom: 10px;">
                             <i class="fas fa-user-clock"></i>
                         </div>
                         <div class="metric-value" id="cardiovascularAge" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
                         <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">CV Age</div>
-                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="Cardiovascular age based on RHR, HR efficiency, and fitness trends. May be different from chronological age">Cardiovascular fitness age</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Cardiovascular fitness age</div>
                     </div>
                 </div>
                 <div class="cv-health-status" style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 15px;">
@@ -777,21 +873,52 @@
             </div>
             <div id="injuryPreventionSection" class="analytics-content" style="display: none; padding: 25px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-top: none; border-radius: 0 0 12px 12px;">
                 <div class="injury-metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px;">
-                    <div class="injury-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="injury-card tooltip" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="tooltip-text">
+                            <strong>Machine Learning Injury Risk Score</strong><br>
+                            Advanced assessment analyzing multiple injury risk factors using trained ML models.<br><br>
+                            <strong>Risk factors analyzed:</strong><br>
+                            • Training load progression patterns<br>
+                            • Weekly volume changes<br>
+                            • Consecutive training days<br>
+                            • Heart rate variability trends<br>
+                            • Age-specific risk adjustments<br><br>
+                            <strong>Risk categories:</strong><br>
+                            • 0-25%: Low risk (green)<br>
+                            • 26-50%: Moderate risk (yellow)<br>
+                            • 51-75%: High risk (orange)<br>
+                            • 76-100%: Very high risk (red)<br><br>
+                            <strong>Reduce risk:</strong> Gradual progression, adequate recovery, cross-training
+                        </div>
                         <div class="metric-icon" style="color: #F59E0B; font-size: 1.4rem; margin-bottom: 10px;">
                             <i class="fas fa-exclamation-triangle"></i>
                         </div>
                         <div class="metric-value" id="injuryRiskScore" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
                         <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">Injury Risk</div>
-                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="Overall injury risk score (0-100). Considers training load progression, biomechanical stress, and age factors">ML-based risk assessment</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">ML-based risk assessment</div>
                     </div>
-                    <div class="injury-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="injury-card tooltip" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="tooltip-text">
+                            <strong>Weekly Training Load Increase</strong><br>
+                            Measures the rate of training volume progression to assess injury risk from overloading.<br><br>
+                            <strong>Calculation:</strong><br>
+                            • Week-to-week TSS (Training Stress Score) change<br>
+                            • Averaged over the last 4 weeks<br>
+                            • Expressed as percentage increase<br><br>
+                            <strong>Safe progression guidelines:</strong><br>
+                            • 0-5%: Very safe progression<br>
+                            • 5-10%: Safe progression<br>
+                            • 10-15%: Moderate risk<br>
+                            • >15%: High injury risk<br><br>
+                            <strong>The 10% rule:</strong> Never increase weekly training load by more than 10% to minimize injury risk<br><br>
+                            <strong>For seniors (35+):</strong> Consider 5-8% maximum increases
+                        </div>
                         <div class="metric-icon" style="color: #10B981; font-size: 1.4rem; margin-bottom: 10px;">
                             <i class="fas fa-chart-line"></i>
                         </div>
                         <div class="metric-value" id="weeklyLoadIncrease" style="font-size: 2rem; font-weight: bold; color: white;">--</div>
                         <div class="metric-label" style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">Load Increase</div>
-                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" title="Average weekly training load increase. >10% increases injury risk significantly">Weekly training progression</div>
+                        <div class="metric-tooltip" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Weekly training progression</div>
                     </div>
                     <div class="injury-card" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
                         <div class="metric-icon" style="color: #EF4444; font-size: 1.4rem; margin-bottom: 10px;">
