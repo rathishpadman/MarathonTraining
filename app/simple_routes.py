@@ -7,6 +7,7 @@ from app import db, socketio
 from app.models import ReplitAthlete, DailySummary, Activity, PlannedWorkout, SystemLog
 from app.data_processor import get_athlete_performance_summary, get_team_overview
 from app.race_predictor_simple import SimpleRacePredictor
+from app.industry_standard_race_predictor import predict_race_time_industry_standard
 from app.injury_predictor import predict_injury_risk, get_injury_prevention_plan
 from app.race_optimizer import optimize_race_performance, get_pacing_strategy, get_training_optimization
 from app.security import ReplitSecurity
@@ -1932,21 +1933,61 @@ def get_ai_recommendations(athlete_id):
 # Race Performance Optimization Endpoints
 @api_bp.route('/athletes/<int:athlete_id>/race-prediction', methods=['GET'])
 def get_race_prediction(athlete_id):
-    """Get race time prediction for specific distance"""
+    """Get race time prediction using industry-standard methodology"""
     try:
-        race_distance = request.args.get('distance', 'Half Marathon')
-        logger.info(f"Predicting {race_distance} performance for athlete {athlete_id}")
+        # Parse parameters
+        race_distance_param = request.args.get('distance', 'Half Marathon')
+        weeks_to_race = int(request.args.get('weeks', 12))
         
-        predictor = SimpleRacePredictor()
-        prediction = predictor.predict_race_time(db.session, athlete_id, race_distance)
+        # Convert distance names to kilometers
+        distance_map = {
+            '5K': 5.0,
+            '10K': 10.0,
+            'Half Marathon': 21.0975,
+            'Marathon': 42.195
+        }
         
-        # Return prediction data directly (already formatted)
-        return jsonify(prediction)
+        race_distance_km = distance_map.get(race_distance_param, 21.0975)
+        
+        logger.info(f"Industry-standard prediction for athlete {athlete_id}: {race_distance_km}km in {weeks_to_race} weeks")
+        
+        # Use industry-standard race predictor
+        prediction = predict_race_time_industry_standard(
+            db.session, athlete_id, race_distance_km, weeks_to_race
+        )
+        
+        # Format time for display
+        def format_time(seconds):
+            hours = int(seconds // 3600)
+            minutes = int((seconds % 3600) // 60)
+            secs = int(seconds % 60)
+            if hours > 0:
+                return f"{hours}:{minutes:02d}:{secs:02d}"
+            else:
+                return f"{minutes}:{secs:02d}"
+        
+        # Enhanced response with industry standard details
+        response = {
+            'race_distance': race_distance_param,
+            'race_distance_km': race_distance_km,
+            'predicted_time_seconds': prediction['predicted_time_seconds'],
+            'predicted_time_formatted': format_time(prediction['predicted_time_seconds']),
+            'predicted_pace_per_km': prediction['predicted_pace_per_km'],
+            'confidence_score': round(prediction['confidence_score'] * 100, 1),
+            'methodology': prediction['methodology'],
+            'sources': prediction['sources'],
+            'weeks_to_race': weeks_to_race,
+            'current_fitness': prediction['current_fitness'],
+            'estimated_vdot': prediction['estimated_vdot'],
+            'training_improvement_percent': round(prediction['training_improvement_percent'], 1)
+        }
+        
+        return jsonify(response)
         
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        logger.error(f"Error predicting race performance: {str(e)}")
+        logger.error(f"Error in industry-standard race prediction: {str(e)}")
         logger.error(f"Full traceback: {error_details}")
         return jsonify({
             'error': 'Failed to predict race performance',
