@@ -708,9 +708,9 @@
                 },
                 { 
                     title: 'Avg Heart Rate', 
-                    value: 'N/A', 
+                    value: metrics.avg_heart_rate || 'N/A', 
                     unit: 'bpm',
-                    tooltip: 'Connect heart rate monitor for detailed insights'
+                    tooltip: metrics.avg_heart_rate ? `Average heart rate from recent activities` : 'Connect heart rate monitor for detailed insights'
                 },
                 { 
                     title: 'LT Pace', 

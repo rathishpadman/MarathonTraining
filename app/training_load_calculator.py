@@ -21,9 +21,9 @@ class TrainingLoadCalculator:
         self.CTL_DAYS = 42  # Chronic Training Load (fitness) - 42 day decay
         self.ATL_DAYS = 7   # Acute Training Load (fatigue) - 7 day decay
         
-        # Decay factors for exponential weighted moving averages
-        self.ctl_decay = 2.0 / (self.CTL_DAYS + 1)
-        self.atl_decay = 2.0 / (self.ATL_DAYS + 1)
+        # Decay factors for exponential weighted moving averages (rounded for consistency)
+        self.ctl_decay = round(2.0 / (self.CTL_DAYS + 1), 6)  # 0.046512
+        self.atl_decay = round(2.0 / (self.ATL_DAYS + 1), 6)  # 0.25
     
     def calculate_tss(self, activity: Activity, athlete: ReplitAthlete) -> float:
         """
@@ -214,10 +214,10 @@ class TrainingLoadCalculator:
             tss = daily_tss[date_str]
             
             # Update CTL (Chronic Training Load) - 42-day exponential decay
-            ctl = (tss * self.ctl_decay) + (ctl * (1 - self.ctl_decay))
+            ctl = round((tss * self.ctl_decay) + (ctl * (1 - self.ctl_decay)), 1)
             
             # Update ATL (Acute Training Load) - 7-day exponential decay
-            atl = (tss * self.atl_decay) + (atl * (1 - self.atl_decay))
+            atl = round((tss * self.atl_decay) + (atl * (1 - self.atl_decay)), 1)
             
             # Calculate TSB (Training Stress Balance)
             tsb = ctl - atl
