@@ -238,19 +238,42 @@ def analyze_senior_athlete_injury_prevention_simple(db_session: Session, athlete
         
         logger.info(f"Weekly training loads: {weeks_data}")
         
-        # Calculate weekly load increase
+        # Calculate weekly load increase - exclude incomplete current week
         weekly_loads = list(weeks_data.values())
         weekly_load_increase = 0
         
-        if len(weekly_loads) >= 2:
-            recent_load = weekly_loads[-1]['distance'] + weekly_loads[-1]['time'] * 10  # Weight time
-            previous_load = weekly_loads[-2]['distance'] + weekly_loads[-2]['time'] * 10
-            
-            logger.info(f"Recent week load: {recent_load:.1f}, Previous week load: {previous_load:.1f}")
-            
-            if previous_load > 0:
-                weekly_load_increase = ((recent_load - previous_load) / previous_load) * 100
-                logger.info(f"Weekly load increase: {weekly_load_increase:.1f}%")
+        # Check if current week is incomplete (less than 7 days of data)
+        current_week_key = datetime.now().strftime('%Y-W%U')
+        sorted_weeks = sorted(weeks_data.keys())
+        
+        # If current week is incomplete, use previous completed weeks for comparison
+        if len(sorted_weeks) >= 2 and sorted_weeks[-1] == current_week_key:
+            # Current week is incomplete - compare last two complete weeks
+            if len(sorted_weeks) >= 3:
+                recent_load = weekly_loads[-2]['distance'] + weekly_loads[-2]['time'] * 10  # Previous complete week
+                previous_load = weekly_loads[-3]['distance'] + weekly_loads[-3]['time'] * 10  # Week before that
+                week_comparison = f"W{sorted_weeks[-2][-2:]} vs W{sorted_weeks[-3][-2:]}"
+            else:
+                # Not enough complete weeks for comparison
+                recent_load = previous_load = 0
+                week_comparison = "insufficient_data"
+        else:
+            # Current week appears complete or we have complete weeks
+            if len(weekly_loads) >= 2:
+                recent_load = weekly_loads[-1]['distance'] + weekly_loads[-1]['time'] * 10
+                previous_load = weekly_loads[-2]['distance'] + weekly_loads[-2]['time'] * 10
+                week_comparison = f"W{sorted_weeks[-1][-2:]} vs W{sorted_weeks[-2][-2:]}"
+            else:
+                recent_load = previous_load = 0
+                week_comparison = "insufficient_data"
+        
+        logger.info(f"Week comparison ({week_comparison}): Recent={recent_load:.1f}, Previous={previous_load:.1f}")
+        
+        if previous_load > 0:
+            weekly_load_increase = ((recent_load - previous_load) / previous_load) * 100
+            logger.info(f"Weekly load increase: {weekly_load_increase:.1f}%")
+        else:
+            logger.info("Insufficient data for weekly load comparison")
         
         # Assess biomechanical stress based on consecutive training days
         consecutive_days = 0
