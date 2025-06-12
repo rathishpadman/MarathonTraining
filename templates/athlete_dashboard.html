@@ -209,6 +209,8 @@
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
             overflow-x: auto;
+            width: 100%;
+            max-width: none;
         }
 
         .heatmap-calendar {
@@ -246,8 +248,10 @@
 
         .heatmap-weeks {
             display: grid;
-            grid-template-columns: repeat(53, 12px);
+            grid-template-columns: repeat(53, minmax(12px, 1fr));
             gap: 2px;
+            min-width: fit-content;
+            width: 100%;
         }
 
         .heatmap-week {
@@ -296,6 +300,12 @@
             height: 12px;
             border-radius: 2px;
         }
+
+        .heatmap-legend-color.level-0 { background: rgba(255, 255, 255, 0.1); }
+        .heatmap-legend-color.level-1 { background: rgba(16, 185, 129, 0.3); }
+        .heatmap-legend-color.level-2 { background: rgba(16, 185, 129, 0.5); }
+        .heatmap-legend-color.level-3 { background: rgba(16, 185, 129, 0.7); }
+        .heatmap-legend-color.level-4 { background: rgba(16, 185, 129, 0.9); }
 
         .heatmap-tooltip {
             position: absolute;
@@ -786,7 +796,7 @@
             let calendarHTML = '<div class="heatmap-calendar">';
             
             // Add months header with proper positioning and gaps
-            calendarHTML += '<div class="heatmap-months" style="display: grid; grid-template-columns: repeat(53, 12px); gap: 2px; margin-left: 40px;">';
+            calendarHTML += '<div class="heatmap-months" style="display: grid; grid-template-columns: repeat(53, minmax(12px, 1fr)); gap: 2px; margin-left: 40px; width: 100%;">';
             let lastMonthWeek = -1;
             for (let week = 0; week < 53; week++) {
                 const monthForWeek = monthPositions.find(m => m.week === week);
@@ -795,7 +805,7 @@
                 // Add gap before new month (except first month)
                 let marginLeft = '';
                 if (monthForWeek && lastMonthWeek !== -1 && week > lastMonthWeek + 1) {
-                    marginLeft = 'margin-left: 8px;';
+                    marginLeft = 'margin-left: 4px;';
                 }
                 if (monthForWeek) lastMonthWeek = week;
                 
