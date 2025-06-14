@@ -60,7 +60,7 @@ The Marathon Training Dashboard is a comprehensive web application that integrat
 │                    DATA LAYER                                   │
 ├─────────────────────────────────────────────────────────────────┤
 │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
-│ │ PostgreSQL  │ │   Redis     │ │    Strava   │ │   Gemini    │ │
+│ │   SQLite    │ │   Redis     │ │    Strava   │ │   Gemini    │ │
 │ │  Database   │ │   Cache     │ │     API     │ │     API     │ │
 │ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
@@ -96,7 +96,7 @@ Strava Activities → Authentication → Data Sync → Processing → ML Analysi
 
 ### 2.4 Database & Storage
 - **SQLite**: Primary database for development and production
-- **PostgreSQL**: Optional production database (via DATABASE_URL if available)
+- **Database flexibility**: Supports PostgreSQL via DATABASE_URL environment variable if needed
 
 ---
 
@@ -243,7 +243,7 @@ def create_app(config_class=Config):
 class Config:
     SECRET_KEY = os.environ.get('SESSION_SECRET', 'dev-secret-key')
     
-    # Database Configuration (SQLite primary, PostgreSQL optional)
+    # Database Configuration (SQLite primary)
     if os.environ.get('DATABASE_URL'):
         SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
     else:
@@ -2430,8 +2430,8 @@ externalPort = 80
 
 #### Production Environment Variables
 ```bash
-# Database
-DATABASE_URL=postgresql://user:pass@host:port/dbname
+# Database (optional - defaults to SQLite)
+DATABASE_URL=sqlite:///marathon.db
 
 # Strava API
 STRAVA_CLIENT_ID=your_client_id
