@@ -29,26 +29,30 @@ class TrainingLoadCalculator:
         """
         Calculate Training Stress Score for an activity
         Uses heart rate zones or pace zones based on available data
+        Enhanced with elevation gain for comprehensive training load assessment
         """
         if not activity.moving_time or activity.moving_time <= 0:
             return 0.0
         
         duration_hours = activity.moving_time / 3600
+        base_tss = 0.0
         
         # Method 1: Heart Rate based TSS (preferred if available)
-        if activity.average_heartrate and athlete.max_hr and athlete.rest_hr:
-            hr_tss = self._calculate_hr_tss(activity, athlete, duration_hours)
-            if hr_tss > 0:
-                return hr_tss
+        if activity.average_heartrate and athlete.max_hr and athlete.lthr:
+            base_tss = self._calculate_hr_tss(activity, athlete, duration_hours)
         
         # Method 2: Pace based TSS for running activities
-        if activity.sport_type == 'Run' and activity.distance and activity.distance > 0:
-            pace_tss = self._calculate_pace_tss(activity, athlete, duration_hours)
-            if pace_tss > 0:
-                return pace_tss
+        elif activity.sport_type == 'Run' and activity.distance and activity.distance > 0:
+            base_tss = self._calculate_pace_tss(activity, athlete, duration_hours)
         
         # Method 3: Simple duration-based TSS (fallback)
-        return self._calculate_duration_tss(activity, duration_hours)
+        else:
+            base_tss = self._calculate_duration_tss(duration_hours)
+        
+        # Apply elevation adjustment multiplier
+        elevation_adjusted_tss = self._apply_elevation_adjustment(base_tss, activity)
+        
+        return max(0.0, elevation_adjusted_tss)
     
     def _calculate_hr_tss(self, activity: Activity, athlete: ReplitAthlete, duration_hours: float) -> float:
         """Calculate TSS based on heart rate zones"""
@@ -200,6 +204,45 @@ class TrainingLoadCalculator:
             daily_tss[date_key] += tss
         
         return daily_tss
+    
+    def _apply_elevation_adjustment(self, base_tss: float, activity: Activity) -> float:
+        """
+        Apply elevation gain adjustment to TSS calculation
+        Critical for marathon training where elevation significantly impacts training stress
+        """
+        if not activity.total_elevation_gain or not activity.distance:
+            return base_tss
+        
+        # Calculate elevation gain per kilometer
+        elevation_per_km = activity.total_elevation_gain / (activity.distance / 1000)
+        
+        # Elevation adjustment factors based on sports science research
+        # Every 100m of elevation gain per km adds approximately 8-12% training stress
+        if elevation_per_km <= 10:  # Flat terrain
+            elevation_multiplier = 1.0
+        elif elevation_per_km <= 30:  # Rolling hills
+            elevation_multiplier = 1.05 + (elevation_per_km - 10) * 0.003  # 1.05-1.11
+        elif elevation_per_km <= 60:  # Hilly terrain
+            elevation_multiplier = 1.11 + (elevation_per_km - 30) * 0.005  # 1.11-1.26
+        elif elevation_per_km <= 100:  # Very hilly
+            elevation_multiplier = 1.26 + (elevation_per_km - 60) * 0.007  # 1.26-1.54
+        else:  # Mountain terrain
+            elevation_multiplier = min(2.0, 1.54 + (elevation_per_km - 100) * 0.003)  # Cap at 2.0x
+        
+        # Additional adjustment for downhill impact (negative elevation change increases eccentric stress)
+        # Note: Strava total_elevation_gain only includes positive elevation, but we account for overall terrain stress
+        if elevation_per_km > 50:  # Significant elevation suggests both up and down
+            eccentric_factor = 1.05  # 5% additional stress for downhill eccentric loading
+            elevation_multiplier *= eccentric_factor
+        
+        adjusted_tss = base_tss * elevation_multiplier
+        
+        # Log significant elevation adjustments for transparency
+        if elevation_multiplier > 1.15:
+            logger.info(f"Applied elevation adjustment: {elevation_per_km:.1f}m/km elevation gain, "
+                       f"multiplier: {elevation_multiplier:.2f}, TSS: {base_tss:.1f} → {adjusted_tss:.1f}")
+        
+        return adjusted_tss
     
     def _calculate_load_timeline(self, daily_tss: Dict[str, float]) -> List[Dict]:
         """Calculate CTL, ATL, TSB over time using exponential weighted moving averages"""
