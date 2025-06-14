@@ -457,12 +457,16 @@ class InjuryRiskPredictor:
         cadence_cv = np.std(cadences) / np.mean(cadences) if cadences and np.mean(cadences) > 0 else 0
         hr_variability_avg = np.mean(hr_variabilities) if hr_variabilities else 0
         
+        # Elevation stress analysis - critical for marathon injury risk
+        elevation_features = self._analyze_elevation_stress(activities)
+        
         return {
             'pace_variability': pace_cv,
             'avg_cadence': cadence_avg,
             'cadence_variability': cadence_cv,
             'hr_variability': hr_variability_avg,
-            'biomech_efficiency_score': 1 / (1 + pace_cv + cadence_cv) if (pace_cv + cadence_cv) > 0 else 1
+            'biomech_efficiency_score': 1 / (1 + pace_cv + cadence_cv) if (pace_cv + cadence_cv) > 0 else 1,
+            **elevation_features
         }
     
     def _extract_recovery_features(self, activities: List[Activity]) -> Dict:
@@ -502,6 +506,92 @@ class InjuryRiskPredictor:
             'max_consecutive_days': max_consecutive,
             'recovery_run_ratio': recovery_ratio,
             'adequate_recovery_score': 1 / (1 + max_consecutive / 7) if max_consecutive > 0 else 1
+        }
+    
+    def _analyze_elevation_stress(self, activities: List[Activity]) -> Dict:
+        """
+        Analyze elevation stress patterns for injury risk assessment
+        Critical factor in marathon training that significantly impacts biomechanical stress
+        """
+        if not activities:
+            return {
+                'elevation_stress_score': 0,
+                'terrain_variability': 0,
+                'uphill_exposure_ratio': 0,
+                'elevation_load_progression': 0
+            }
+        
+        elevation_gains = []
+        elevation_per_km_values = []
+        weekly_elevation_loads = []
+        
+        # Calculate elevation metrics for each activity
+        for activity in activities:
+            if activity.total_elevation_gain and activity.distance and activity.distance > 0:
+                elevation_per_km = activity.total_elevation_gain / (activity.distance / 1000)
+                elevation_gains.append(activity.total_elevation_gain)
+                elevation_per_km_values.append(elevation_per_km)
+                
+                # Calculate elevation load factor (similar to TSS elevation adjustment)
+                if elevation_per_km <= 10:
+                    load_factor = 1.0
+                elif elevation_per_km <= 30:
+                    load_factor = 1.05 + (elevation_per_km - 10) * 0.003
+                elif elevation_per_km <= 60:
+                    load_factor = 1.11 + (elevation_per_km - 30) * 0.005
+                else:
+                    load_factor = min(2.0, 1.26 + (elevation_per_km - 60) * 0.007)
+                
+                weekly_elevation_loads.append(load_factor)
+        
+        if not elevation_per_km_values:
+            return {
+                'elevation_stress_score': 0,
+                'terrain_variability': 0,
+                'uphill_exposure_ratio': 0,
+                'elevation_load_progression': 0
+            }
+        
+        # Calculate elevation stress score (0-100)
+        avg_elevation_per_km = np.mean(elevation_per_km_values)
+        max_elevation_per_km = max(elevation_per_km_values)
+        
+        # Base stress from average terrain difficulty
+        if avg_elevation_per_km <= 15:
+            base_stress = 10
+        elif avg_elevation_per_km <= 40:
+            base_stress = 25
+        elif avg_elevation_per_km <= 70:
+            base_stress = 50
+        else:
+            base_stress = 75
+        
+        # Additional stress from peak elevation exposure
+        peak_stress_bonus = min(25, max_elevation_per_km / 4)
+        elevation_stress_score = base_stress + peak_stress_bonus
+        
+        # Terrain variability (high variability = higher injury risk)
+        terrain_variability = np.std(elevation_per_km_values) / np.mean(elevation_per_km_values) if np.mean(elevation_per_km_values) > 0 else 0
+        
+        # Uphill exposure ratio (percentage of activities with significant elevation)
+        significant_elevation_activities = len([x for x in elevation_per_km_values if x > 20])
+        uphill_exposure_ratio = significant_elevation_activities / len(activities)
+        
+        # Elevation load progression (recent vs older activities)
+        if len(weekly_elevation_loads) >= 4:
+            recent_loads = weekly_elevation_loads[-2:]  # Last 2 activities
+            older_loads = weekly_elevation_loads[:-2]   # Previous activities
+            recent_avg = np.mean(recent_loads)
+            older_avg = np.mean(older_loads)
+            elevation_load_progression = (recent_avg - older_avg) / older_avg if older_avg > 0 else 0
+        else:
+            elevation_load_progression = 0
+        
+        return {
+            'elevation_stress_score': min(100, elevation_stress_score),
+            'terrain_variability': terrain_variability,
+            'uphill_exposure_ratio': uphill_exposure_ratio,
+            'elevation_load_progression': elevation_load_progression
         }
     
     def _extract_progression_features(self, activities: List[Activity]) -> Dict:
