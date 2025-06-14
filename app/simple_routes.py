@@ -1378,12 +1378,29 @@ def get_community_activity_stream():
         ).filter(
             Activity.start_date >= seven_days_ago,
             ReplitAthlete.is_active == True
-        ).order_by(Activity.start_date.desc()).limit(20).all()
+        ).order_by(Activity.start_date.desc()).limit(50).all()  # Get more to filter duplicates
+        
+        # Filter duplicates: Remove activities with same athlete, distance, and start time within 5 minutes
+        filtered_activities = []
+        seen_activities = set()
+        
+        for activity, athlete in recent_activities:
+            # Create a unique key for duplicate detection
+            time_bucket = int(activity.start_date.timestamp() // 300)  # 5-minute buckets
+            distance = round(float(activity.distance or 0) / 100) * 100  # Round to nearest 100m
+            unique_key = (activity.athlete_id, time_bucket, distance)
+            
+            if unique_key not in seen_activities:
+                seen_activities.add(unique_key)
+                filtered_activities.append((activity, athlete))
+        
+        # Limit to 20 unique activities after filtering
+        filtered_activities = filtered_activities[:20]
         
         activity_stream = []
         milestones = []
         
-        for activity, athlete in recent_activities:
+        for activity, athlete in filtered_activities:
             distance_km = float(activity.distance or 0) / 1000
             duration_minutes = (activity.moving_time or activity.elapsed_time or 0) / 60
             calories = activity.calories or 0
