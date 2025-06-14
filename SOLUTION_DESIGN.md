@@ -8,11 +8,15 @@
 5. [Machine Learning & AI Systems](#5-machine-learning--ai-systems)
 6. [Race Prediction Algorithms](#6-race-prediction-algorithms)
 7. [Data Processing Engine](#7-data-processing-engine)
-8. [Frontend Architecture](#8-frontend-architecture)
-9. [API Design & Endpoints](#9-api-design--endpoints)
-10. [Security & Authentication](#10-security--authentication)
-11. [Performance & Scalability](#11-performance--scalability)
-12. [Deployment Architecture](#12-deployment-architecture)
+8. [Elevation-Enhanced Analytics](#8-elevation-enhanced-analytics)
+9. [Duplicate Detection System](#9-duplicate-detection-system)
+10. [Training Load Calculator](#10-training-load-calculator)
+11. [Senior Athlete Analytics](#11-senior-athlete-analytics)
+12. [Frontend Architecture](#12-frontend-architecture)
+13. [API Design & Endpoints](#13-api-design--endpoints)
+14. [Security & Authentication](#14-security--authentication)
+15. [Performance & Scalability](#15-performance--scalability)
+16. [Deployment Architecture](#16-deployment-architecture)
 
 ---
 
