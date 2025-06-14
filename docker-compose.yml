@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  marathon-dashboard:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=sqlite:///marathon.db
+      - SESSION_SECRET=${SESSION_SECRET:-default-session-secret}
+      - JWT_SECRET=${JWT_SECRET:-default-jwt-secret}
+      - STRAVA_CLIENT_ID=${STRAVA_CLIENT_ID}
+      - STRAVA_CLIENT_SECRET=${STRAVA_CLIENT_SECRET}
+      - STRAVA_CALLBACK_URL=${STRAVA_CALLBACK_URL}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - marathon_data:/app/instance
+      - marathon_logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: PostgreSQL database (uncomment if needed)
+  # postgres:
+  #   image: postgres:15-alpine
+  #   environment:
+  #     POSTGRES_DB: marathon_db
+  #     POSTGRES_USER: marathon_user
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U marathon_user -d marathon_db"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+  # Optional: Redis cache (for production scaling)
+  # redis:
+  #   image: redis:7-alpine
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+volumes:
+  marathon_data:
+    driver: local
+  marathon_logs:
+    driver: local
+  # postgres_data:
+  #   driver: local
+
+networks:
+  default:
+    name: marathon-network
