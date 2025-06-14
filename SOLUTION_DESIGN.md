@@ -95,8 +95,8 @@ Strava Activities → Authentication → Data Sync → Processing → ML Analysi
 - **requests 2.32.3**: HTTP client for external API calls
 
 ### 2.4 Database & Storage
-- **PostgreSQL**: Production database (via DATABASE_URL)
-- **SQLite**: Development fallback database
+- **SQLite**: Primary database for development and production
+- **PostgreSQL**: Optional production database (via DATABASE_URL if available)
 
 ---
 
@@ -234,7 +234,7 @@ def create_app(config_class=Config):
 #### Database Initialization
 - Creates all tables using SQLAlchemy metadata
 - Establishes foreign key relationships
-- Configures connection pooling for PostgreSQL
+- Configures SQLite database with WAL mode for better concurrency
 
 ### 4.2 Configuration Management (`app/config.py`)
 
@@ -242,7 +242,18 @@ def create_app(config_class=Config):
 ```python
 class Config:
     SECRET_KEY = os.environ.get('SESSION_SECRET', 'dev-secret-key')
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///marathon.db')
+    
+    # Database Configuration (SQLite primary, PostgreSQL optional)
+    if os.environ.get('DATABASE_URL'):
+        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    else:
+        SQLALCHEMY_DATABASE_URI = 'sqlite:///marathon.db'
+    
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_timeout": 20,
+        "pool_recycle": -1,
+    }
     
     # Strava API Configuration
     STRAVA_CLIENT_ID = os.environ.get('STRAVA_CLIENT_ID')
@@ -255,6 +266,11 @@ class Config:
     # Email Configuration
     MAIL_SMTP_SERVER = os.environ.get('MAIL_SMTP_SERVER', 'smtp.gmail.com')
     MAIL_SMTP_PORT = int(os.environ.get('MAIL_SMTP_PORT', '587'))
+    MAIL_SMTP_USER = os.environ.get('MAIL_SMTP_USER', 'default@email.com')
+    MAIL_SMTP_PASSWORD = os.environ.get('MAIL_SMTP_PASSWORD', 'default_password')
+    
+    # Logging Configuration
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 ```
 
 #### Replit-Optimized Logging
@@ -381,6 +397,1076 @@ def _create_ai_prompt(self, athlete_data, current_activity):
     "With continued consistency, a half-marathon goal in 3-4 months is achievable."
   ]
 }
+```
+
+---
+
+## 8. Elevation-Enhanced Analytics
+
+### 8.1 Terrain Classification System
+
+The system automatically classifies terrain difficulty and calculates elevation stress for comprehensive training load analysis.
+
+#### Terrain Difficulty Classification
+```python
+def _calculate_elevation_multiplier(self, activity):
+    """
+    Calculate terrain-based training stress multiplier using logarithmic scaling
+    """
+    elevation_gain = activity.total_elevation_gain or 0
+    distance_km = (activity.distance or 0) / 1000
+    
+    if distance_km <= 0:
+        return 1.0
+    
+    # Calculate elevation ratio (meters per kilometer)
+    elevation_ratio = elevation_gain / distance_km
+    
+    # Logarithmic scaling with industry-standard coefficients
+    if elevation_ratio <= 5:
+        return 1.0  # Flat terrain
+    elif elevation_ratio <= 15:
+        return 1.08  # Rolling hills (8% increase)
+    elif elevation_ratio <= 30:
+        return 1.12  # Hilly terrain (12% increase)
+    else:
+        # Mountain terrain with logarithmic scaling, capped at 2.0x
+        multiplier = 1.0 + (0.5 * math.log10(elevation_ratio))
+        return min(multiplier, 2.0)
+```
+
+#### Elevation Stress Analysis for Injury Prevention
+```python
+def _analyze_elevation_stress(self, activities):
+    """
+    Analyze elevation stress patterns for injury risk assessment
+    Critical factor in marathon training that significantly impacts biomechanical stress
+    """
+    if not activities:
+        return {
+            'avg_elevation_per_km': 0,
+            'max_elevation_session': 0,
+            'elevation_frequency': 0,
+            'uphill_exposure_ratio': 0,
+            'terrain_variety_score': 0
+        }
+    
+    elevation_data = []
+    terrain_types = []
+    uphill_sessions = 0
+    
+    for activity in activities:
+        elevation_gain = activity.total_elevation_gain or 0
+        distance_km = (activity.distance or 0) / 1000
+        
+        if distance_km > 0:
+            elevation_per_km = elevation_gain / distance_km
+            elevation_data.append(elevation_per_km)
+            
+            # Classify terrain type
+            if elevation_per_km > 15:
+                terrain_types.append('hilly')
+                uphill_sessions += 1
+            elif elevation_per_km > 5:
+                terrain_types.append('rolling')
+            else:
+                terrain_types.append('flat')
+    
+    # Calculate terrain variety (Shannon diversity index)
+    terrain_counts = {t: terrain_types.count(t) for t in set(terrain_types)}
+    total_sessions = len(terrain_types)
+    variety_score = 0
+    
+    if total_sessions > 0:
+        for count in terrain_counts.values():
+            if count > 0:
+                proportion = count / total_sessions
+                variety_score -= proportion * math.log2(proportion)
+    
+    return {
+        'avg_elevation_per_km': np.mean(elevation_data) if elevation_data else 0,
+        'max_elevation_session': max(elevation_data) if elevation_data else 0,
+        'elevation_frequency': len([x for x in elevation_data if x > 10]) / len(activities) if activities else 0,
+        'uphill_exposure_ratio': uphill_sessions / len(activities) if activities else 0,
+        'terrain_variety_score': variety_score
+    }
+```
+
+### 8.2 Training Stress Score (TSS) Enhancement
+
+Elevation data enhances TSS calculations with terrain-specific multipliers based on sports science research.
+
+#### Elevation-Enhanced TSS Formula
+```python
+def calculate_elevation_enhanced_tss(self, activity):
+    """
+    Calculate TSS with elevation enhancement based on terrain stress
+    Formula: Base TSS × Elevation Multiplier × Intensity Factor
+    """
+    # Base TSS calculation using heart rate or pace
+    base_tss = self._calculate_base_tss(activity)
+    
+    # Elevation multiplier (8-12% increase per 100m elevation/km)
+    elevation_multiplier = self._calculate_elevation_multiplier(activity)
+    
+    # Final TSS with elevation enhancement
+    enhanced_tss = base_tss * elevation_multiplier
+    
+    return enhanced_tss
+```
+
+---
+
+## 9. Duplicate Detection System
+
+### 9.1 Advanced Activity Deduplication
+
+Sophisticated duplicate detection prevents inflated training metrics through time bucketing and distance matching.
+
+#### Core Deduplication Algorithm
+```python
+def filter_duplicate_activities(activities):
+    """
+    Filter duplicate activities using time bucketing and distance matching
+    Prevents inflated metrics from multiple device recordings of same activity
+    """
+    filtered_activities = []
+    seen_activities = set()
+    
+    for activity in activities:
+        # Create 5-minute time buckets
+        time_bucket = int(activity.start_date.timestamp() // 300)
+        
+        # Round distance to nearest 100m for matching
+        distance = round(float(activity.distance or 0) / 100) * 100
+        
+        # Create unique identifier
+        unique_key = (activity.athlete_id, time_bucket, distance)
+        
+        if unique_key not in seen_activities:
+            seen_activities.add(unique_key)
+            filtered_activities.append(activity)
+    
+    return filtered_activities
+```
+
+#### Implementation Across All Calculations
+
+The duplicate filtering is applied consistently across:
+
+**1. Community Overview Calculations**
+```python
+# Performance Leaderboard
+all_activities_30d_raw = Activity.query.filter(
+    Activity.start_date >= start_date_30d
+).all()
+
+# Apply duplicate filtering
+filtered_activities_30d = filter_duplicate_activities(all_activities_30d_raw)
+
+# Use filtered data for all metrics
+total_distance = sum((a.distance or 0) for a in filtered_activities_30d) / 1000
+total_activities = len(filtered_activities_30d)
+```
+
+**2. Training Load Calculations**
+```python
+# Filter duplicates before TSS calculations
+filtered_activities = filter_duplicate_activities(raw_activities)
+
+# Calculate training load metrics
+for activity in filtered_activities:
+    tss = self.calculate_elevation_enhanced_tss(activity)
+    weekly_tss += tss
+```
+
+**3. Individual Athlete Metrics**
+```python
+# Apply filtering to athlete dashboard calculations
+athlete_activities = filter_duplicate_activities(
+    Activity.query.filter_by(athlete_id=athlete_id).all()
+)
+```
+
+### 9.2 Data Integrity Validation
+
+#### Duplicate Detection Metrics
+- **Time Window**: 5-minute buckets prevent same-activity duplicates
+- **Distance Matching**: ±100m tolerance for GPS variance
+- **Athlete Isolation**: Per-athlete deduplication prevents cross-contamination
+- **Preservation**: Keeps first occurrence, discards subsequent duplicates
+
+---
+
+## 10. Training Load Calculator
+
+### 10.1 Advanced TSS Calculation Methods
+
+The Training Load Calculator implements multiple industry-standard methodologies for comprehensive training stress analysis.
+
+#### Heart Rate-Based TSS
+```python
+def _calculate_hr_tss(self, distance_km, duration_hours, avg_hr, athlete):
+    """
+    Calculate TSS using heart rate zones based on TrainingPeaks methodology
+    """
+    if not avg_hr or not athlete:
+        return self._calculate_pace_tss(distance_km, duration_hours)
+    
+    # Estimate max HR if not available (220 - age formula)
+    max_hr = getattr(athlete, 'max_hr', None) or (220 - (athlete.age if hasattr(athlete, 'age') else 30))
+    
+    # Calculate intensity factor using heart rate reserve
+    rest_hr = getattr(athlete, 'rest_hr', None) or 60
+    hr_reserve = max_hr - rest_hr
+    intensity_factor = (avg_hr - rest_hr) / hr_reserve
+    
+    # Normalize intensity factor (0.5 to 1.2 range)
+    intensity_factor = max(0.5, min(intensity_factor, 1.2))
+    
+    # TSS formula: Duration × IF² × 100
+    tss = duration_hours * (intensity_factor ** 2) * 100
+    
+    return tss
+```
+
+#### Pace-Based TSS for Running
+```python
+def _calculate_pace_tss(self, distance_km, duration_hours):
+    """
+    Calculate TSS using running pace with VDOT methodology
+    """
+    if duration_hours <= 0 or distance_km <= 0:
+        return self._calculate_duration_tss(duration_hours)
+    
+    # Calculate pace per km in minutes
+    pace_per_km = (duration_hours * 60) / distance_km
+    
+    # VDOT-based intensity factor calculation
+    # Easy pace baseline: 8:00 min/km (IF = 0.7)
+    # Threshold pace: 5:00 min/km (IF = 1.0)
+    # VO2 max pace: 3:30 min/km (IF = 1.2)
+    
+    if pace_per_km >= 8.0:
+        intensity_factor = 0.7  # Easy/recovery pace
+    elif pace_per_km >= 6.5:
+        intensity_factor = 0.75 + (8.0 - pace_per_km) * 0.1  # Aerobic pace
+    elif pace_per_km >= 5.0:
+        intensity_factor = 0.85 + (6.5 - pace_per_km) * 0.1  # Threshold pace
+    else:
+        intensity_factor = min(1.2, 1.0 + (5.0 - pace_per_km) * 0.1)  # VO2 max pace
+    
+    # TSS calculation with pace-based IF
+    tss = duration_hours * (intensity_factor ** 2) * 100
+    
+    return tss
+```
+
+### 10.2 Performance Management Chart (PMC)
+
+#### Chronic Training Load (CTL) - Fitness
+```python
+def calculate_ctl(self, daily_tss_values, days=42):
+    """
+    Calculate Chronic Training Load using exponential weighted moving average
+    CTL represents long-term fitness (42-day exponential average)
+    """
+    if not daily_tss_values:
+        return [0] * days
+    
+    ctl_values = []
+    current_ctl = 0
+    
+    # CTL decay factor (42-day time constant)
+    ctl_decay = math.exp(-1/42)
+    
+    for tss in daily_tss_values:
+        # Exponential weighted moving average
+        current_ctl = (current_ctl * ctl_decay) + (tss * (1 - ctl_decay))
+        ctl_values.append(round(current_ctl, 1))
+    
+    return ctl_values
+```
+
+#### Acute Training Load (ATL) - Fatigue
+```python
+def calculate_atl(self, daily_tss_values, days=7):
+    """
+    Calculate Acute Training Load using exponential weighted moving average
+    ATL represents short-term fatigue (7-day exponential average)
+    """
+    if not daily_tss_values:
+        return [0] * len(daily_tss_values) if daily_tss_values else []
+    
+    atl_values = []
+    current_atl = 0
+    
+    # ATL decay factor (7-day time constant)
+    atl_decay = math.exp(-1/7)
+    
+    for tss in daily_tss_values:
+        # Exponential weighted moving average
+        current_atl = (current_atl * atl_decay) + (tss * (1 - atl_decay))
+        atl_values.append(round(current_atl, 1))
+    
+    return atl_values
+```
+
+#### Training Stress Balance (TSB) - Form
+```python
+def calculate_tsb(self, ctl_values, atl_values):
+    """
+    Calculate Training Stress Balance (Form)
+    TSB = CTL - ATL
+    Positive TSB indicates freshness, negative indicates fatigue
+    """
+    if len(ctl_values) != len(atl_values):
+        return []
+    
+    tsb_values = []
+    for ctl, atl in zip(ctl_values, atl_values):
+        tsb = round(ctl - atl, 1)
+        tsb_values.append(tsb)
+    
+    return tsb_values
+```
+
+---
+
+## 11. Senior Athlete Analytics
+
+### 11.1 Age-Specific Performance Modeling
+
+Specialized analytics for athletes 35+ focusing on recovery, cardiovascular health, and injury prevention.
+
+#### Age-Adjusted Performance Metrics
+```python
+def calculate_age_adjusted_metrics(self, athlete_data, athlete_age):
+    """
+    Calculate age-adjusted performance metrics using Masters Athletics standards
+    """
+    if athlete_age < 35:
+        return athlete_data  # No adjustment needed
+    
+    # Age-grading factors from World Masters Athletics
+    age_factors = {
+        'pace_factor': self._get_age_pace_factor(athlete_age),
+        'hr_factor': self._get_age_hr_factor(athlete_age),
+        'recovery_factor': self._get_age_recovery_factor(athlete_age)
+    }
+    
+    # Adjust metrics based on age factors
+    adjusted_metrics = {
+        'age_graded_pace': athlete_data['avg_pace'] * age_factors['pace_factor'],
+        'max_hr_estimate': 208 - (0.7 * athlete_age),  # Tanaka formula
+        'recovery_multiplier': age_factors['recovery_factor'],
+        'training_intensity_limit': 0.85 - ((athlete_age - 35) * 0.01)
+    }
+    
+    return adjusted_metrics
+```
+
+#### Recovery-Focused Recommendations
+```python
+def generate_senior_athlete_recommendations(self, athlete_data, age):
+    """
+    Generate age-specific training recommendations
+    """
+    recommendations = []
+    
+    if age >= 50:
+        recommendations.extend([
+            "Prioritize 2-3 complete rest days per week for optimal recovery",
+            "Focus on strength training 2x/week to maintain bone density",
+            "Consider heart rate monitor for intensity management"
+        ])
+    elif age >= 40:
+        recommendations.extend([
+            "Include dynamic warm-up (10+ minutes) before intense sessions",
+            "Emphasize easy-pace runs (80% of weekly volume)",
+            "Schedule recovery weeks every 3-4 weeks"
+        ])
+    
+    return recommendations
+```
+
+---
+
+## 12. Frontend Architecture
+
+### 12.1 Responsive Dashboard Design
+
+The frontend implements a modern, mobile-first design using vanilla JavaScript with Bootstrap for responsive layouts.
+
+#### Main Dashboard Components
+```html
+<!-- Community Dashboard Overview -->
+<div class="dashboard-container">
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <h3>Total Distance</h3>
+            <div class="kpi-value" id="totalDistance">Loading...</div>
+        </div>
+        <div class="kpi-card">
+            <h3>Active Athletes</h3>
+            <div class="kpi-value" id="totalAthletes">Loading...</div>
+        </div>
+    </div>
+    
+    <div class="charts-section">
+        <div class="training-trends-chart">
+            <canvas id="communityTrendsChart"></canvas>
+        </div>
+        <div class="performance-leaderboard">
+            <div id="performanceLeaderboard"></div>
+        </div>
+    </div>
+</div>
+```
+
+#### Interactive Training Heatmap
+```javascript
+function renderTrainingHeatmap(heatmapData) {
+    const heatmapContainer = document.getElementById('trainingHeatmap');
+    
+    // Create grid for 30-day heatmap
+    const heatmapHTML = heatmapData.map(day => {
+        const intensity = calculateIntensityLevel(day.tss);
+        const tooltipText = `${day.date}: ${day.tss} TSS`;
+        
+        return `
+            <div class="heatmap-cell intensity-${intensity}" 
+                 title="${tooltipText}"
+                 data-date="${day.date}"
+                 data-tss="${day.tss}">
+            </div>
+        `;
+    }).join('');
+    
+    heatmapContainer.innerHTML = heatmapHTML;
+    
+    // Add interactive tooltips
+    addHeatmapTooltips();
+}
+
+function calculateIntensityLevel(tss) {
+    if (tss === 0) return 0;
+    if (tss < 50) return 1;
+    if (tss < 100) return 2;
+    if (tss < 150) return 3;
+    return 4;
+}
+```
+
+#### Real-Time Performance Metrics
+```javascript
+class PerformanceWidget {
+    constructor(containerId) {
+        this.container = document.getElementById(containerId);
+        this.updateInterval = 30000; // 30 seconds
+        this.initializeWidget();
+    }
+    
+    async initializeWidget() {
+        await this.fetchLatestMetrics();
+        this.startAutoUpdate();
+    }
+    
+    async fetchLatestMetrics() {
+        try {
+            const response = await fetch('/api/athlete/metrics');
+            const metrics = await response.json();
+            this.renderMetrics(metrics);
+        } catch (error) {
+            console.error('Failed to fetch metrics:', error);
+            this.showErrorState();
+        }
+    }
+    
+    renderMetrics(metrics) {
+        this.container.innerHTML = `
+            <div class="metrics-grid">
+                <div class="metric-item">
+                    <span class="metric-label">Current Form (TSB)</span>
+                    <span class="metric-value ${this.getTSBClass(metrics.tsb)}">
+                        ${metrics.tsb.toFixed(1)}
+                    </span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Fitness (CTL)</span>
+                    <span class="metric-value">${metrics.ctl.toFixed(1)}</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Fatigue (ATL)</span>
+                    <span class="metric-value">${metrics.atl.toFixed(1)}</span>
+                </div>
+            </div>
+        `;
+    }
+    
+    getTSBClass(tsb) {
+        if (tsb > 10) return 'status-positive';
+        if (tsb < -20) return 'status-warning';
+        return 'status-neutral';
+    }
+}
+```
+
+### 12.2 Chart Visualization System
+
+#### SVG-Based Charts for Performance
+```javascript
+class CustomChartRenderer {
+    constructor(containerID, chartData) {
+        this.container = document.getElementById(containerID);
+        this.data = chartData;
+        this.width = 800;
+        this.height = 400;
+        this.margin = { top: 20, right: 30, bottom: 40, left: 50 };
+    }
+    
+    renderTrainingLoadChart() {
+        const svg = this.createSVG();
+        const { xScale, yScale } = this.createScales();
+        
+        // Render CTL line (fitness)
+        this.renderLine(svg, this.data.ctl, xScale, yScale, '#4CAF50', 'CTL');
+        
+        // Render ATL line (fatigue)  
+        this.renderLine(svg, this.data.atl, xScale, yScale, '#FF9800', 'ATL');
+        
+        // Render TSB area (form)
+        this.renderArea(svg, this.data.tsb, xScale, yScale, '#2196F3', 'TSB');
+        
+        // Add interactive elements
+        this.addInteractivity(svg, xScale, yScale);
+    }
+    
+    renderLine(svg, data, xScale, yScale, color, label) {
+        const line = svg.append('path')
+            .datum(data)
+            .attr('fill', 'none')
+            .attr('stroke', color)
+            .attr('stroke-width', 2)
+            .attr('d', d3.line()
+                .x((d, i) => xScale(i))
+                .y(d => yScale(d))
+            );
+        
+        // Add hover effects
+        line.on('mouseover', () => this.showTooltip(label))
+            .on('mouseout', () => this.hideTooltip());
+    }
+}
+```
+
+---
+
+## 13. API Design & Endpoints
+
+### 13.1 RESTful API Structure
+
+The API follows RESTful conventions with comprehensive error handling and data validation.
+
+#### Authentication Endpoints
+```python
+# Strava OAuth Integration
+@main_bp.route('/auth/strava')
+def strava_auth():
+    """Initiate Strava OAuth flow"""
+    
+@main_bp.route('/auth/strava/callback')  
+def strava_callback():
+    """Handle Strava OAuth callback"""
+    
+@main_bp.route('/auth/logout')
+def logout():
+    """Logout and clear session"""
+```
+
+#### Community Data Endpoints
+```python
+@main_bp.route('/api/community/overview')
+def get_community_overview():
+    """
+    Get community overview with KPIs and trends
+    
+    Returns:
+        {
+            "kpis": {
+                "totalDistance": 130.9,
+                "totalActivities": 19,
+                "totalAthletes": 1,
+                "avgPace": 7.13
+            },
+            "leaderboard": [...],
+            "communityTrends": {...},
+            "trainingLoadDistribution": {...}
+        }
+    """
+    
+@main_bp.route('/api/community/activity-stream')
+def get_activity_stream():
+    """
+    Get recent community activity stream
+    
+    Returns:
+        {
+            "stream": [
+                {
+                    "type": "activity",
+                    "athlete_name": "Rathish Padman",
+                    "activity_name": "Morning Run",
+                    "distance_km": 6.02,
+                    "duration_minutes": 50,
+                    "pace": "8:16",
+                    "sport_type": "Run",
+                    "relative_time": "23 minutes ago"
+                }
+            ]
+        }
+    """
+```
+
+#### Athlete Analytics Endpoints
+```python
+@main_bp.route('/api/athlete/<int:athlete_id>/training-load')
+def get_training_load_metrics(athlete_id):
+    """
+    Get comprehensive training load analytics
+    
+    Parameters:
+        athlete_id (int): Athlete identifier
+        days (int): Number of days to analyze (default: 90)
+        
+    Returns:
+        {
+            "daily_metrics": [...],
+            "performance_chart": {
+                "dates": [...],
+                "ctl": [...],
+                "atl": [...], 
+                "tsb": [...]
+            },
+            "recommendations": [...]
+        }
+    """
+    
+@main_bp.route('/api/athlete/<int:athlete_id>/injury-risk')
+def get_injury_risk_analysis(athlete_id):
+    """
+    Get ML-based injury risk prediction
+    
+    Returns:
+        {
+            "overall_risk": 0.83,
+            "risk_level": "very_high",
+            "risk_factors": [...],
+            "recommendations": [...],
+            "model_predictions": {
+                "random_forest": 0.58,
+                "gradient_boost": 0.996,
+                "logistic": 0.998
+            },
+            "confidence": 0.85
+        }
+    """
+    
+@main_bp.route('/api/athlete/<int:athlete_id>/race-predictions')
+def get_race_predictions(athlete_id):
+    """
+    Get industry-standard race time predictions
+    
+    Returns:
+        {
+            "5K": {
+                "predicted_time_formatted": "30:16",
+                "predicted_pace_per_km": 6.05,
+                "confidence_score": 80,
+                "methodology": "industry_standard_sports_science"
+            },
+            "10K": {...},
+            "Half Marathon": {...},
+            "Marathon": {...}
+        }
+    """
+```
+
+#### Training Insights Endpoints
+```python
+@main_bp.route('/api/athlete/<int:athlete_id>/heatmap')
+def get_training_heatmap(athlete_id):
+    """
+    Get 30-day training intensity heatmap data
+    
+    Returns:
+        {
+            "heatmap_data": [
+                {
+                    "date": "2025-06-14",
+                    "tss": 46.6,
+                    "activities": 1,
+                    "intensity_level": 2
+                }
+            ]
+        }
+    """
+    
+@main_bp.route('/api/athlete/<int:athlete_id>/ai-recommendations')
+def get_ai_recommendations(athlete_id):
+    """
+    Get Gemini AI-powered training recommendations
+    
+    Returns:
+        {
+            "recommendations": [
+                "Based on your consistent weekly volume of 37.0km...",
+                "Incorporate interval training twice weekly...",
+                "Target a 10K finish time around 45-47 minutes..."
+            ]
+        }
+    """
+```
+
+### 13.2 Error Handling & Validation
+
+#### Comprehensive Error Response Format
+```python
+@main_bp.errorhandler(404)
+def not_found_error(error):
+    return jsonify({
+        'error': 'Resource not found',
+        'message': 'The requested resource could not be found',
+        'status_code': 404,
+        'timestamp': datetime.utcnow().isoformat()
+    }), 404
+
+@main_bp.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    return jsonify({
+        'error': 'Internal server error',
+        'message': 'An unexpected error occurred',
+        'status_code': 500,
+        'timestamp': datetime.utcnow().isoformat()
+    }), 500
+```
+
+#### Request Validation
+```python
+def validate_athlete_access(athlete_id):
+    """Validate athlete exists and user has access"""
+    athlete = ReplitAthlete.query.get_or_404(athlete_id)
+    
+    if not athlete.is_active:
+        abort(403, description="Athlete account is inactive")
+    
+    return athlete
+
+def validate_date_range(start_date, end_date, max_days=365):
+    """Validate date range parameters"""
+    if (end_date - start_date).days > max_days:
+        abort(400, description=f"Date range cannot exceed {max_days} days")
+    
+    return True
+```
+
+---
+
+## 14. Security & Authentication
+
+### 14.1 OAuth 2.0 Implementation
+
+#### Strava API Security
+```python
+class StravaAuthManager:
+    def __init__(self, client_id, client_secret):
+        self.client_id = client_id
+        self.client_secret = client_secret
+        
+    def exchange_code_for_token(self, authorization_code):
+        """
+        Exchange authorization code for access token
+        Implements PKCE for enhanced security
+        """
+        token_data = {
+            'client_id': self.client_id,
+            'client_secret': self.client_secret,
+            'code': authorization_code,
+            'grant_type': 'authorization_code'
+        }
+        
+        response = requests.post(
+            'https://www.strava.com/oauth/token',
+            data=token_data,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise AuthenticationError("Failed to exchange code for token")
+    
+    def refresh_access_token(self, refresh_token):
+        """Refresh expired access token"""
+        refresh_data = {
+            'client_id': self.client_id,
+            'client_secret': self.client_secret,
+            'refresh_token': refresh_token,
+            'grant_type': 'refresh_token'
+        }
+        
+        response = requests.post(
+            'https://www.strava.com/oauth/token',
+            data=refresh_data,
+            timeout=30
+        )
+        
+        return response.json()
+```
+
+#### Session Management
+```python
+def create_secure_session(athlete_data):
+    """Create secure session with JWT tokens"""
+    session_data = {
+        'athlete_id': athlete_data['id'],
+        'athlete_name': athlete_data['name'],
+        'strava_id': athlete_data['strava_athlete_id'],
+        'created_at': datetime.utcnow().isoformat(),
+        'expires_at': (datetime.utcnow() + timedelta(hours=24)).isoformat()
+    }
+    
+    # Store in secure session
+    session['athlete_data'] = session_data
+    session.permanent = True
+    
+    return session_data
+```
+
+### 14.2 Data Protection
+
+#### Sensitive Data Encryption
+```python
+from cryptography.fernet import Fernet
+
+class TokenEncryption:
+    def __init__(self, key=None):
+        self.key = key or Fernet.generate_key()
+        self.cipher_suite = Fernet(self.key)
+    
+    def encrypt_token(self, token):
+        """Encrypt access tokens before database storage"""
+        return self.cipher_suite.encrypt(token.encode()).decode()
+    
+    def decrypt_token(self, encrypted_token):
+        """Decrypt access tokens for API calls"""
+        return self.cipher_suite.decrypt(encrypted_token.encode()).decode()
+```
+
+#### Rate Limiting & API Protection
+```python
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
+
+@main_bp.route('/api/athlete/<int:athlete_id>/metrics')
+@limiter.limit("10 per minute")
+def get_athlete_metrics(athlete_id):
+    """Rate-limited endpoint for athlete metrics"""
+    return get_metrics_data(athlete_id)
+```
+
+---
+
+## 15. Performance & Scalability
+
+### 15.1 Database Optimization
+
+#### Query Optimization
+```python
+def get_optimized_activities(athlete_id, days=30):
+    """
+    Optimized query with proper indexing and eager loading
+    """
+    start_date = datetime.utcnow() - timedelta(days=days)
+    
+    return Activity.query\
+        .filter(Activity.athlete_id == athlete_id)\
+        .filter(Activity.start_date >= start_date)\
+        .options(joinedload(Activity.athlete))\
+        .order_by(Activity.start_date.desc())\
+        .all()
+```
+
+#### Database Indexing Strategy (SQLite)
+```sql
+-- Composite indexes for performance
+CREATE INDEX idx_activity_athlete_date ON activity (athlete_id, start_date DESC);
+CREATE INDEX idx_activity_sport_date ON activity (sport_type, start_date DESC);
+CREATE INDEX idx_daily_summary_athlete_date ON daily_summary (athlete_id, summary_date DESC);
+
+-- SQLite-specific optimizations
+CREATE INDEX idx_strava_activity_id ON activity (strava_activity_id);
+CREATE INDEX idx_athlete_active ON replit_athlete (is_active, id);
+
+-- Enable WAL mode for better concurrency
+PRAGMA journal_mode=WAL;
+PRAGMA synchronous=NORMAL;
+PRAGMA cache_size=10000;
+```
+
+### 15.2 Caching Strategy
+
+#### Redis Caching Implementation
+```python
+from flask_caching import Cache
+
+cache = Cache(app, config={
+    'CACHE_TYPE': 'redis',
+    'CACHE_REDIS_URL': os.environ.get('REDIS_URL', 'redis://localhost:6379')
+})
+
+@cache.memoize(timeout=300)  # 5-minute cache
+def get_cached_athlete_metrics(athlete_id):
+    """Cache expensive metric calculations"""
+    return calculate_comprehensive_metrics(athlete_id)
+
+@cache.memoize(timeout=600)  # 10-minute cache
+def get_cached_community_overview():
+    """Cache community overview data"""
+    return generate_community_overview()
+```
+
+#### Application-Level Caching
+```python
+class MetricsCache:
+    def __init__(self):
+        self.cache = {}
+        self.cache_ttl = 300  # 5 minutes
+    
+    def get_or_calculate(self, cache_key, calculation_func, *args):
+        """Get from cache or calculate if expired"""
+        now = time.time()
+        
+        if cache_key in self.cache:
+            data, timestamp = self.cache[cache_key]
+            if now - timestamp < self.cache_ttl:
+                return data
+        
+        # Calculate fresh data
+        result = calculation_func(*args)
+        self.cache[cache_key] = (result, now)
+        
+        return result
+```
+
+---
+
+## 16. Deployment Architecture
+
+### 16.1 Replit Deployment Configuration
+
+#### Production Environment Setup
+```python
+# Production configuration
+class ProductionConfig(Config):
+    DEBUG = False
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_recycle": 300,
+        "pool_pre_ping": True,
+        "pool_size": 10,
+        "max_overflow": 20
+    }
+    
+    # Security enhancements
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=24)
+```
+
+#### Gunicorn Configuration
+```python
+# gunicorn.conf.py
+bind = "0.0.0.0:5000"
+workers = 2
+worker_class = "sync"
+worker_connections = 1000
+max_requests = 1000
+max_requests_jitter = 100
+preload_app = True
+reload = True  # Development only
+timeout = 120
+keepalive = 5
+```
+
+### 16.2 Monitoring & Health Checks
+
+#### Application Health Monitoring
+```python
+@main_bp.route('/health')
+def health_check():
+    """Comprehensive health check endpoint"""
+    health_status = {
+        'status': 'healthy',
+        'timestamp': datetime.utcnow().isoformat(),
+        'version': '1.0.0',
+        'checks': {}
+    }
+    
+    # Database connectivity check
+    try:
+        db.session.execute('SELECT 1')
+        health_status['checks']['database'] = 'healthy'
+    except Exception as e:
+        health_status['checks']['database'] = f'unhealthy: {str(e)}'
+        health_status['status'] = 'unhealthy'
+    
+    # External API checks
+    try:
+        response = requests.get('https://www.strava.com/api/v3/activities', timeout=5)
+        if response.status_code in [200, 401]:  # 401 is expected without auth
+            health_status['checks']['strava_api'] = 'healthy'
+        else:
+            health_status['checks']['strava_api'] = 'degraded'
+    except Exception:
+        health_status['checks']['strava_api'] = 'unhealthy'
+    
+    status_code = 200 if health_status['status'] == 'healthy' else 503
+    return jsonify(health_status), status_code
+```
+
+#### Performance Metrics Collection
+```python
+import time
+from functools import wraps
+
+def track_performance(func):
+    """Decorator to track endpoint performance"""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        
+        try:
+            result = func(*args, **kwargs)
+            execution_time = time.time() - start_time
+            
+            # Log performance metrics
+            logger.info(f"Endpoint {func.__name__} executed in {execution_time:.3f}s")
+            
+            return result
+        except Exception as e:
+            execution_time = time.time() - start_time
+            logger.error(f"Endpoint {func.__name__} failed after {execution_time:.3f}s: {str(e)}")
+            raise
+    
+    return wrapper
 ```
 
 ---
