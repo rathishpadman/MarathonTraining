@@ -1108,15 +1108,44 @@ def get_community_overview():
         start_date_30d = datetime.now() - timedelta(days=30)  # Last 30 days for KPIs
         start_date_7d = datetime.now() - timedelta(days=7)   # Last 7 days for leaderboard
         
-        # Get all activities for 30-day KPIs
-        all_activities_30d = Activity.query.filter(
+        # Get all activities for 30-day KPIs and apply duplicate filtering
+        all_activities_30d_raw = Activity.query.filter(
             Activity.start_date >= start_date_30d
         ).all()
         
-        # Get activities for 7-day leaderboard
-        all_activities_7d = Activity.query.filter(
+        # Filter duplicates from 30-day data
+        filtered_activities_30d = []
+        seen_activities_30d = set()
+        
+        for activity in all_activities_30d_raw:
+            time_bucket = int(activity.start_date.timestamp() // 300)  # 5-minute buckets
+            distance = round(float(activity.distance or 0) / 100) * 100  # Round to nearest 100m
+            unique_key = (activity.athlete_id, time_bucket, distance)
+            
+            if unique_key not in seen_activities_30d:
+                seen_activities_30d.add(unique_key)
+                filtered_activities_30d.append(activity)
+        
+        # Get activities for 7-day leaderboard and apply duplicate filtering
+        all_activities_7d_raw = Activity.query.filter(
             Activity.start_date >= start_date_7d
         ).all()
+        
+        filtered_activities_7d = []
+        seen_activities_7d = set()
+        
+        for activity in all_activities_7d_raw:
+            time_bucket = int(activity.start_date.timestamp() // 300)  # 5-minute buckets
+            distance = round(float(activity.distance or 0) / 100) * 100  # Round to nearest 100m
+            unique_key = (activity.athlete_id, time_bucket, distance)
+            
+            if unique_key not in seen_activities_7d:
+                seen_activities_7d.add(unique_key)
+                filtered_activities_7d.append(activity)
+        
+        # Use filtered data for all calculations
+        all_activities_30d = filtered_activities_30d
+        all_activities_7d = filtered_activities_7d
         
         # Safe calculation with null checks for 30-day KPIs
         total_distance = sum((a.distance or 0) for a in all_activities_30d if a.distance is not None) / 1000  # km
