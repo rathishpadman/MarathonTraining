@@ -47,7 +47,7 @@ class TrainingLoadCalculator:
         
         # Method 3: Simple duration-based TSS (fallback)
         else:
-            base_tss = self._calculate_duration_tss(duration_hours)
+            base_tss = self._calculate_duration_tss(activity, duration_hours)
         
         # Apply elevation adjustment multiplier
         elevation_adjusted_tss = self._apply_elevation_adjustment(base_tss, activity)

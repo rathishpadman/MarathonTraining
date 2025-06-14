@@ -851,39 +851,57 @@ def sync_athlete_activities_internal(athlete_id):
         activities_synced = 0
         for activity_data in activities_data:
             try:
-                # Check if activity already exists
+                # Enhanced duplicate detection - check by Strava ID first
                 existing = db.session.query(Activity).filter_by(
                     strava_activity_id=activity_data['id']
                 ).first()
                 
-                if not existing:
-                    # Parse the start date properly
-                    start_date_str = activity_data['start_date_local']
-                    if start_date_str.endswith('Z'):
-                        start_date_str = start_date_str.replace('Z', '+00:00')
-                    
-                    # Create new activity record
-                    activity = Activity()
-                    activity.strava_activity_id = activity_data['id']
-                    activity.athlete_id = athlete_id
-                    activity.name = activity_data['name']
-                    activity.sport_type = activity_data['sport_type']
-                    activity.start_date = datetime.fromisoformat(start_date_str)
-                    activity.distance = activity_data.get('distance')
-                    activity.moving_time = activity_data.get('moving_time')
-                    activity.elapsed_time = activity_data.get('elapsed_time')
-                    activity.total_elevation_gain = activity_data.get('total_elevation_gain')
-                    activity.average_speed = activity_data.get('average_speed')
-                    activity.max_speed = activity_data.get('max_speed')
-                    activity.average_cadence = activity_data.get('average_cadence')
-                    activity.average_heartrate = activity_data.get('average_heartrate')
-                    activity.max_heartrate = activity_data.get('max_heartrate')
-                    activity.calories = activity_data.get('calories')
-                    activity.created_at = datetime.now()
-                    
-                    db.session.add(activity)
-                    activities_synced += 1
-                    logger.info(f"Added new activity {activity_data['id']} for athlete {athlete_id}")
+                if existing:
+                    continue  # Skip if already exists by Strava ID
+                
+                # Parse the start date properly
+                start_date_str = activity_data['start_date_local']
+                if start_date_str.endswith('Z'):
+                    start_date_str = start_date_str.replace('Z', '+00:00')
+                activity_start = datetime.fromisoformat(start_date_str)
+                
+                # Additional check for activities with same athlete, timestamp, and distance (within 5 minutes)
+                time_buffer = timedelta(minutes=5)
+                distance = activity_data.get('distance', 0)
+                
+                similar_activity = db.session.query(Activity).filter(
+                    Activity.athlete_id == athlete_id,
+                    Activity.start_date >= activity_start - time_buffer,
+                    Activity.start_date <= activity_start + time_buffer,
+                    Activity.distance == distance
+                ).first()
+                
+                if similar_activity:
+                    logger.info(f"Skipping duplicate activity {activity_data['id']} - similar activity {similar_activity.strava_activity_id} already exists")
+                    continue
+                
+                # Create new activity record
+                activity = Activity()
+                activity.strava_activity_id = activity_data['id']
+                activity.athlete_id = athlete_id
+                activity.name = activity_data['name']
+                activity.sport_type = activity_data['sport_type']
+                activity.start_date = activity_start
+                activity.distance = activity_data.get('distance')
+                activity.moving_time = activity_data.get('moving_time')
+                activity.elapsed_time = activity_data.get('elapsed_time')
+                activity.total_elevation_gain = activity_data.get('total_elevation_gain')
+                activity.average_speed = activity_data.get('average_speed')
+                activity.max_speed = activity_data.get('max_speed')
+                activity.average_cadence = activity_data.get('average_cadence')
+                activity.average_heartrate = activity_data.get('average_heartrate')
+                activity.max_heartrate = activity_data.get('max_heartrate')
+                activity.calories = activity_data.get('calories')
+                activity.created_at = datetime.now()
+                
+                db.session.add(activity)
+                activities_synced += 1
+                logger.info(f"Added new activity {activity_data['id']} for athlete {athlete_id}")
                     
             except Exception as e:
                 logger.error(f"Error processing activity {activity_data.get('id', 'unknown')}: {str(e)}")
