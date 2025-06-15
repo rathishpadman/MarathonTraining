@@ -203,6 +203,28 @@
         </div>
         <div class="col-md-3 mb-3">
             <div class="kpi-card">
+                <div class="kpi-value" id="avgCommunityTSS">0</div>
+                <div class="kpi-label">Avg Training Stress</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="kpi-card">
+                <div class="kpi-value" id="consistencyRate">0%</div>
+                <div class="kpi-label">Consistency Rate</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="kpi-card">
+                <div class="kpi-value" id="peakTrainingDay">0</div>
+                <div class="kpi-label">Peak TSS Day</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Secondary KPIs -->
+    <div class="row mx-2 mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="kpi-card">
                 <div class="kpi-value" id="totalDistance">0 km</div>
                 <div class="kpi-label">Total Distance</div>
             </div>
@@ -217,6 +239,12 @@
             <div class="kpi-card">
                 <div class="kpi-value" id="avgPace">0:00</div>
                 <div class="kpi-label">Avg Pace</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="kpi-card">
+                <div class="kpi-value" id="communityInsights">0</div>
+                <div class="kpi-label">Active Insights</div>
             </div>
         </div>
     </div>
@@ -239,6 +267,25 @@
                     Training Load Distribution
                 </h4>
                 <canvas id="trainingLoadChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Community Insights -->
+    <div class="row mx-2 mb-4">
+        <div class="col-12">
+            <div class="chart-container">
+                <h4 class="text-dark mb-3">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Community Insights
+                </h4>
+                <div id="communityInsights">
+                    <div class="d-flex justify-content-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading insights...</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -292,6 +339,11 @@ async function loadCommunityData() {
         // Render charts
         if (data.communityTrends) {
             renderTrainingTrendsChart(data.communityTrends);
+            
+            // Display community insights
+            if (data.communityTrends.insights) {
+                displayCommunityInsights(data.communityTrends.insights);
+            }
         }
         
         if (data.trainingLoadDistribution) {
@@ -308,10 +360,17 @@ async function loadCommunityData() {
 }
 
 function updateKPIs(kpis) {
+    // Primary KPIs - Enhanced Analytics
     document.getElementById('totalAthletes').textContent = kpis.totalAthletes || 0;
+    document.getElementById('avgCommunityTSS').textContent = kpis.avgCommunityTSS || 0;
+    document.getElementById('consistencyRate').textContent = `${kpis.consistencyRate || 0}%`;
+    document.getElementById('peakTrainingDay').textContent = kpis.peakTrainingDay || 0;
+    
+    // Secondary KPIs - Traditional Metrics
     document.getElementById('totalDistance').textContent = `${(kpis.totalDistance || 0).toFixed(1)} km`;
     document.getElementById('totalActivities').textContent = kpis.totalActivities || 0;
     document.getElementById('avgPace').textContent = formatPace(kpis.avgPace || 0);
+    document.getElementById('communityInsights').textContent = '3'; // Fixed value for insights count
 }
 
 function renderLeaderboard(athletes) {
@@ -357,28 +416,32 @@ function renderLeaderboard(athletes) {
 }
 
 function renderTrainingTrendsChart(data) {
+    console.log('Rendering SVG chart with data:', data);
     const ctx = document.getElementById('trainingTrendsChart').getContext('2d');
     new Chart(ctx, {
         type: 'line',
         data: {
             labels: data.labels,
-            datasets: data.datasets.map(dataset => ({
-                ...dataset,
-                borderColor: '#14B8A6',
-                backgroundColor: 'rgba(20, 184, 166, 0.1)',
-                tension: 0.4
-            }))
+            datasets: data.datasets // Use exact colors from backend
         },
         options: {
             responsive: true,
             plugins: {
                 legend: {
                     position: 'bottom'
+                },
+                title: {
+                    display: true,
+                    text: 'Training Stress Score (TSS) & Active Athletes'
                 }
             },
             scales: {
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Training Stress Score'
+                    }
                 }
             }
         }
@@ -487,6 +550,35 @@ function formatActivityTime(dateString) {
     if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+
+function displayCommunityInsights(insights) {
+    const insightsContainer = document.getElementById('communityInsights');
+    
+    if (!insights || insights.length === 0) {
+        insightsContainer.innerHTML = `
+            <div class="text-muted text-center py-3">
+                <i class="fas fa-info-circle me-2"></i>
+                No community insights available at this time
+            </div>
+        `;
+        return;
+    }
+    
+    const insightsHTML = insights.map((insight, index) => `
+        <div class="insight-item mb-3 p-3 bg-light rounded">
+            <div class="d-flex align-items-start">
+                <div class="insight-icon me-3">
+                    <i class="fas fa-chart-line text-success"></i>
+                </div>
+                <div class="insight-content">
+                    <p class="mb-0">${insight}</p>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    insightsContainer.innerHTML = insightsHTML;
 }
 </script>
 {% endblock %}
