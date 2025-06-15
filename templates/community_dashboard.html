@@ -418,14 +418,25 @@ function renderLeaderboard(athletes) {
 function renderTrainingTrendsChart(data) {
     console.log('Rendering SVG chart with data:', data);
     const ctx = document.getElementById('trainingTrendsChart').getContext('2d');
+    
+    // Assign each dataset to appropriate y-axis
+    const updatedDatasets = data.datasets.map((dataset, index) => ({
+        ...dataset,
+        yAxisID: index === 0 ? 'y' : 'y1' // First dataset (TSS) on left axis, second (Athletes) on right axis
+    }));
+    
     new Chart(ctx, {
         type: 'line',
         data: {
             labels: data.labels,
-            datasets: data.datasets // Use exact colors from backend
+            datasets: updatedDatasets
         },
         options: {
             responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
             plugins: {
                 legend: {
                     position: 'bottom'
@@ -436,12 +447,44 @@ function renderTrainingTrendsChart(data) {
                 }
             },
             scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                },
                 y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Training Stress Score'
+                        text: 'Training Stress Score (TSS)',
+                        color: 'rgb(34, 197, 94)'
+                    },
+                    ticks: {
+                        color: 'rgb(34, 197, 94)'
                     }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Active Athletes',
+                        color: 'rgb(99, 102, 241)'
+                    },
+                    ticks: {
+                        color: 'rgb(99, 102, 241)',
+                        stepSize: 1 // Integer steps for athlete count
+                    },
+                    grid: {
+                        drawOnChartArea: false, // Only want the grid lines for one axis to show up
+                    },
                 }
             }
         }
