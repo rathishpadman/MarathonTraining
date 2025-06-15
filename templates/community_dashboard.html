@@ -419,6 +419,11 @@ function renderTrainingTrendsChart(data) {
     console.log('Rendering SVG chart with data:', data);
     const ctx = document.getElementById('trainingTrendsChart').getContext('2d');
     
+    // Calculate dynamic max for athlete count axis
+    const athleteData = data.datasets.find(d => d.label.includes('Athletes'));
+    const maxAthletes = athleteData ? Math.max(...athleteData.data) : 1;
+    const dynamicMax = Math.max(3, maxAthletes + 1); // At least 3, or max + 1 for breathing room
+    
     // Assign each dataset to appropriate y-axis
     const updatedDatasets = data.datasets.map((dataset, index) => ({
         ...dataset,
@@ -473,7 +478,7 @@ function renderTrainingTrendsChart(data) {
                     display: true,
                     position: 'right',
                     beginAtZero: true,
-                    max: 5, // Set a reasonable maximum to give more visual range
+                    max: dynamicMax,
                     title: {
                         display: true,
                         text: 'Active Athletes',
@@ -481,13 +486,13 @@ function renderTrainingTrendsChart(data) {
                     },
                     ticks: {
                         color: 'rgb(99, 102, 241)',
-                        stepSize: 1, // Integer steps for athlete count
+                        stepSize: 1,
                         callback: function(value) {
                             return Number.isInteger(value) ? value : '';
                         }
                     },
                     grid: {
-                        drawOnChartArea: false, // Only want the grid lines for one axis to show up
+                        drawOnChartArea: false,
                     },
                 }
             }
