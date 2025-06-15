@@ -425,10 +425,10 @@ function renderTrainingTrendsChart(data) {
         window.trainingTrendsChartInstance.destroy();
     }
     
-    // Calculate dynamic max for athlete count axis
+    // Calculate dynamic max for athlete count axis - force larger range for visibility
     const athleteData = data.datasets.find(d => d.label.includes('Athletes'));
     const maxAthletes = athleteData ? Math.max(...athleteData.data) : 1;
-    const dynamicMax = Math.max(3, maxAthletes + 1); // At least 3, or max + 1 for breathing room
+    const dynamicMax = Math.max(10, maxAthletes * 3); // Much larger range for better visibility
     
     console.log('Max athletes:', maxAthletes, 'Dynamic max:', dynamicMax);
     
