@@ -417,12 +417,20 @@ function renderLeaderboard(athletes) {
 
 function renderTrainingTrendsChart(data) {
     console.log('Rendering SVG chart with data:', data);
-    const ctx = document.getElementById('trainingTrendsChart').getContext('2d');
+    const canvas = document.getElementById('trainingTrendsChart');
+    const ctx = canvas.getContext('2d');
+    
+    // Destroy existing chart if it exists
+    if (window.trainingTrendsChartInstance) {
+        window.trainingTrendsChartInstance.destroy();
+    }
     
     // Calculate dynamic max for athlete count axis
     const athleteData = data.datasets.find(d => d.label.includes('Athletes'));
     const maxAthletes = athleteData ? Math.max(...athleteData.data) : 1;
     const dynamicMax = Math.max(3, maxAthletes + 1); // At least 3, or max + 1 for breathing room
+    
+    console.log('Max athletes:', maxAthletes, 'Dynamic max:', dynamicMax);
     
     // Assign each dataset to appropriate y-axis
     const updatedDatasets = data.datasets.map((dataset, index) => ({
@@ -430,7 +438,7 @@ function renderTrainingTrendsChart(data) {
         yAxisID: index === 0 ? 'y' : 'y1' // First dataset (TSS) on left axis, second (Athletes) on right axis
     }));
     
-    new Chart(ctx, {
+    window.trainingTrendsChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
             labels: data.labels,
