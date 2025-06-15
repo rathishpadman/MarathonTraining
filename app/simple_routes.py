@@ -1,4 +1,5 @@
 import logging
+import numpy as np
 from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify, send_from_directory
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
@@ -1230,44 +1231,35 @@ def get_community_overview():
         training_load_labels = list(activity_breakdown.keys())
         training_load_data = [round(distance, 1) for distance in activity_breakdown.values()]
         
-        # Community trends (last 7 days) - include all activity types
-        trend_labels = []
-        distance_trend = []
-        activity_trend = []
+        # Enhanced community trends using advanced analytics
+        from app.community_analytics import get_enhanced_community_trends
+        enhanced_trends = get_enhanced_community_trends(days=7)
         
-        for i in range(6, -1, -1):
-            date = datetime.now() - timedelta(days=i)
-            trend_labels.append(date.strftime('%m/%d'))
-            
-            day_activities = [a for a in all_activities_30d if a.start_date and a.start_date.date() == date.date()]
-            
-            # Calculate total training load (distance + time-based activities)
-            day_training_load = 0
-            for activity in day_activities:
-                distance_km = (activity.distance or 0) / 1000
-                duration_hours = (activity.moving_time or activity.elapsed_time or 0) / 3600
-                
-                if distance_km > 0:
-                    day_training_load += distance_km
-                elif duration_hours > 0.1:  # At least 6 minutes
-                    # Convert time-based activities to equivalent load
-                    day_training_load += duration_hours * 5
-            
-            # Count all activities (not just distance-based)
-            day_count = len([a for a in day_activities if 
-                           (a.distance and a.distance > 0) or 
-                           (a.moving_time and a.moving_time > 360) or  # > 6 minutes
-                           (a.calories and a.calories > 0)])
-            
-            distance_trend.append(round(day_training_load, 1))
-            activity_trend.append(day_count)
+        # Extract enhanced metrics for backward compatibility
+        trend_labels = enhanced_trends['labels']
+        
+        # Use TSS and active athletes as primary metrics (more meaningful than simple distance)
+        community_tss = enhanced_trends['datasets'][0]['data']  # Community TSS
+        active_athletes_trend = enhanced_trends['datasets'][1]['data']  # Active Athletes
+        
+        # Keep original variable names for frontend compatibility but with better data
+        distance_trend = community_tss  # Now represents Training Stress Score
+        activity_trend = active_athletes_trend  # Now represents active athlete count
+        
+        # Calculate enhanced KPIs
+        avg_community_tss = np.mean([val for val in community_tss if val > 0]) if any(val > 0 for val in community_tss) else 0
+        consistency_percentage = (sum(1 for val in active_athletes_trend if val > 0) / 7) * 100
+        peak_training_day = max(community_tss) if community_tss else 0
         
         return jsonify({
             'kpis': {
                 'totalAthletes': active_athletes,
                 'totalDistance': round(total_distance, 1),
                 'totalActivities': total_activities,
-                'avgPace': round(avg_pace, 2) if avg_pace > 0 else 0
+                'avgPace': round(avg_pace, 2) if avg_pace > 0 else 0,
+                'avgCommunityTSS': round(avg_community_tss, 1),
+                'consistencyRate': round(consistency_percentage, 1),
+                'peakTrainingDay': round(peak_training_day, 1)
             },
             'leaderboard': leaderboard,
             'trainingLoadDistribution': {
@@ -1278,18 +1270,21 @@ def get_community_overview():
                 'labels': trend_labels,
                 'datasets': [
                     {
-                        'label': 'Training Load',
+                        'label': 'Community TSS (Training Stress)',
                         'data': distance_trend,
-                        'borderColor': 'rgb(75, 192, 192)',
-                        'backgroundColor': 'rgba(75, 192, 192, 0.2)'
+                        'borderColor': 'rgb(34, 197, 94)',
+                        'backgroundColor': 'rgba(34, 197, 94, 0.1)',
+                        'tension': 0.4
                     },
                     {
-                        'label': 'Daily Activities',
+                        'label': 'Active Athletes',
                         'data': activity_trend,
-                        'borderColor': 'rgb(255, 99, 132)',
-                        'backgroundColor': 'rgba(255, 99, 132, 0.2)'
+                        'borderColor': 'rgb(99, 102, 241)',
+                        'backgroundColor': 'rgba(99, 102, 241, 0.1)',
+                        'tension': 0.4
                     }
-                ]
+                ],
+                'insights': enhanced_trends.get('insights', [])
             }
         })
         
