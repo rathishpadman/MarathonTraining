@@ -24,25 +24,28 @@ class CommunityAnalytics:
         Calculate enhanced community training trends with better KPIs
         """
         try:
-            cutoff_date = datetime.now() - timedelta(days=days)
+            # Calculate date range to include today's data
+            today = datetime.now().date()
+            start_date = today - timedelta(days=days-1)  # Include today as the last day
+            cutoff_datetime = datetime.combine(start_date, datetime.min.time())
             
             # Get all active athletes with activities in the period
             athletes_with_activities = db.session.query(ReplitAthlete).join(Activity).filter(
                 and_(
                     ReplitAthlete.is_active == True,
-                    Activity.start_date >= cutoff_date
+                    Activity.start_date >= cutoff_datetime
                 )
             ).distinct().all()
             
             if not athletes_with_activities:
                 return self._get_empty_trends(days)
             
-            # Calculate daily community metrics
+            # Calculate daily community metrics - include today
             daily_metrics = {}
-            date_range = [(cutoff_date + timedelta(days=i)) for i in range(days)]
+            date_range = [start_date + timedelta(days=i) for i in range(days)]
             
             for date in date_range:
-                day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
+                day_start = datetime.combine(date, datetime.min.time())
                 day_end = day_start + timedelta(days=1)
                 
                 daily_metrics[date.strftime('%Y-%m-%d')] = self._calculate_daily_community_metrics(
