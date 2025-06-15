@@ -473,6 +473,7 @@ function renderTrainingTrendsChart(data) {
                     display: true,
                     position: 'right',
                     beginAtZero: true,
+                    max: 5, // Set a reasonable maximum to give more visual range
                     title: {
                         display: true,
                         text: 'Active Athletes',
@@ -480,7 +481,10 @@ function renderTrainingTrendsChart(data) {
                     },
                     ticks: {
                         color: 'rgb(99, 102, 241)',
-                        stepSize: 1 // Integer steps for athlete count
+                        stepSize: 1, // Integer steps for athlete count
+                        callback: function(value) {
+                            return Number.isInteger(value) ? value : '';
+                        }
                     },
                     grid: {
                         drawOnChartArea: false, // Only want the grid lines for one axis to show up
