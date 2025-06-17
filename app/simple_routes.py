@@ -1110,7 +1110,7 @@ def sync_athlete_activities(athlete_id):
 def get_community_overview():
     """Get community overview data for the home page dashboard"""
     try:
-        logger.info("Fetching community overview data")
+        logger.debug("Fetching community overview data")
         
         # Get all active athletes
         athletes = ReplitAthlete.query.filter_by(is_active=True).all()
@@ -1419,7 +1419,7 @@ def get_community_training_zones():
 def get_community_activity_stream():
     """Get recent community activities and milestones"""
     try:
-        logger.info("Fetching community activity stream")
+        logger.debug("Fetching community activity stream")
         
         # Get recent activities from all athletes
         seven_days_ago = datetime.now() - timedelta(days=7)
