@@ -325,6 +325,14 @@
     <script>
         let currentAthleteId = null;
         
+        // Get athlete ID from URL parameter or template variable
+        function getAthleteIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const athleteFromUrl = urlParams.get('athlete');
+            const athleteFromTemplate = {{ athlete_id|tojson if athlete_id else 'null' }};
+            return athleteFromUrl || athleteFromTemplate;
+        }
+        
         // Load athletes on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadAthletes();

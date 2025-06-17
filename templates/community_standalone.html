@@ -412,6 +412,16 @@
             transform: translateY(-1px);
         }
         
+        .achievements-btn {
+            background: #9C27B0;
+            color: white;
+        }
+        
+        .achievements-btn:hover {
+            background: #7B1FA2;
+            transform: translateY(-1px);
+        }
+        
         .btn-icon {
             font-size: 12px;
         }
@@ -700,6 +710,9 @@
                             </button>
                             <button class="action-btn predictor-btn" onclick="window.location.href='/race_predictor/' + ${athlete.id}">
                                 <span class="btn-icon">⚡</span> Race Predictor
+                            </button>
+                            <button class="action-btn achievements-btn" onclick="window.location.href='/achievements?athlete=' + ${athlete.id}">
+                                <span class="btn-icon">🏆</span> Achievements
                             </button>
                             <button class="action-btn analyser-btn" onclick="window.location.href='/analytics/' + ${athlete.id}">
                                 <span class="btn-icon">🔍</span> Risk Analyser

@@ -92,12 +92,16 @@ def risk_analyser(athlete_id=1):
 def achievements(athlete_id=None):
     """Training achievement stickers page"""
     try:
-        from flask import render_template
+        from flask import render_template, request
+        # Check for athlete parameter in URL query string
+        if not athlete_id:
+            athlete_id = request.args.get('athlete', type=int)
+        
         if athlete_id:
             logger.info(f"Accessing achievements page for athlete {athlete_id}")
         else:
             logger.info("Accessing achievements page")
-        return render_template('achievements.html')
+        return render_template('achievements.html', athlete_id=athlete_id)
     except Exception as e:
         logger.error(f"Error rendering achievements page: {str(e)}")
         return f"<h1>Error loading achievements: {str(e)}</h1>", 500
