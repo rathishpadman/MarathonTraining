@@ -681,13 +681,13 @@
                             ${athlete.distance.toFixed(1)}km • ${athlete.activities} activities • ${formatPace(athlete.avg_pace)} min/km • ${athlete.avg_hr ? Math.round(athlete.avg_hr) + ' bpm avg' : '149 bpm avg'}
                         </div>
                         <div class="action-buttons">
-                            <button class="action-btn dashboard-btn" onclick="window.location.href='/dashboard/${athlete.id}'">
+                            <button class="action-btn dashboard-btn" onclick="window.location.href='/dashboard/' + ${athlete.id}">
                                 <span class="btn-icon">📊</span> Dashboard
                             </button>
-                            <button class="action-btn predictor-btn" onclick="window.location.href='/race_predictor/${athlete.id}'">
+                            <button class="action-btn predictor-btn" onclick="window.location.href='/race_predictor/' + ${athlete.id}">
                                 <span class="btn-icon">⚡</span> Race Predictor
                             </button>
-                            <button class="action-btn analyser-btn" onclick="window.location.href='/analytics/${athlete.id}'">
+                            <button class="action-btn analyser-btn" onclick="window.location.href='/analytics/' + ${athlete.id}">
                                 <span class="btn-icon">🔍</span> Risk Analyser
                             </button>
                         </div>
