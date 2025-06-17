@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Achievement Stickers - Marathon Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .achievements-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            max-width: 1200px;
+            padding: 30px;
+        }
+        
+        .achievement-card {
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .achievement-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            border-radius: 20px 20px 0 0;
+        }
+        
+        .achievement-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .achievement-sticker {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .achievement-sticker:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+        
+        .achievement-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .stats-bar {
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            border-radius: 25px;
+            height: 30px;
+            position: relative;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        
+        .stats-progress {
+            background: linear-gradient(90deg, #2196F3, #03DAC6);
+            height: 100%;
+            border-radius: 25px;
+            transition: width 1s ease;
+            position: relative;
+        }
+        
+        .stats-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .category-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+        
+        .category-distance { background: linear-gradient(45deg, #4CAF50, #8BC34A); color: white; }
+        .category-consistency { background: linear-gradient(45deg, #FF5722, #FFC107); color: white; }
+        .category-performance { background: linear-gradient(45deg, #FF4081, #E91E63); color: white; }
+        .category-variety { background: linear-gradient(45deg, #607D8B, #9E9E9E); color: white; }
+        .category-endurance { background: linear-gradient(45deg, #3F51B5, #2196F3); color: white; }
+        .category-speed { background: linear-gradient(45deg, #9C27B0, #E91E63); color: white; }
+        .category-recovery { background: linear-gradient(45deg, #F44336, #FF5722); color: white; }
+        .category-special { background: linear-gradient(45deg, #8BC34A, #4CAF50); color: white; }
+        
+        .earned-date {
+            font-size: 0.8rem;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .achievement-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .achievement-description {
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            color: #ddd;
+            margin-bottom: 20px;
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .header-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .header-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .athlete-selector {
+            margin-bottom: 30px;
+        }
+        
+        .nav-tabs {
+            border: none;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            background: rgba(255, 255, 255, 0.8);
+            color: #666;
+            border-radius: 25px;
+            margin: 0 10px;
+            padding: 10px 25px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="achievements-container">
+            <!-- Header Section -->
+            <div class="header-section">
+                <h1 class="header-title">
+                    <i class="fas fa-trophy"></i> Training Achievement Stickers
+                </h1>
+                <p class="header-subtitle">Celebrate your training milestones and accomplishments</p>
+            </div>
+            
+            <!-- Athlete Selector -->
+            <div class="athlete-selector">
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <select id="athleteSelect" class="form-select form-select-lg">
+                            <option value="">Loading athletes...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Achievement Statistics -->
+            <div id="achievementStats" class="row mb-4" style="display: none;">
+                <div class="col-md-3">
+                    <div class="achievement-card text-center">
+                        <div class="achievement-sticker bg-primary text-white pulse-animation">
+                            <i class="fas fa-medal"></i>
+                        </div>
+                        <h4 id="totalEarned">0</h4>
+                        <p class="text-muted">Total Earned</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="achievement-card text-center">
+                        <div class="achievement-sticker bg-success text-white pulse-animation">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <h4 id="completionRate">0%</h4>
+                        <p class="text-muted">Completion Rate</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="achievement-card text-center">
+                        <div class="achievement-sticker bg-warning text-white pulse-animation">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <h4 id="totalPossible">0</h4>
+                        <p class="text-muted">Total Available</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="achievement-card text-center">
+                        <div class="achievement-sticker bg-info text-white pulse-animation">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <h4 id="recentCount">0</h4>
+                        <p class="text-muted">Recent Achievements</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Achievement Progress Bar -->
+            <div id="progressSection" style="display: none;">
+                <h5 class="text-center mb-3">Achievement Progress</h5>
+                <div class="stats-bar">
+                    <div id="progressBar" class="stats-progress" style="width: 0%">
+                        <div class="stats-text" id="progressText">0% Complete</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Category Tabs -->
+            <ul class="nav nav-tabs" id="categoryTabs" style="display: none;">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#all-achievements">
+                        <i class="fas fa-th"></i> All Achievements
+                    </a>
+                </li>
+            </ul>
+            
+            <!-- Loading State -->
+            <div id="loadingState" class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading achievements...</span>
+                </div>
+            </div>
+            
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <i class="fas fa-trophy"></i>
+                <h4>No Achievements Yet</h4>
+                <p>Start training to unlock your first achievement stickers!</p>
+            </div>
+            
+            <!-- Achievement Grid -->
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="all-achievements">
+                    <div id="achievementGrid" class="achievement-grid">
+                        <!-- Achievements will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentAthleteId = null;
+        
+        // Load athletes on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAthletes();
+        });
+        
+        async function loadAthletes() {
+            try {
+                const response = await fetch('/api/athletes');
+                const athletes = await response.json();
+                
+                const select = document.getElementById('athleteSelect');
+                select.innerHTML = '<option value="">Select an athlete...</option>';
+                
+                athletes.forEach(athlete => {
+                    const option = document.createElement('option');
+                    option.value = athlete.id;
+                    option.textContent = athlete.name;
+                    select.appendChild(option);
+                });
+                
+                // Auto-select first athlete if available
+                if (athletes.length > 0) {
+                    select.value = athletes[0].id;
+                    currentAthleteId = athletes[0].id;
+                    loadAchievements(currentAthleteId);
+                }
+                
+                // Add change event listener
+                select.addEventListener('change', function() {
+                    currentAthleteId = this.value;
+                    if (currentAthleteId) {
+                        loadAchievements(currentAthleteId);
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error loading athletes:', error);
+                document.getElementById('athleteSelect').innerHTML = '<option value="">Error loading athletes</option>';
+            }
+        }
+        
+        async function loadAchievements(athleteId) {
+            showLoading();
+            
+            try {
+                // Load achievements and stats in parallel
+                const [achievementsResponse, statsResponse] = await Promise.all([
+                    fetch(`/api/athletes/${athleteId}/achievements`),
+                    fetch(`/api/athletes/${athleteId}/achievement-stats`)
+                ]);
+                
+                const achievementsData = await achievementsResponse.json();
+                const statsData = await statsResponse.json();
+                
+                hideLoading();
+                
+                if (achievementsData.achievements && achievementsData.achievements.length > 0) {
+                    displayAchievements(achievementsData.achievements);
+                    displayStats(statsData);
+                    generateCategoryTabs(statsData.by_category);
+                } else {
+                    showEmptyState();
+                }
+                
+            } catch (error) {
+                console.error('Error loading achievements:', error);
+                hideLoading();
+                showEmptyState();
+            }
+        }
+        
+        function displayAchievements(achievements) {
+            const grid = document.getElementById('achievementGrid');
+            grid.innerHTML = '';
+            
+            achievements.forEach(achievement => {
+                const card = createAchievementCard(achievement);
+                grid.appendChild(card);
+            });
+        }
+        
+        function createAchievementCard(achievement) {
+            const card = document.createElement('div');
+            card.className = 'achievement-card';
+            
+            const earnedDate = new Date(achievement.earned_date).toLocaleDateString();
+            
+            card.innerHTML = `
+                <div class="category-badge category-${achievement.category}">
+                    ${achievement.category}
+                </div>
+                <div class="text-center">
+                    <div class="achievement-sticker" style="background: ${achievement.color};">
+                        <span style="color: white;">${achievement.emoji}</span>
+                    </div>
+                    <div class="achievement-title">${achievement.name}</div>
+                    <div class="achievement-description">${achievement.description}</div>
+                    <div class="earned-date mt-3">
+                        <i class="fas fa-calendar-check"></i> Earned on ${earnedDate}
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        function displayStats(stats) {
+            document.getElementById('totalEarned').textContent = stats.total_earned;
+            document.getElementById('completionRate').textContent = `${stats.completion_rate}%`;
+            document.getElementById('totalPossible').textContent = stats.total_possible;
+            document.getElementById('recentCount').textContent = stats.recent_achievements.length;
+            
+            // Update progress bar
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            progressBar.style.width = `${stats.completion_rate}%`;
+            progressText.textContent = `${stats.completion_rate}% Complete`;
+            
+            // Show stats sections
+            document.getElementById('achievementStats').style.display = 'block';
+            document.getElementById('progressSection').style.display = 'block';
+        }
+        
+        function generateCategoryTabs(byCategory) {
+            const tabsList = document.getElementById('categoryTabs');
+            const categories = Object.keys(byCategory);
+            
+            if (categories.length > 1) {
+                // Clear existing tabs except "All"
+                tabsList.innerHTML = `
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#all-achievements">
+                            <i class="fas fa-th"></i> All Achievements
+                        </a>
+                    </li>
+                `;
+                
+                // Add category tabs
+                categories.forEach(category => {
+                    const achievements = byCategory[category];
+                    const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
+                    const categoryIcon = getCategoryIcon(category);
+                    
+                    const tab = document.createElement('li');
+                    tab.className = 'nav-item';
+                    tab.innerHTML = `
+                        <a class="nav-link" data-bs-toggle="tab" href="#${category}-achievements">
+                            <i class="${categoryIcon}"></i> ${categoryName} (${achievements.length})
+                        </a>
+                    `;
+                    tabsList.appendChild(tab);
+                    
+                    // Create tab content
+                    const tabContent = document.createElement('div');
+                    tabContent.className = 'tab-pane fade';
+                    tabContent.id = `${category}-achievements`;
+                    
+                    const grid = document.createElement('div');
+                    grid.className = 'achievement-grid';
+                    
+                    achievements.forEach(achievement => {
+                        const card = createAchievementCard(achievement);
+                        grid.appendChild(card);
+                    });
+                    
+                    tabContent.appendChild(grid);
+                    document.querySelector('.tab-content').appendChild(tabContent);
+                });
+                
+                tabsList.style.display = 'flex';
+            }
+        }
+        
+        function getCategoryIcon(category) {
+            const icons = {
+                'distance': 'fas fa-ruler',
+                'consistency': 'fas fa-fire',
+                'performance': 'fas fa-chart-line',
+                'variety': 'fas fa-palette',
+                'endurance': 'fas fa-heart',
+                'speed': 'fas fa-bolt',
+                'recovery': 'fas fa-leaf',
+                'special': 'fas fa-star'
+            };
+            return icons[category] || 'fas fa-trophy';
+        }
+        
+        function showLoading() {
+            document.getElementById('loadingState').style.display = 'block';
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('achievementGrid').innerHTML = '';
+            document.getElementById('achievementStats').style.display = 'none';
+            document.getElementById('progressSection').style.display = 'none';
+            document.getElementById('categoryTabs').style.display = 'none';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingState').style.display = 'none';
+        }
+        
+        function showEmptyState() {
+            document.getElementById('emptyState').style.display = 'block';
+            document.getElementById('achievementGrid').innerHTML = '';
+            document.getElementById('achievementStats').style.display = 'none';
+            document.getElementById('progressSection').style.display = 'none';
+            document.getElementById('categoryTabs').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

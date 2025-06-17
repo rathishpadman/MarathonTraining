@@ -17,6 +17,7 @@ from app.config import Config
 from app.ai_race_advisor import get_race_recommendations
 from app.training_load_calculator import get_training_load_metrics
 from app.senior_athlete_analytics_simple import get_senior_athlete_analytics_simple
+from app.achievement_system import get_athlete_achievements, get_achievement_stats
 
 # Create blueprint for API routes
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -85,6 +86,21 @@ def risk_analyser(athlete_id=1):
     except Exception as e:
         logger.error(f"Error rendering risk analyser: {str(e)}")
         return f"<h1>Error loading risk analyser: {str(e)}</h1>", 500
+
+@main_bp.route('/achievements')
+@main_bp.route('/achievements/<int:athlete_id>')
+def achievements(athlete_id=None):
+    """Training achievement stickers page"""
+    try:
+        from flask import render_template
+        if athlete_id:
+            logger.info(f"Accessing achievements page for athlete {athlete_id}")
+        else:
+            logger.info("Accessing achievements page")
+        return render_template('achievements.html')
+    except Exception as e:
+        logger.error(f"Error rendering achievements page: {str(e)}")
+        return f"<h1>Error loading achievements: {str(e)}</h1>", 500
 
 @main_bp.route('/auth/status')
 def auth_status():
@@ -2498,6 +2514,37 @@ def get_training_heatmap_data(athlete_id):
     except Exception as e:
         logger.error(f"Error getting training heatmap data: {str(e)}")
         return jsonify({'error': 'Failed to get heatmap data'}), 500
+
+# Achievement System API Endpoints
+@api_bp.route('/athletes/<int:athlete_id>/achievements', methods=['GET'])
+def get_athlete_achievements_api(athlete_id):
+    """Get achievements for a specific athlete"""
+    try:
+        days_back = request.args.get('days_back', 90, type=int)
+        achievements = get_athlete_achievements(athlete_id, days_back)
+        
+        logger.info(f"Retrieved {len(achievements)} achievements for athlete {athlete_id}")
+        return jsonify({
+            'achievements': achievements,
+            'count': len(achievements)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting achievements for athlete {athlete_id}: {str(e)}")
+        return jsonify({'error': 'Failed to get achievements'}), 500
+
+@api_bp.route('/athletes/<int:athlete_id>/achievement-stats', methods=['GET'])
+def get_athlete_achievement_stats_api(athlete_id):
+    """Get achievement statistics for a specific athlete"""
+    try:
+        stats = get_achievement_stats(athlete_id)
+        
+        logger.info(f"Retrieved achievement stats for athlete {athlete_id}: {stats['total_earned']}/{stats['total_possible']} earned")
+        return jsonify(stats)
+        
+    except Exception as e:
+        logger.error(f"Error getting achievement stats for athlete {athlete_id}: {str(e)}")
+        return jsonify({'error': 'Failed to get achievement statistics'}), 500
 
 # Analytics endpoints are defined above in lines 117-362
 # All duplicate routes below this line have been removed to prevent Flask conflicts
