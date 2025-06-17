@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Progress Heatmap - Marathon Training Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .year-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .year-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .year-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .year-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+        }
+
+        .heatmap-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .heatmap-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(53, 1fr);
+            gap: 3px;
+            margin-bottom: 20px;
+        }
+
+        .month-labels {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 0.8rem;
+            color: #666;
+            text-align: center;
+        }
+
+        .day-cell {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .day-cell:hover {
+            transform: scale(1.5);
+            z-index: 10;
+            border: 1px solid #333;
+        }
+
+        .intensity-0 { background: #f3f4f6; }
+        .intensity-1 { background: #dcfce7; }
+        .intensity-2 { background: #bbf7d0; }
+        .intensity-3 { background: #86efac; }
+        .intensity-4 { background: #22c55e; }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .insights-card, .intensity-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .insight-item {
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            border-left: 3px solid #667eea;
+        }
+
+        .intensity-distribution {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .intensity-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .intensity-bar-fill {
+            height: 20px;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            min-width: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: white;
+            font-weight: 600;
+        }
+
+        .intensity-bar-label {
+            font-size: 0.8rem;
+            min-width: 80px;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            max-width: 200px;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .calendar-grid {
+                grid-template-columns: repeat(26, 1fr);
+            }
+            
+            .controls {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .stats-overview {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔥 Training Progress Heatmap</h1>
+            <p>{{ heatmap_data.athlete_name }} - {{ heatmap_data.year }}</p>
+        </div>
+
+        {% if heatmap_data.error %}
+            <div class="error-message">
+                {{ heatmap_data.error }}
+            </div>
+        {% else %}
+            <div class="controls">
+                <div class="year-selector">
+                    <span>Year:</span>
+                    {% for yr in range(2020, 2026) %}
+                        <a href="/training-heatmap?athlete_id={{ athlete_id }}&year={{ yr }}" 
+                           class="year-btn {% if yr == heatmap_data.year %}active{% endif %}">{{ yr }}</a>
+                    {% endfor %}
+                </div>
+                <a href="/" class="year-btn">← Back to Dashboard</a>
+            </div>
+
+            <div class="stats-overview">
+                <div class="stat-card">
+                    <div class="stat-value">{{ heatmap_data.statistics.active_days }}</div>
+                    <div class="stat-label">Active Days</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ heatmap_data.statistics.consistency_rate }}%</div>
+                    <div class="stat-label">Consistency</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ heatmap_data.statistics.current_streak }}</div>
+                    <div class="stat-label">Current Streak</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ heatmap_data.statistics.longest_streak }}</div>
+                    <div class="stat-label">Longest Streak</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ heatmap_data.statistics.total_distance }}</div>
+                    <div class="stat-label">Total Distance (km)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ heatmap_data.statistics.total_tss }}</div>
+                    <div class="stat-label">Total TSS</div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="heatmap-section">
+                    <div class="heatmap-title">
+                        📅 Training Calendar
+                    </div>
+
+                    <div class="month-labels">
+                        <div>Jan</div><div>Feb</div><div>Mar</div><div>Apr</div>
+                        <div>May</div><div>Jun</div><div>Jul</div><div>Aug</div>
+                        <div>Sep</div><div>Oct</div><div>Nov</div><div>Dec</div>
+                    </div>
+
+                    <div class="calendar-grid" id="calendar-grid">
+                        {% for day in heatmap_data.calendar_data %}
+                            <div class="day-cell intensity-{{ day.intensity }}" 
+                                 data-date="{{ day.date }}"
+                                 data-activities="{{ day.activities }}"
+                                 data-tss="{{ day.tss }}"
+                                 data-distance="{{ day.distance }}"
+                                 data-duration="{{ day.duration_minutes }}"
+                                 data-types="{{ day.activity_types|join(', ') }}">
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="legend">
+                        <span>Less</span>
+                        {% for level in range(5) %}
+                            <div class="legend-item">
+                                <div class="legend-color intensity-{{ level }}"></div>
+                                <span>{{ heatmap_data.legend[level|string].label }}</span>
+                            </div>
+                        {% endfor %}
+                        <span>More</span>
+                    </div>
+                </div>
+
+                <div class="sidebar">
+                    <div class="insights-card">
+                        <div class="card-title">💡 Insights</div>
+                        {% for insight in heatmap_data.insights %}
+                            <div class="insight-item">{{ insight }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="intensity-card">
+                        <div class="card-title">📊 Training Intensity</div>
+                        <div class="intensity-distribution">
+                            {% for level in range(5) %}
+                                {% set count = heatmap_data.statistics.intensity_distribution[level] %}
+                                {% set percentage = (count / heatmap_data.statistics.total_days * 100) if heatmap_data.statistics.total_days > 0 else 0 %}
+                                <div class="intensity-bar">
+                                    <div class="intensity-bar-label">{{ heatmap_data.legend[level|string].label }}</div>
+                                    <div class="intensity-bar-fill intensity-{{ level }}" 
+                                         style="width: {{ percentage }}%">
+                                        {{ count }}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tooltip = document.getElementById('tooltip');
+            const dayCells = document.querySelectorAll('.day-cell');
+
+            dayCells.forEach(cell => {
+                cell.addEventListener('mouseenter', function(e) {
+                    const date = this.getAttribute('data-date');
+                    const activities = this.getAttribute('data-activities');
+                    const tss = this.getAttribute('data-tss');
+                    const distance = this.getAttribute('data-distance');
+                    const duration = this.getAttribute('data-duration');
+                    const types = this.getAttribute('data-types');
+
+                    let content = `<strong>${date}</strong><br>`;
+                    
+                    if (activities == '0') {
+                        content += 'Rest day';
+                    } else {
+                        content += `Activities: ${activities}<br>`;
+                        content += `TSS: ${tss}<br>`;
+                        content += `Distance: ${distance} km<br>`;
+                        content += `Duration: ${duration} min`;
+                        if (types) {
+                            content += `<br>Types: ${types}`;
+                        }
+                    }
+
+                    tooltip.innerHTML = content;
+                    tooltip.classList.add('show');
+                    
+                    const rect = this.getBoundingClientRect();
+                    tooltip.style.left = (rect.left + rect.width / 2) + 'px';
+                    tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+                });
+
+                cell.addEventListener('mouseleave', function() {
+                    tooltip.classList.remove('show');
+                });
+            });
+
+            // Position tooltip to prevent overflow
+            document.addEventListener('mousemove', function(e) {
+                if (tooltip.classList.contains('show')) {
+                    const tooltipRect = tooltip.getBoundingClientRect();
+                    const windowWidth = window.innerWidth;
+                    const windowHeight = window.innerHeight;
+
+                    if (tooltipRect.right > windowWidth) {
+                        tooltip.style.left = (windowWidth - tooltipRect.width - 10) + 'px';
+                    }
+                    if (tooltipRect.top < 0) {
+                        tooltip.style.top = '10px';
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

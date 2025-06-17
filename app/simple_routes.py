@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 from datetime import datetime, timedelta
-from flask import Blueprint, request, jsonify, send_from_directory
+from flask import Blueprint, request, jsonify, send_from_directory, render_template
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
 from flask_socketio import emit, join_room, leave_room
 from app import db, socketio
@@ -18,7 +18,7 @@ from app.ai_race_advisor import get_race_recommendations
 from app.training_load_calculator import get_training_load_metrics
 from app.senior_athlete_analytics_simple import get_senior_athlete_analytics_simple
 from app.achievement_system import get_athlete_achievements, get_achievement_stats
-from app.training_heatmap import generate_training_heatmap
+from app.training_heatmap_simple import generate_training_heatmap
 
 # Create blueprint for API routes
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -2553,3 +2553,27 @@ def get_athlete_achievement_stats_api(athlete_id):
 
 # Analytics endpoints are defined above in lines 117-362
 # All duplicate routes below this line have been removed to prevent Flask conflicts
+
+@main_bp.route('/training-heatmap')
+def training_heatmap_page():
+    """Training heatmap page route"""
+    try:
+        athlete_id = request.args.get('athlete_id', 1, type=int)
+        year = request.args.get('year', None, type=int)
+        
+        logger.info(f"Loading training heatmap for athlete {athlete_id}, year {year}")
+        
+        # Generate heatmap data
+        heatmap_data = generate_training_heatmap(athlete_id, year)
+        
+        return render_template('training_heatmap.html', 
+                             heatmap_data=heatmap_data,
+                             athlete_id=athlete_id,
+                             year=heatmap_data.get('year', year))
+        
+    except Exception as e:
+        logger.error(f"Error loading training heatmap: {str(e)}")
+        return render_template('training_heatmap.html', 
+                             heatmap_data={'error': 'Failed to load heatmap'},
+                             athlete_id=athlete_id,
+                             year=year or datetime.now().year)
