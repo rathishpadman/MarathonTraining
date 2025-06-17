@@ -86,7 +86,34 @@ def risk_analyser(athlete_id=1):
         logger.error(f"Error rendering risk analyser: {str(e)}")
         return f"<h1>Error loading risk analyser: {str(e)}</h1>", 500
 
-
+@main_bp.route('/auth/status')
+def auth_status():
+    """Check authentication status for current user"""
+    try:
+        # Check if there are any active athletes
+        active_athletes = db.session.query(ReplitAthlete).filter_by(is_active=True).all()
+        
+        if active_athletes:
+            # Return authenticated status with athlete info
+            return jsonify({
+                'authenticated': True,
+                'athlete_count': len(active_athletes),
+                'message': 'Athletes connected'
+            })
+        else:
+            # No active athletes found
+            return jsonify({
+                'authenticated': False,
+                'athlete_count': 0,
+                'message': 'No athletes connected'
+            })
+            
+    except Exception as e:
+        logger.error(f"Error checking auth status: {str(e)}")
+        return jsonify({
+            'authenticated': False,
+            'error': 'Failed to check authentication status'
+        }), 500
 
 @main_bp.route('/connect/strava')
 def strava_connect():
