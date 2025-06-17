@@ -265,11 +265,11 @@ def _generate_insights(stats: Dict, daily_data: Dict) -> List[str]:
 def _get_intensity_legend() -> Dict:
     """Get intensity level legend for the heatmap"""
     return {
-        0: {'label': 'Rest', 'color': '#f3f4f6', 'description': 'No training activity'},
-        1: {'label': 'Light', 'color': '#dcfce7', 'description': 'Easy training session'},
-        2: {'label': 'Moderate', 'color': '#bbf7d0', 'description': 'Standard training day'},
-        3: {'label': 'High', 'color': '#86efac', 'description': 'Intense training session'},
-        4: {'label': 'Very High', 'color': '#22c55e', 'description': 'Maximum effort training'}
+        '0': {'label': 'Rest', 'color': '#f3f4f6', 'description': 'No training activity'},
+        '1': {'label': 'Light', 'color': '#dcfce7', 'description': 'Easy training session'},
+        '2': {'label': 'Moderate', 'color': '#bbf7d0', 'description': 'Standard training day'},
+        '3': {'label': 'High', 'color': '#86efac', 'description': 'Intense training session'},
+        '4': {'label': 'Very High', 'color': '#22c55e', 'description': 'Maximum effort training'}
     }
 
 def _format_calendar_data(daily_data: Dict, year: int) -> List[Dict]:
