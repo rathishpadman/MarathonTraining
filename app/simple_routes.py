@@ -2554,26 +2554,4 @@ def get_athlete_achievement_stats_api(athlete_id):
 # Analytics endpoints are defined above in lines 117-362
 # All duplicate routes below this line have been removed to prevent Flask conflicts
 
-@main_bp.route('/training-heatmap')
-def training_heatmap_page():
-    """Training heatmap page route"""
-    try:
-        athlete_id = request.args.get('athlete_id', 1, type=int)
-        year = request.args.get('year', None, type=int)
-        
-        logger.info(f"Loading training heatmap for athlete {athlete_id}, year {year}")
-        
-        # Generate heatmap data
-        heatmap_data = generate_training_heatmap(athlete_id, year)
-        
-        return render_template('training_heatmap.html', 
-                             heatmap_data=heatmap_data,
-                             athlete_id=athlete_id,
-                             year=heatmap_data.get('year', year))
-        
-    except Exception as e:
-        logger.error(f"Error loading training heatmap: {str(e)}")
-        return render_template('training_heatmap.html', 
-                             heatmap_data={'error': 'Failed to load heatmap'},
-                             athlete_id=athlete_id,
-                             year=year or datetime.now().year)
+# Removed duplicate training heatmap route - functionality integrated in athlete dashboard

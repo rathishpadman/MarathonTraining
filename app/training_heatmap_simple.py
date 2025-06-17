@@ -89,7 +89,9 @@ def _calculate_daily_data(activities: List[Activity], year: int) -> Dict:
         
         day_data = daily_data[date_str]
         day_data['activities'] += 1
-        day_data['total_distance'] += float(activity.distance or 0)
+        # Convert distance from meters to kilometers
+        distance_km = float(activity.distance or 0) / 1000.0
+        day_data['total_distance'] += distance_km
         day_data['total_duration'] += int(activity.moving_time or 0)
         
         if activity.sport_type and activity.sport_type not in day_data['activity_types']:
