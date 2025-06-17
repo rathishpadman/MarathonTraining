@@ -52,14 +52,36 @@ class CommunityAnalytics:
                     day_start, day_end, athletes_with_activities
                 )
             
-            # Prepare chart data
-            labels = [date.strftime('%m/%d') for date in date_range]
+            # Filter out zero-activity days for better chart representation
+            filtered_data = []
+            for date in date_range:
+                date_str = date.strftime('%Y-%m-%d')
+                metrics = daily_metrics[date_str]
+                if metrics['active_athletes'] > 0 or metrics['avg_tss'] > 0:
+                    filtered_data.append({
+                        'label': date.strftime('%m/%d'),
+                        'tss': metrics['avg_tss'],
+                        'athletes': metrics['active_athletes'],
+                        'intensity': metrics['avg_intensity'],
+                        'consistency': metrics['consistency_score']
+                    })
             
-            # Extract metrics for charts
-            community_tss = [daily_metrics[date.strftime('%Y-%m-%d')]['avg_tss'] for date in date_range]
-            active_athletes = [daily_metrics[date.strftime('%Y-%m-%d')]['active_athletes'] for date in date_range]
-            avg_intensity = [daily_metrics[date.strftime('%Y-%m-%d')]['avg_intensity'] for date in date_range]
-            consistency_score = [daily_metrics[date.strftime('%Y-%m-%d')]['consistency_score'] for date in date_range]
+            # If no active days found, show last 7 days anyway to avoid empty chart
+            if not filtered_data:
+                filtered_data = [{
+                    'label': date.strftime('%m/%d'),
+                    'tss': daily_metrics[date.strftime('%Y-%m-%d')]['avg_tss'],
+                    'athletes': daily_metrics[date.strftime('%Y-%m-%d')]['active_athletes'],
+                    'intensity': daily_metrics[date.strftime('%Y-%m-%d')]['avg_intensity'],
+                    'consistency': daily_metrics[date.strftime('%Y-%m-%d')]['consistency_score']
+                } for date in date_range[-7:]]  # Show last 7 days as fallback
+            
+            # Extract data for chart
+            labels = [item['label'] for item in filtered_data]
+            community_tss = [item['tss'] for item in filtered_data]
+            active_athletes = [item['athletes'] for item in filtered_data]
+            avg_intensity = [item['intensity'] for item in filtered_data]
+            consistency_score = [item['consistency'] for item in filtered_data]
             
             return {
                 'labels': labels,
