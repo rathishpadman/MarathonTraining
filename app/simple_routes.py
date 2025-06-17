@@ -18,6 +18,7 @@ from app.ai_race_advisor import get_race_recommendations
 from app.training_load_calculator import get_training_load_metrics
 from app.senior_athlete_analytics_simple import get_senior_athlete_analytics_simple
 from app.achievement_system import get_athlete_achievements, get_achievement_stats
+from app.training_heatmap import generate_training_heatmap
 
 # Create blueprint for API routes
 api_bp = Blueprint('api', __name__, url_prefix='/api')
