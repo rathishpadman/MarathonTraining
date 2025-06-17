@@ -353,8 +353,16 @@
                     select.appendChild(option);
                 });
                 
-                // Auto-select first athlete if available
-                if (athletes.length > 0) {
+                // Check for athlete ID from URL parameter first
+                const athleteIdFromUrl = getAthleteIdFromUrl();
+                
+                if (athleteIdFromUrl && athletes.some(a => a.id == athleteIdFromUrl)) {
+                    // Select specific athlete from URL
+                    select.value = athleteIdFromUrl;
+                    currentAthleteId = athleteIdFromUrl;
+                    loadAchievements(currentAthleteId);
+                } else if (athletes.length > 0) {
+                    // Auto-select first athlete if no specific athlete requested
                     select.value = athletes[0].id;
                     currentAthleteId = athletes[0].id;
                     loadAchievements(currentAthleteId);
